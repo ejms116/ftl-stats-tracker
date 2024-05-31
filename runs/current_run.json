@@ -1,0 +1,145 @@
+{
+  "startTime": 1717141627.684245900,
+  "endTime": null,
+  "playerShipName": "The Kestrel",
+  "playerShipBlueprintId": "PLAYER_SHIP_HARD",
+  "difficulty": "NORMAL",
+  "sectorTreeSeed": 1924934762,
+  "result": "ONGOING",
+  "jumpList": [
+    {
+      "sectorNumber": 1,
+      "totalBeaconsExplored": 1,
+      "currentBeaconId": 1,
+      "jumpNumber": 0,
+      "events": [
+        {
+          "ts": 1717141627.686249800,
+          "category": "RESOURCE",
+          "type": "START",
+          "amount": 30,
+          "id": "HULL"
+        },
+        {
+          "ts": 1717141627.687249700,
+          "category": "RESOURCE",
+          "type": "START",
+          "amount": 16,
+          "id": "FUEL"
+        },
+        {
+          "ts": 1717141627.687249700,
+          "category": "RESOURCE",
+          "type": "START",
+          "amount": 2,
+          "id": "DRONE_PARTS"
+        },
+        {
+          "ts": 1717141627.687249700,
+          "category": "RESOURCE",
+          "type": "START",
+          "amount": 8,
+          "id": "MISSILES"
+        },
+        {
+          "ts": 1717141627.687249700,
+          "category": "RESOURCE",
+          "type": "START",
+          "amount": 10,
+          "id": "SCRAP"
+        },
+        {
+          "ts": 1717141627.687249700,
+          "category": "CREW",
+          "type": "START",
+          "amount": 0,
+          "id": "human"
+        },
+        {
+          "ts": 1717141627.687249700,
+          "category": "CREW",
+          "type": "START",
+          "amount": 0,
+          "id": "human"
+        },
+        {
+          "ts": 1717141627.687249700,
+          "category": "CREW",
+          "type": "START",
+          "amount": 0,
+          "id": "human"
+        },
+        {
+          "ts": 1717141627.687249700,
+          "category": "SYSTEM",
+          "type": "START",
+          "amount": 2,
+          "id": "shields"
+        },
+        {
+          "ts": 1717141627.687249700,
+          "category": "SYSTEM",
+          "type": "START",
+          "amount": 2,
+          "id": "engines"
+        },
+        {
+          "ts": 1717141627.687249700,
+          "category": "SYSTEM",
+          "type": "START",
+          "amount": 1,
+          "id": "oxygen"
+        },
+        {
+          "ts": 1717141627.687249700,
+          "category": "SYSTEM",
+          "type": "START",
+          "amount": 3,
+          "id": "weapons"
+        },
+        {
+          "ts": 1717141627.687249700,
+          "category": "SYSTEM",
+          "type": "START",
+          "amount": 1,
+          "id": "medbay"
+        },
+        {
+          "ts": 1717141627.687249700,
+          "category": "SYSTEM",
+          "type": "START",
+          "amount": 1,
+          "id": "pilot"
+        },
+        {
+          "ts": 1717141627.687249700,
+          "category": "SYSTEM",
+          "type": "START",
+          "amount": 1,
+          "id": "sensors"
+        },
+        {
+          "ts": 1717141627.687249700,
+          "category": "SYSTEM",
+          "type": "START",
+          "amount": 1,
+          "id": "doors"
+        },
+        {
+          "ts": 1717141630.854559500,
+          "category": "WEAPON",
+          "type": "START",
+          "amount": 0,
+          "id": "MISSILES_2_PLAYER"
+        },
+        {
+          "ts": 1717141630.854559500,
+          "category": "WEAPON",
+          "type": "START",
+          "amount": 0,
+          "id": "LASER_BURST_3"
+        }
+      ]
+    }
+  ]
+}
