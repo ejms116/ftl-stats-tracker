@@ -22,17 +22,20 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class StatsManager {
     private static final Logger log = LoggerFactory.getLogger(StatsManager.class);
-    public final String datPath = "C:\\Program Files (x86)\\Steam\\steamapps\\common\\FTL Faster Than Light";
-    public final File datFile = new File(datPath);
-    public DataManager manager;
+    private static final String currentRunFilename = "current_run.json";
+    private static final String runHistoryFoldername = "runs";
+    public final String datPath = "C:\\Program Files (x86)\\Steam\\steamapps\\common\\FTL Faster Than Light"; // TODO make user prompt for this
+    private DataManager manager;
 
     private FTLEventGenerator eventGenerator = new FTLEventGenerator();
 
@@ -65,17 +68,16 @@ public class StatsManager {
         System.out.println(toggleTracking);
     }
 
-    private void setupDataManager(){
-        try {
-            manager = new DefaultDataManager(datFile);
-            DataManager.setInstance(manager);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        } catch (JAXBException e) {
-            throw new RuntimeException(e);
-        } catch (JDOMException e) {
-            throw new RuntimeException(e);
-        }
+    public StatsManager(FTLStatsTrackerController ftlStatsTrackerController){
+        mapper.registerModule(new JavaTimeModule());
+        log.info("JavaTimeModule registered");
+        this.controller = ftlStatsTrackerController;
+        setupFileWatcher();
+        log.info("File Watcher setup complete...");
+
+        currentRun = readFTLRunFromJSON(new File(currentRunFilename));
+        log.info("reading run to continue");
+
     }
 
     public void setupFileWatcher(){
@@ -92,6 +94,10 @@ public class StatsManager {
         };
         timer = new Timer();
         timer.schedule( task , new Date(), 100 );
+    }
+
+    public void shutdownFileWatcher(){
+        timer.cancel();
     }
 
     public void loadGameStateFile(File file) {
@@ -158,6 +164,15 @@ public class StatsManager {
         }
     }
 
+    private FTLRun readFTLRunFromJSON(File file){
+        try {
+            return mapper.readValue(new File(file.getAbsolutePath()), FTLRun.class);
+        } catch (IOException e){
+            log.error("could not read file");
+        }
+        return null;
+    }
+
 
 
     public void loadGameState (SavedGameParser.SavedGameState currentGameState) {
@@ -175,8 +190,20 @@ public class StatsManager {
         log.info( "Currently at beacon number : " + currentGameState.getTotalBeaconsExplored() );
         log.info( "Currently in sector : " + currentGameState.getSectorNumber() + 1 );
 
+
         // check if new run was started
         if (currentRun == null || currentRun.getSectorTreeSeed() != currentGameState.getSectorTreeSeed()){
+            if (currentRun != null){
+                Path currentPath = Paths.get(currentRunFilename);
+                Path targetPath = Paths.get(currentRun.generateFileNameForRun()); // TODO make sure the runs folder exists!
+                try {
+                    Files.move(currentPath, targetPath, StandardCopyOption.REPLACE_EXISTING);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+
+                log.info("Save file moved to runs folder");
+            }
             currentRun = new FTLRun(currentGameState);
             jumpNumber = 0;
             currentJump = new FTLJump(currentGameState, jumpNumber);
@@ -203,10 +230,8 @@ public class StatsManager {
 
         // save to json file
         try {
-            Path dir = Paths.get("runs");
-            String pathImport = "runs/" + "current_run" + ".json";
 
-            mapper.writeValue(new File(pathImport), currentRun);
+            mapper.writeValue(new File(currentRunFilename), currentRun);
         } catch (IOException e){
             throw new RuntimeException();
         }
@@ -253,15 +278,4 @@ public class StatsManager {
         lastGameState = currentGameState;
     }
 
-
-    public void init(FTLStatsTrackerController ftlStatsTrackerController) {
-        mapper.registerModule(new JavaTimeModule());
-        this.controller = ftlStatsTrackerController;
-        setupFileWatcher();
-        log.info("File Watcher setup complete...");
-    }
-
-    public void shutdownFileWatcher(){
-        timer.cancel();
-    }
 }

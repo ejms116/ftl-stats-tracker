@@ -7,7 +7,7 @@ import javafx.stage.Stage;
 import net.blerf.ftl.core.EditorConfig;
 import net.blerf.ftl.parser.DataManager;
 import net.blerf.ftl.parser.DefaultDataManager;
-import net.gausman.ftl.FTLStatsTracker;
+import net.gausman.ftl.FTLStatsTrackerApplication;
 import net.vhati.modmanager.core.FTLUtilities;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,7 +16,7 @@ import java.io.*;
 import java.util.Properties;
 
 public class ConfigSetup {
-    private static final Logger log = LoggerFactory.getLogger(FTLStatsTracker.class);
+    private static final Logger log = LoggerFactory.getLogger(FTLStatsTrackerApplication.class);
     public static EditorConfig init(Stage stage){
 
         boolean writeConfig = false;
@@ -83,7 +83,7 @@ public class ConfigSetup {
             fc.setTitle("Locate FTL resources");
             File temp = fc.showOpenDialog(stage);
             if (temp == null){
-                throw new FTLStatsTracker.ExitException();
+                throw new FTLStatsTrackerApplication.ExitException();
             }
             datsDir = temp.getParentFile(); // TODO: add error Handling
             if (FTLUtilities.isDatsDirValid(datsDir)) {
@@ -99,7 +99,7 @@ public class ConfigSetup {
             alert.showAndWait();
             log.debug("No FTL dats path found, exiting.");
 
-            throw new FTLStatsTracker.ExitException();
+            throw new FTLStatsTrackerApplication.ExitException();
         }
 
         if (writeConfig) {
@@ -123,7 +123,7 @@ public class ConfigSetup {
             log.error( "Error parsing FTL resources", e );
             showErrorDialog( "Error parsing FTL resources" );
 
-            throw new FTLStatsTracker.ExitException();
+            throw new FTLStatsTrackerApplication.ExitException();
         }
         return appConfig;
     }

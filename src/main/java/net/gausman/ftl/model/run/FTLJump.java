@@ -12,6 +12,10 @@ public class FTLJump {
     private int jumpNumber = 0;
     private List<FTLRunEvent> events = new ArrayList<>();
 
+    public FTLJump(){
+        this.sectorNumber = 0;
+    }
+
     public FTLJump(SavedGameParser.SavedGameState gameState, int jumpNumber){
         this.sectorNumber = gameState.getSectorNumber() + 1;
         this.totalBeaconsExplored = gameState.getTotalBeaconsExplored();
