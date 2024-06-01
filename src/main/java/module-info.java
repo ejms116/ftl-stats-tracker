@@ -15,7 +15,8 @@ module net.gausman.ftl {
     exports net.gausman.ftl;
     opens net.gausman.ftl to jakarta.xml.bind, javafx.fxml, javafx.base;
     opens net.blerf.ftl.xml to jakarta.xml.bind;
-    opens net.gausman.ftl.model to javafx.base;
+    opens net.blerf.ftl.constants to com.fasterxml.jackson.databind;
+    opens net.gausman.ftl.model to javafx.base, com.fasterxml.jackson.databind;
     opens net.gausman.ftl.model.run to javafx.base, com.fasterxml.jackson.databind;
     exports net.gausman.ftl.util;
     opens net.gausman.ftl.util to jakarta.xml.bind, javafx.base, javafx.fxml;

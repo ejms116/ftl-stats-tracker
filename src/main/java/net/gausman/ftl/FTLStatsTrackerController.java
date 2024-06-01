@@ -21,7 +21,7 @@ import java.time.Instant;
 import java.util.ResourceBundle;
 
 public class FTLStatsTrackerController implements Initializable {
-    private StatsManager statsManager = new StatsManager();
+    private StatsManager statsManager;
     @FXML private BarChart<?,?> barChart;
     @FXML private ToggleButton toggleTrackingButton;
 
@@ -41,7 +41,9 @@ public class FTLStatsTrackerController implements Initializable {
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
-        statsManager.init(this);
+
+        //statsManager.init(this);
+        statsManager = new StatsManager(this);
 
         ts.setCellValueFactory(new PropertyValueFactory<EventListItem, Instant>("ts"));
         sectorNumber.setCellValueFactory(new PropertyValueFactory<EventListItem, Integer>("sectorNumber"));

@@ -18,12 +18,22 @@ public class FTLRun {
     private Constants.Result result = Constants.Result.ONGOING;
     private List<FTLJump> jumpList = new ArrayList<>();
 
+    public FTLRun(){
+        startTime = Instant.now();
+    }
+
     public FTLRun(SavedGameParser.SavedGameState gameState){
         startTime = Instant.now();
         this.difficulty = gameState.getDifficulty();
         this.playerShipBlueprintId = gameState.getPlayerShipBlueprintId();
         this.playerShipName = gameState.getPlayerShipName();
         this.sectorTreeSeed = gameState.getSectorTreeSeed();
+    }
+
+    public String generateFileNameForRun(){
+        String runFileName = "runs\\" + startTime + "_" + playerShipBlueprintId + ".json";
+        runFileName = runFileName.replaceAll("\\:", "-");
+        return runFileName;
     }
 
     public Instant getStartTime() {
