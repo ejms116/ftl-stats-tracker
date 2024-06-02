@@ -5,16 +5,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="0576553e-3a2b-4a46-bcd5-687c909a3c0a" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/util/DateUtil.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/resources/net/gausman/ftl/main.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/ui/FTLFrame.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/ui/FTLFrame.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/FTLStatsTrackerApplication.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/FTLStatsTrackerApplication.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/FTLStatsTrackerController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/FTLStatsTrackerController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/controller/FTLEventGenerator.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/controller/FTLEventGenerator.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/controller/StatsManager.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/controller/StatsManager.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/model/run/FTLRun.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/model/run/FTLRun.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/util/ConfigSetup.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/util/ConfigSetup.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/util/DateUtil.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/util/DateUtil.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/view/EventListItem.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/view/EventListItem.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/resources/net/gausman/ftl/main.fxml" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/net/gausman/ftl/main.fxml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -62,10 +60,10 @@
     "RunOnceActivity.OpenProjectViewOnStart": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "git-widget-placeholder": "feature/save-file-tracking",
+    "git-widget-placeholder": "feature/ui-improvements",
     "ignore.virus.scanning.warn.message": "true",
     "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "D:/Users/Erik/Java Projects/FTL_Stats_Tracker/pom.xml",
+    "last_opened_file_path": "C:/Users/erikj/Coding/IdeaProjects/ftl-stats-tracker/pom.xml",
     "project.structure.last.edited": "Modules",
     "project.structure.proportion": "0.0",
     "project.structure.side.proportion": "0.0",
@@ -116,13 +114,13 @@
         </breakpoint>
         <line-breakpoint enabled="true" type="java-line">
           <url>file://$PROJECT_DIR$/src/main/java/net/gausman/ftl/controller/StatsManager.java</url>
-          <line>208</line>
+          <line>209</line>
           <option name="timeStamp" value="46" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="java-line">
-          <url>file://$PROJECT_DIR$/src/main/java/net/gausman/ftl/FTLStatsTrackerController.java</url>
-          <line>80</line>
-          <option name="timeStamp" value="55" />
+          <url>file://$PROJECT_DIR$/src/main/java/net/gausman/ftl/view/EventListItem.java</url>
+          <line>31</line>
+          <option name="timeStamp" value="47" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

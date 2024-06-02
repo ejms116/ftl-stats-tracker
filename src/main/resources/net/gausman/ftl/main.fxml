@@ -9,9 +9,10 @@
    <children>
       <GridPane hgap="5.0" prefHeight="806.0" prefWidth="1493.0" vgap="5.0">
         <columnConstraints>
-          <ColumnConstraints hgrow="SOMETIMES" maxWidth="387.0" minWidth="10.0" prefWidth="291.4" />
-            <ColumnConstraints hgrow="SOMETIMES" maxWidth="323.20000000000005" minWidth="10.0" prefWidth="231.99996948242182" />
-            <ColumnConstraints hgrow="SOMETIMES" maxWidth="629.0" minWidth="10.0" prefWidth="499.60003051757826" />
+          <ColumnConstraints hgrow="SOMETIMES" maxWidth="387.0" minWidth="10.0" prefWidth="268.0" />
+            <ColumnConstraints hgrow="SOMETIMES" maxWidth="323.20000000000005" minWidth="10.0" prefWidth="193.59999999999997" />
+            <ColumnConstraints hgrow="SOMETIMES" maxWidth="629.0" minWidth="10.0" prefWidth="182.39999999999998" />
+            <ColumnConstraints hgrow="SOMETIMES" maxWidth="629.0" minWidth="10.0" prefWidth="401.0" />
             <ColumnConstraints hgrow="SOMETIMES" maxWidth="629.0" minWidth="10.0" prefWidth="499.60003051757826" />
         </columnConstraints>
         <rowConstraints>
@@ -55,7 +56,7 @@
                   <TextField fx:id="filterField" />
                   <TableView fx:id="eventTableView" prefHeight="734.0" prefWidth="982.0">
                     <columns>
-                      <TableColumn fx:id="ts" prefWidth="77.5999847650528" text="Timestamp" />
+                      <TableColumn fx:id="time" prefWidth="77.5999847650528" text="Time" />
                       <TableColumn fx:id="sectorNumber" prefWidth="47.59996795654297" text="Sector" />
                         <TableColumn fx:id="totalBeaconsExplored" prefWidth="55.20006561279297" text="Explored" />
                         <TableColumn fx:id="currentBeaconId" prefWidth="75.0" text="BeaconId" />
@@ -68,7 +69,7 @@
                   </TableView>
                </children>
             </FlowPane>
-            <FlowPane orientation="VERTICAL" prefHeight="273.0" prefWidth="277.0" GridPane.rowIndex="1">
+            <FlowPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" orientation="VERTICAL" prefHeight="273.0" prefWidth="277.0" GridPane.rowIndex="1">
                <children>
                   <Label prefHeight="18.0" prefWidth="237.0" text="Run Overview">
                      <padding>

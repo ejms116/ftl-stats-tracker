@@ -16,6 +16,7 @@ import net.gausman.ftl.controller.StatsManager;
 import net.gausman.ftl.view.EventListItem;
 
 import java.net.URL;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -29,7 +30,7 @@ public class FTLStatsTrackerController implements Initializable {
     @FXML private ToggleButton toggleTrackingButton;
 
 
-    @FXML private TableColumn<EventListItem, Instant> ts;
+    @FXML private TableColumn<EventListItem, String> time;
     @FXML private TableColumn<EventListItem, Integer> sectorNumber;
     @FXML private TableColumn<EventListItem, Integer> totalBeaconsExplored;
     @FXML private TableColumn<EventListItem, Integer> currentBeaconId;
@@ -56,7 +57,7 @@ public class FTLStatsTrackerController implements Initializable {
     public void initialize(URL url, ResourceBundle resourceBundle) {
         statsManager = new StatsManager(this);
 
-        ts.setCellValueFactory(new PropertyValueFactory<>("ts"));
+        time.setCellValueFactory(new PropertyValueFactory<>("time"));
         sectorNumber.setCellValueFactory(new PropertyValueFactory<>("sectorNumber"));
         totalBeaconsExplored.setCellValueFactory(new PropertyValueFactory<>("totalBeaconsExplored"));
         currentBeaconId.setCellValueFactory(new PropertyValueFactory<>("currentBeaconId"));

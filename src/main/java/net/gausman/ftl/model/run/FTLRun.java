@@ -93,5 +93,4 @@ public class FTLRun {
     public List<FTLJump> getJumpList() {
         return jumpList;
     }
-
 }

@@ -952,7 +952,7 @@ public class FTLFrame extends JFrame implements ActionListener, Statusbar, Threa
 
 			gameStateChooser.setDialogTitle( "Save Game State" );
 			int chooserResponse = gameStateChooser.showSaveDialog( FTLFrame.this );
-			File chosenFile = gameStateChooser.getSelectedFile();
+			File  chosenFile = gameStateChooser.getSelectedFile();
 			boolean sillyMistake = false;
 
 			if ( chooserResponse == JFileChooser.APPROVE_OPTION ) {

@@ -29,7 +29,7 @@ public class FTLStatsTrackerApplication extends Application {
             stage.setScene(scene);
             FTLStatsTrackerController FTLStatsTrackerController = fxmlLoader.getController();
             stage.setOnHidden(e -> FTLStatsTrackerController.shutdown());
-            stage.show();
+            stage. show();
         } catch (ExitException e) {
             System.gc();
         }
