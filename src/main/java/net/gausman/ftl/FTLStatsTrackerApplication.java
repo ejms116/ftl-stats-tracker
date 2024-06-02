@@ -16,13 +16,15 @@ import org.slf4j.*;
 
 public class FTLStatsTrackerApplication extends Application {
     private static final Logger log = LoggerFactory.getLogger(FTLStatsTrackerApplication.class);
+    public static EditorConfig appConfig;
 
     @Override
     public void start(Stage stage) throws IOException {
         try {
-            EditorConfig appConfig = ConfigSetup.init(stage);
+            appConfig = ConfigSetup.init(stage);
             FXMLLoader fxmlLoader = new FXMLLoader(FTLStatsTrackerApplication.class.getResource("main.fxml"));
-            Scene scene = new Scene(fxmlLoader.load(), 1280, 720);
+            Scene scene = new Scene(fxmlLoader.load(), 1493, 806);
+            scene.getStylesheets().add(FTLStatsTrackerApplication.class.getResource("main.css").toExternalForm());
             stage.setTitle("FTL Stats Tracker");
             stage.setScene(scene);
             FTLStatsTrackerController FTLStatsTrackerController = fxmlLoader.getController();

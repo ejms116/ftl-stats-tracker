@@ -54,6 +54,7 @@ public class ConfigSetup {
 
         String savePath = appConfig.getProperty(EditorConfig.FTL_SAVE_PATH);
         if (savePath.length() > 0){
+            log.info("Using Save file location from config: " + savePath);
             // TODO: check valid savegame path
         } else {
             props.setProperty(EditorConfig.FTL_SAVE_PATH, "C:\\Users\\Erik\\Documents\\My Games\\FasterThanLight\\continue.sav");
@@ -100,6 +101,18 @@ public class ConfigSetup {
             log.debug("No FTL dats path found, exiting.");
 
             throw new FTLStatsTrackerApplication.ExitException();
+        }
+
+        File runsDir = new File("runs");
+        if (!runsDir.exists()){
+            runsDir.mkdirs();
+            log.info("runs directory created");
+        }
+
+        File savesDir = new File("saves");
+        if (!savesDir.exists()){
+            savesDir.mkdirs();
+            log.info("saves directory created");
         }
 
         if (writeConfig) {

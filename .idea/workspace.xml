@@ -5,18 +5,17 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="0576553e-3a2b-4a46-bcd5-687c909a3c0a" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/FTLStatsTrackerApplication.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/util/DateUtil.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/resources/net/gausman/ftl/main.css" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/runs/current_run.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/module-info.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/module-info.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/FTLStatsTracker.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/FTLStatsTracker.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/FTLStatsTrackerApplication.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/FTLStatsTrackerApplication.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/FTLStatsTrackerController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/FTLStatsTrackerController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/controller/FTLEventGenerator.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/controller/FTLEventGenerator.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/controller/StatsManager.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/controller/StatsManager.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/model/run/FTLJump.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/model/run/FTLJump.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/model/run/FTLRun.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/model/run/FTLRun.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/util/ConfigSetup.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/util/ConfigSetup.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/net/gausman/ftl/main.fxml" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/net/gausman/ftl/main.fxml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -51,28 +50,28 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Application.FTLStatsTracker.executor&quot;: &quot;Debug&quot;,
-    &quot;Application.Hello.executor&quot;: &quot;Run&quot;,
-    &quot;Application.HelloApplication.executor&quot;: &quot;Run&quot;,
-    &quot;Application.Main.executor&quot;: &quot;Run&quot;,
-    &quot;Maven.ftl-stats-tracker [deploy].executor&quot;: &quot;Run&quot;,
-    &quot;Maven.ftl-stats-tracker [install].executor&quot;: &quot;Run&quot;,
-    &quot;Maven.ftl-stats-tracker [package].executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;feature/executable-jar&quot;,
-    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
-    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;D:/Users/Erik/Java Projects/FTL_Stats_Tracker/pom.xml&quot;,
-    &quot;project.structure.last.edited&quot;: &quot;Modules&quot;,
-    &quot;project.structure.proportion&quot;: &quot;0.0&quot;,
-    &quot;project.structure.side.proportion&quot;: &quot;0.0&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Application.FTLStatsTracker.executor": "Debug",
+    "Application.Hello.executor": "Run",
+    "Application.HelloApplication.executor": "Run",
+    "Application.Main.executor": "Run",
+    "Maven.ftl-stats-tracker [deploy].executor": "Run",
+    "Maven.ftl-stats-tracker [install].executor": "Run",
+    "Maven.ftl-stats-tracker [package].executor": "Run",
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "git-widget-placeholder": "feature/save-file-tracking",
+    "ignore.virus.scanning.warn.message": "true",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "D:/Users/Erik/Java Projects/FTL_Stats_Tracker/pom.xml",
+    "project.structure.last.edited": "Modules",
+    "project.structure.proportion": "0.0",
+    "project.structure.side.proportion": "0.0",
+    "settings.editor.selected.configurable": "preferences.pluginManager"
   }
-}</component>
+}]]></component>
   <component name="RunManager">
     <configuration name="FTLStatsTracker" type="Application" factoryName="Application">
       <option name="MAIN_CLASS_NAME" value="net.gausman.ftl.FTLStatsTrackerApplication" />
@@ -116,14 +115,14 @@
           <option name="timeStamp" value="18" />
         </breakpoint>
         <line-breakpoint enabled="true" type="java-line">
-          <url>file://$PROJECT_DIR$/src/main/java/net/gausman/ftl/controller/FTLEventGenerator.java</url>
-          <line>87</line>
-          <option name="timeStamp" value="32" />
+          <url>file://$PROJECT_DIR$/src/main/java/net/gausman/ftl/controller/StatsManager.java</url>
+          <line>208</line>
+          <option name="timeStamp" value="46" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="java-line">
-          <url>file://$PROJECT_DIR$/src/main/java/net/gausman/ftl/controller/StatsManager.java</url>
-          <line>195</line>
-          <option name="timeStamp" value="38" />
+          <url>file://$PROJECT_DIR$/src/main/java/net/gausman/ftl/FTLStatsTrackerController.java</url>
+          <line>80</line>
+          <option name="timeStamp" value="55" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
