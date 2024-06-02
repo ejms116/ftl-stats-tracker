@@ -2,6 +2,7 @@ package net.gausman.ftl.controller;
 
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import jakarta.xml.bind.JAXBException;
+import net.blerf.ftl.core.EditorConfig;
 import net.blerf.ftl.model.sectortree.SectorDot;
 import net.blerf.ftl.parser.DataManager;
 import net.blerf.ftl.parser.DefaultDataManager;
@@ -9,6 +10,7 @@ import net.blerf.ftl.parser.MysteryBytes;
 import net.blerf.ftl.parser.SavedGameParser;
 import net.blerf.ftl.parser.random.NativeRandom;
 import net.blerf.ftl.parser.sectortree.RandomSectorTreeGenerator;
+import net.gausman.ftl.FTLStatsTrackerApplication;
 import net.gausman.ftl.FTLStatsTrackerController;
 import net.gausman.ftl.model.run.FTLJump;
 import net.gausman.ftl.model.run.FTLRun;
@@ -21,6 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -56,6 +59,7 @@ public class StatsManager {
     private boolean toggleTracking = false;
 
     private SavedGameParser.SavedGameState lastGameState = null;
+    private SavedGameParser parser = new SavedGameParser();
 
     private FTLStatsTrackerController controller;
     private FTLRun currentRun;
@@ -63,9 +67,11 @@ public class StatsManager {
     private FTLJump currentJump;
     private int jumpNumber = 0;
     ObjectMapper mapper = new ObjectMapper();
+
+
     public void setToggleTracking(){
         toggleTracking = !toggleTracking;
-        System.out.println(toggleTracking);
+        log.info("Stats/File tracking: " + toggleTracking);
     }
 
     public StatsManager(FTLStatsTrackerController ftlStatsTrackerController){
@@ -76,17 +82,29 @@ public class StatsManager {
         log.info("File Watcher setup complete...");
 
         currentRun = readFTLRunFromJSON(new File(currentRunFilename));
-        log.info("reading run to continue");
+        if (currentRun != null){
+            // add events to GUI
+            for (FTLJump jump: currentRun.getJumpList()){
+                for (FTLRunEvent event: jump.getEvents()){
+                    controller.addEvent(new EventListItem(currentRun, jump, event));
+                }
+            }
+            log.info("Found ongoing run to continue"); // TODO error handling when there is a diffrence between json/sav files
+        }
 
+        System.out.println(FTLStatsTrackerApplication.appConfig.getProperty(EditorConfig.FTL_DATS_PATH));
+        //EditorConfig config = new EditorConfig();
     }
 
     public void setupFileWatcher(){
         task = new FileWatcher( chosenFile ) {
             protected void onChange( File file ) {
                 if (toggleTracking == true) {
-                    log.info( "\nFILE "+ file.getName() +" HAS CHANGED !" );
                     if (chosenFile.exists()){
-                        loadGameStateFile (chosenFile);
+                        log.info( "FILE "+ file.getName() +" HAS CHANGED" );
+                        loadGameStateFile(chosenFile);
+                    } else {
+                        log.info( "FILE "+ file.getName() +" WAS DELETED" );
                     }
 
                 }
@@ -101,6 +119,7 @@ public class StatsManager {
     }
 
     public void loadGameStateFile(File file) {
+
         FileInputStream in = null;
         StringBuilder hexBuf = new StringBuilder();
         Exception exception = null;
@@ -125,7 +144,7 @@ public class StatsManager {
 
             SavedGameParser parser = new SavedGameParser();
             SavedGameParser.SavedGameState gs = parser.readSavedGame(in);
-            loadGameState(gs);
+            handleGameState(gs);
             log.trace( "Game state read successfully." );
 
             if ( lastGameState.getMysteryList().size() > 0 ) {
@@ -165,6 +184,9 @@ public class StatsManager {
     }
 
     private FTLRun readFTLRunFromJSON(File file){
+        if (!file.exists()){
+            return null;
+        }
         try {
             return mapper.readValue(new File(file.getAbsolutePath()), FTLRun.class);
         } catch (IOException e){
@@ -173,9 +195,7 @@ public class StatsManager {
         return null;
     }
 
-
-
-    public void loadGameState (SavedGameParser.SavedGameState currentGameState) {
+    private void handleGameState(SavedGameParser.SavedGameState currentGameState){
         // TEST
 //        DataManager dm = DataManager.get();
 //        WeaponBlueprint w = dm.getWeapon("LASER_BURST_3");
@@ -185,29 +205,32 @@ public class StatsManager {
 
         // TEST
 
-        log.info( "------" );
-        log.info( "Ship Name : " + currentGameState.getPlayerShipName() );
-        log.info( "Currently at beacon number : " + currentGameState.getTotalBeaconsExplored() );
-        log.info( "Currently in sector : " + currentGameState.getSectorNumber() + 1 );
-
-
         // check if new run was started
         if (currentRun == null || currentRun.getSectorTreeSeed() != currentGameState.getSectorTreeSeed()){
             if (currentRun != null){
                 Path currentPath = Paths.get(currentRunFilename);
-                Path targetPath = Paths.get(currentRun.generateFileNameForRun()); // TODO make sure the runs folder exists!
+                Path targetPath = Paths.get(currentRun.generateFileNameForRun());
                 try {
                     Files.move(currentPath, targetPath, StandardCopyOption.REPLACE_EXISTING);
                 } catch (IOException e) {
-                    throw new RuntimeException(e);
+                    //throw new RuntimeException(e);
+                    System.out.println("cant move file");
                 }
 
-                log.info("Save file moved to runs folder");
+                log.info("Stats file moved to runs folder");
             }
             currentRun = new FTLRun(currentGameState);
             jumpNumber = 0;
             currentJump = new FTLJump(currentGameState, jumpNumber);
-            currentJump.addEvents(eventGenerator.getEventsStartRun(currentGameState));
+            currentRun.addJump(currentJump);
+
+            File newSaveDir = new File(currentRun.generateFolderNameForSave());
+            newSaveDir.mkdirs();
+
+            copySaveFile(currentGameState);
+
+            //currentJump.addEvents(eventGenerator.getEventsStartRun(currentGameState));
+            addEventsAll(eventGenerator.getEventsStartRun(currentGameState));
         }
 
         // check if new jump
@@ -218,26 +241,68 @@ public class StatsManager {
                 currentJump.getEvents().add(testEvent);
             }
             // add events to GUI
-            for (FTLRunEvent event: currentJump.getEvents()){
-                controller.addEvent(new EventListItem(currentRun, currentJump, event));
-            }
-            currentRun.addJump(currentJump);
+//            for (FTLRunEvent event: currentJump.getEvents()){
+//                controller.addEvent(new EventListItem(currentRun, currentJump, event));
+//            }
             jumpNumber++;
             currentJump = new FTLJump(currentGameState, jumpNumber);
+            currentRun.addJump(currentJump);
+            copySaveFile(currentGameState);
         }
 
-        currentJump.addEvents(eventGenerator.getEventsFromGameStateComparison(lastGameState, currentGameState));
+        addEventsAll(eventGenerator.getEventsFromGameStateComparison(lastGameState, currentGameState));
+        //currentJump.addEvents(eventGenerator.getEventsFromGameStateComparison(lastGameState, currentGameState));
 
         // save to json file
         try {
-
             mapper.writeValue(new File(currentRunFilename), currentRun);
         } catch (IOException e){
             throw new RuntimeException();
         }
 
+        lastGameState = currentGameState;
 
-        // old logic
+        log.info( "Ship Name: " + currentGameState.getPlayerShipName());
+        log.info( "Total beacons explored: " + currentGameState.getTotalBeaconsExplored());
+        log.info( "Currently at beacon Id: " + currentGameState.getCurrentBeaconId());
+        log.info( "Jump number: " + jumpNumber);
+        log.info( "Currently in sector: " + currentGameState.getSectorNumber() + 1);
+        log.info( "----------------------------------------------------------------");
+
+    }
+
+    private void addEventsAll(List<FTLRunEvent> events){
+        currentJump.addEvents(events);
+        for (FTLRunEvent event: events){
+            controller.addEvent(new EventListItem(currentRun, currentJump, event));
+        }
+    }
+
+    private void copySaveFile(SavedGameParser.SavedGameState currentGameState){
+        try {
+            FileOutputStream out = new FileOutputStream(currentRun.generateFileNameForSave(jumpNumber, currentJump.getSectorNumber()));
+            parser.writeSavedGame(out, currentGameState);
+
+        } catch (IOException e){
+
+        }
+
+//        Path localSavePath = Paths.get(savePath);
+//        Path targetSavePath = Paths.get(currentRun.generateFileNameForSave(jumpNumber, currentJump.getSectorNumber()));
+//        try {
+//            Files.copy(localSavePath, targetSavePath);
+//        } catch (IOException e) {
+//            throw new RuntimeException(e);
+//        }
+    }
+
+    // deprecated
+    public void loadGameState (SavedGameParser.SavedGameState currentGameState) {
+        log.info( "------" );
+        log.info( "Ship Name : " + currentGameState.getPlayerShipName() );
+        log.info( "Currently at beacon number : " + currentGameState.getTotalBeaconsExplored() );
+        log.info( "Currently in sector : " + currentGameState.getSectorNumber() + 1 );
+
         if (gameStateArray.isEmpty() ||
                 currentGameState.getTotalBeaconsExplored() > lastGameState.getTotalBeaconsExplored()
         ) {

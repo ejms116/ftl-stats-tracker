@@ -3,13 +3,12 @@ package net.gausman.ftl;
 import javafx.beans.property.ObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.chart.BarChart;
 import javafx.scene.chart.XYChart;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
-import javafx.scene.control.ToggleButton;
+import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import net.gausman.ftl.model.Constants;
 
@@ -18,7 +17,11 @@ import net.gausman.ftl.view.EventListItem;
 
 import java.net.URL;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.ResourceBundle;
+import java.util.function.Predicate;
 
 public class FTLStatsTrackerController implements Initializable {
     private StatsManager statsManager;
@@ -38,39 +41,116 @@ public class FTLStatsTrackerController implements Initializable {
 
     @FXML private TableView<EventListItem> eventTableView;
 
+    @FXML private TextField filterField;
+
+    @FXML private CheckBox resourceCB;
+    @FXML private CheckBox crewCB;
+    @FXML private CheckBox systemCB;
+
+    //private HashMap<Constants.EventCategory, Boolean> showCategories = new HashMap<Constants.EventCategory, Boolean>();
+    private List<String> showCategories = new ArrayList<>();
+
+    private ObservableList<EventListItem> masterData = FXCollections.observableArrayList();
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
-
-        //statsManager.init(this);
         statsManager = new StatsManager(this);
 
-        ts.setCellValueFactory(new PropertyValueFactory<EventListItem, Instant>("ts"));
-        sectorNumber.setCellValueFactory(new PropertyValueFactory<EventListItem, Integer>("sectorNumber"));
-        totalBeaconsExplored.setCellValueFactory(new PropertyValueFactory<EventListItem, Integer>("totalBeaconsExplored"));
-        currentBeaconId.setCellValueFactory(new PropertyValueFactory<EventListItem, Integer>("currentBeaconId"));
-        jumpNumber.setCellValueFactory(new PropertyValueFactory<EventListItem, Integer>("jumpNumber"));
-        category.setCellValueFactory(new PropertyValueFactory<EventListItem, Constants.EventCategory>("category"));
-        type.setCellValueFactory(new PropertyValueFactory<EventListItem, Constants.EventType>("type"));
-        amount.setCellValueFactory(new PropertyValueFactory<EventListItem, ObjectProperty<Integer>>("amount"));
-        id.setCellValueFactory(new PropertyValueFactory<EventListItem, String>("id"));
-        ObservableList<EventListItem> data = FXCollections.observableArrayList();
+        ts.setCellValueFactory(new PropertyValueFactory<>("ts"));
+        sectorNumber.setCellValueFactory(new PropertyValueFactory<>("sectorNumber"));
+        totalBeaconsExplored.setCellValueFactory(new PropertyValueFactory<>("totalBeaconsExplored"));
+        currentBeaconId.setCellValueFactory(new PropertyValueFactory<>("currentBeaconId"));
+        jumpNumber.setCellValueFactory(new PropertyValueFactory<>("jumpNumber"));
+        category.setCellValueFactory(new PropertyValueFactory<>("category"));
+        type.setCellValueFactory(new PropertyValueFactory<>("type"));
+        amount.setCellValueFactory(new PropertyValueFactory<>("amount"));
+        id.setCellValueFactory(new PropertyValueFactory<>("id"));
 
-//        EventListItem event = new EventListItem();
-//        event.setId("TEST");
-//        data.add(event);
-//
-//        event = new EventListItem();
-//        event.setId("BURST_1");
-//        data.add(event);
-//
-//        eventTableView.getItems().setAll(data);
+        FilteredList<EventListItem> filteredData = new FilteredList<>(masterData, p -> false);
+
+        resourceCB.selectedProperty().addListener((observable, oldValue, newValue) -> {
+            filteredData.setPredicate(eventListItem -> {
+                if (newValue == true){
+                    if (!showCategories.contains("RESOURCE")){
+                        showCategories.add("RESOURCE");
+                    }
+                } else {
+                    showCategories.remove("RESOURCE");
+                }
+
+                if (showCategories.contains(eventListItem.getCategory().toString())){
+                    return true;
+                }
+                return false;
+            });
+        });
+
+        systemCB.selectedProperty().addListener((observable, oldValue, newValue) -> {
+            filteredData.setPredicate(eventListItem -> {
+                if (newValue == true){
+                    if (!showCategories.contains("SYSTEM")){
+                        showCategories.add("SYSTEM");
+                    }
+                } else {
+                    showCategories.remove("SYSTEM");
+                }
+
+                if (showCategories.contains(eventListItem.getCategory().toString())){
+                    return true;
+                }
+                return false;
+            });
+        });
+
+        crewCB.selectedProperty().addListener((observable, oldValue, newValue) -> {
+            filteredData.setPredicate(eventListItem -> {
+                if (newValue == true){
+                    if (!showCategories.contains("CREW")){
+                        showCategories.add("CREW");
+                    }
+                } else {
+                    showCategories.remove("CREW");
+                }
+
+                if (showCategories.contains(eventListItem.getCategory().toString())){
+                    return true;
+                }
+                return false;
+            });
+        });
+
+        // TODO text filer when filtering category
+        filterField.textProperty().addListener((observable, oldValue, newValue) -> {
+            filteredData.setPredicate(eventListItem -> {
+                if (newValue == null || newValue.isEmpty()){
+                    return true;
+                }
+
+                String lowerCaseFilter = newValue.toLowerCase();
+
+                if (showCategories.contains(eventListItem.getCategory().toString()) && eventListItem.getId().toLowerCase().contains(lowerCaseFilter)){
+                    return true;
+                }
+                return false;
+            });
+        });
+
+        eventTableView.setItems(filteredData);
+
+//        showCategories.put(Constants.EventCategory.RESOURCE, false);
+//        showCategories.put(Constants.EventCategory.SYSTEM, false);
+//        showCategories.put(Constants.EventCategory.CREW, false);
+
+        resourceCB.selectedProperty().set(true);
+//        systemCB.selectedProperty().set(false);
+//        crewCB.selectedProperty().set(false);
 
         setTestDataBarChart();
     }
 
     public void addEvent(EventListItem event){
-        eventTableView.getItems().add(event);
+        masterData.add(event);
+        //eventTableView.getItems().add(event);
     }
 
     @FXML

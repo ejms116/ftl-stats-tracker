@@ -127,7 +127,7 @@ public class FTLEventGenerator {
         CargoConsolidator oldCargo = new CargoConsolidator(oldGameState);
         CargoConsolidator newCargo = new CargoConsolidator(newGameState);
 
-        int jumpNumber = 0; // TODO delete?
+        // TODO delete?
 
         FTLRunEvent event;
 
@@ -136,8 +136,6 @@ public class FTLEventGenerator {
 
          if (oldGameState.getCurrentBeaconId() == newGameState.getCurrentBeaconId()){
             jumped = false;
-        } else {
-            jumpNumber++;
         }
 
         if (jumped == false && newGameState.getBeaconList().get(newGameState.getCurrentBeaconId()) != null &&
@@ -160,7 +158,7 @@ public class FTLEventGenerator {
                 event = new FTLRunEvent();
                 event.setCategory(Constants.EventCategory.RESOURCE);
                 event.setType(Constants.EventType.BUY);
-                event.setId("MISSILE");
+                event.setId("MISSILES");
                 event.setAmount(missiles_diff);
                 events.add(event);
             }
@@ -170,7 +168,7 @@ public class FTLEventGenerator {
                 event = new FTLRunEvent();
                 event.setCategory(Constants.EventCategory.RESOURCE);
                 event.setType(Constants.EventType.BUY);
-                event.setId("DRONES");
+                event.setId("DRONE_PARTS");
                 event.setAmount(drones_diff);
                 events.add(event);
             }
