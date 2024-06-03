@@ -35,7 +35,8 @@ public class FTLRun {
     }
 
     public String generateFileNameForRun(){
-        String runFileName = "runs\\" + DateUtil.formatInstant(startTime) + "_" + playerShipBlueprintId + ".json";
+        DataManager dm = DataManager.get();
+        String runFileName = String.format("runs\\%s-%s.json", DateUtil.formatInstant(startTime), dm.getShip(playerShipBlueprintId).getName().getTextValue());
         runFileName = runFileName.replaceAll("\\:", "-");
         return runFileName;
     }

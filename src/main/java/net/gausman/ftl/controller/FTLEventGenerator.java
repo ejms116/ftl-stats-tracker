@@ -112,7 +112,7 @@ public class FTLEventGenerator {
         }
 
         // INFO We assume here that the player ship does not start with anything in the cargo, which is true for vanilla FTL
-
+        // TODO if the run was started late the beacons explored stat is wrong...
 
         return events;
     }

@@ -281,7 +281,8 @@ public class StatsManager {
 
     private void copySaveFile(SavedGameParser.SavedGameState currentGameState){
         try {
-            FileOutputStream out = new FileOutputStream(currentRun.generateFileNameForSave(jumpNumber, currentJump.getSectorNumber()));
+            String fName = currentRun.generateFileNameForSave(jumpNumber, currentJump.getSectorNumber());
+            FileOutputStream out = new FileOutputStream(fName);
             parser.writeSavedGame(out, currentGameState);
 
         } catch (IOException e){

@@ -15,6 +15,8 @@ import net.gausman.ftl.model.Constants;
 import net.gausman.ftl.controller.StatsManager;
 import net.gausman.ftl.view.EventListItem;
 
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import java.net.URL;
 import java.time.Duration;
 import java.time.Instant;
@@ -22,6 +24,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.ResourceBundle;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
 public class FTLStatsTrackerController implements Initializable {
@@ -44,12 +47,23 @@ public class FTLStatsTrackerController implements Initializable {
 
     @FXML private TextField filterField;
 
+    @FXML private CheckBox systemCB;
     @FXML private CheckBox resourceCB;
     @FXML private CheckBox crewCB;
-    @FXML private CheckBox systemCB;
+    @FXML private CheckBox weaponCB;
+    @FXML private CheckBox droneCB;
+    @FXML private CheckBox augmentCB;
 
-    //private HashMap<Constants.EventCategory, Boolean> showCategories = new HashMap<Constants.EventCategory, Boolean>();
+    @FXML private CheckBox startCB;
+    @FXML private CheckBox upgradeCB;
+    @FXML private CheckBox rewardCB;
+    @FXML private CheckBox buyCB;
+    @FXML private CheckBox sellCB;
+    @FXML private CheckBox discardCB;
+
     private List<String> showCategories = new ArrayList<>();
+    private List<String> showTypes = new ArrayList<>();
+    private String searchString = "";
 
     private ObservableList<EventListItem> masterData = FXCollections.observableArrayList();
 
@@ -69,89 +83,82 @@ public class FTLStatsTrackerController implements Initializable {
 
         FilteredList<EventListItem> filteredData = new FilteredList<>(masterData, p -> false);
 
-        resourceCB.selectedProperty().addListener((observable, oldValue, newValue) -> {
-            filteredData.setPredicate(eventListItem -> {
-                if (newValue == true){
-                    if (!showCategories.contains("RESOURCE")){
-                        showCategories.add("RESOURCE");
-                    }
-                } else {
-                    showCategories.remove("RESOURCE");
-                }
 
-                if (showCategories.contains(eventListItem.getCategory().toString())){
-                    return true;
-                }
-                return false;
-            });
-        });
+        resourceCB.selectedProperty().addListener((observable, oldValue, newValue) -> dynamicListener(filteredData, showCategories, "RESOURCE", newValue));
+        systemCB.selectedProperty().addListener((observable, oldValue, newValue) -> dynamicListener(filteredData, showCategories, "SYSTEM", newValue));
+        crewCB.selectedProperty().addListener((observable, oldValue, newValue) -> dynamicListener(filteredData, showCategories, "CREW", newValue));
+        weaponCB.selectedProperty().addListener((observable, oldValue, newValue) -> dynamicListener(filteredData, showCategories, "WEAPON", newValue));
+        droneCB.selectedProperty().addListener((observable, oldValue, newValue) -> dynamicListener(filteredData, showCategories, "DRONE", newValue));
+        augmentCB.selectedProperty().addListener((observable, oldValue, newValue) -> dynamicListener(filteredData, showCategories, "AUGMENT", newValue));
 
-        systemCB.selectedProperty().addListener((observable, oldValue, newValue) -> {
-            filteredData.setPredicate(eventListItem -> {
-                if (newValue == true){
-                    if (!showCategories.contains("SYSTEM")){
-                        showCategories.add("SYSTEM");
-                    }
-                } else {
-                    showCategories.remove("SYSTEM");
-                }
+        startCB.selectedProperty().addListener((observable, oldValue, newValue) -> dynamicListener(filteredData, showTypes, "START", newValue));
+        upgradeCB.selectedProperty().addListener((observable, oldValue, newValue) -> dynamicListener(filteredData, showTypes, "UPGRADE", newValue));
+        rewardCB.selectedProperty().addListener((observable, oldValue, newValue) -> dynamicListener(filteredData, showTypes, "REWARD", newValue));
+        buyCB.selectedProperty().addListener((observable, oldValue, newValue) -> dynamicListener(filteredData, showTypes, "BUY", newValue));
+        sellCB.selectedProperty().addListener((observable, oldValue, newValue) -> dynamicListener(filteredData, showTypes, "SELL", newValue));
+        discardCB.selectedProperty().addListener((observable, oldValue, newValue) -> dynamicListener(filteredData, showTypes, "DISCARD", newValue));
 
-                if (showCategories.contains(eventListItem.getCategory().toString())){
-                    return true;
-                }
-                return false;
-            });
-        });
-
-        crewCB.selectedProperty().addListener((observable, oldValue, newValue) -> {
-            filteredData.setPredicate(eventListItem -> {
-                if (newValue == true){
-                    if (!showCategories.contains("CREW")){
-                        showCategories.add("CREW");
-                    }
-                } else {
-                    showCategories.remove("CREW");
-                }
-
-                if (showCategories.contains(eventListItem.getCategory().toString())){
-                    return true;
-                }
-                return false;
-            });
-        });
-
-        // TODO text filer when filtering category
         filterField.textProperty().addListener((observable, oldValue, newValue) -> {
             filteredData.setPredicate(eventListItem -> {
-                if (newValue == null || newValue.isEmpty()){
-                    return true;
-                }
+//                if (newValue == null || newValue.isEmpty()){
+//                    return true;
+//                }
 
-                String lowerCaseFilter = newValue.toLowerCase();
+                searchString = newValue.toLowerCase();
 
-                if (showCategories.contains(eventListItem.getCategory().toString()) && eventListItem.getId().toLowerCase().contains(lowerCaseFilter)){
-                    return true;
-                }
-                return false;
+                return filterEventList(eventListItem);
             });
         });
 
         eventTableView.setItems(filteredData);
 
-//        showCategories.put(Constants.EventCategory.RESOURCE, false);
-//        showCategories.put(Constants.EventCategory.SYSTEM, false);
-//        showCategories.put(Constants.EventCategory.CREW, false);
-
+        // TODO save these values to the settings.cfg
         resourceCB.selectedProperty().set(true);
-//        systemCB.selectedProperty().set(false);
-//        crewCB.selectedProperty().set(false);
+        systemCB.selectedProperty().set(true);
+        crewCB.selectedProperty().set(true);
+        weaponCB.selectedProperty().set(true);
+        droneCB.selectedProperty().set(true);
+        augmentCB.selectedProperty().set(true);
+
+        startCB.selectedProperty().set(true);
+        upgradeCB.selectedProperty().set(true);
+        rewardCB.selectedProperty().set(true);
+        buyCB.selectedProperty().set(true);
+        sellCB.selectedProperty().set(true);
+        discardCB.selectedProperty().set(true);
 
         setTestDataBarChart();
     }
 
+    private void dynamicListener(FilteredList<EventListItem> filteredData, List<String> show, String text, boolean newValue){
+        if (newValue == true) {
+            if (!show.contains(text)) {
+                show.add(text);
+            }
+        } else {
+            show.remove(text);
+        }
+        filteredData.setPredicate(this::filterEventList);
+    }
+
+
+
+    private boolean filterEventList(EventListItem item){
+        if (!showCategories.contains(item.getCategory().toString())){
+            return false;
+        }
+        if (!showTypes.contains(item.getType().toString())){
+            return false;
+        }
+        if (!item.getId().toLowerCase().contains(searchString)){
+            return false;
+        }
+
+        return true;
+    }
+
     public void addEvent(EventListItem event){
         masterData.add(event);
-        //eventTableView.getItems().add(event);
     }
 
     @FXML
@@ -188,4 +195,26 @@ public class FTLStatsTrackerController implements Initializable {
 
         barChart.getData().addAll(series1, series2);
     }
+
+//    class EventListChangeListener implements ChangeListener{
+//        FilteredList<EventListItem> filteredData = new FilteredList<>(masterData, p -> false);
+//
+//        @Override
+//        public void stateChanged(ChangeEvent e) {
+//            (observable, oldValue, newValue) -> {
+//                filteredData.setPredicate(eventListItem -> {
+//                    e.
+//                    if (newValue == true){
+//                        if (!showCategories.contains("RESOURCE")){
+//                            showCategories.add("RESOURCE");
+//                        }
+//                    } else {
+//                        showCategories.remove("RESOURCE");
+//                    }
+//
+//                    return filterEventList(eventListItem);
+//                });
+//            }
+//        }
+//    }
 }
