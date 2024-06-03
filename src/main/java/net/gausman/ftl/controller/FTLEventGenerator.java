@@ -7,6 +7,7 @@ import net.blerf.ftl.xml.ShipBlueprint;
 import net.blerf.ftl.xml.WeaponBlueprint;
 import net.gausman.ftl.model.Constants;
 import net.gausman.ftl.model.run.FTLRunEvent;
+import net.gausman.ftl.view.OverviewListItem;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,6 +16,41 @@ import java.util.Map;
 public class FTLEventGenerator {
 
     private DataManager dm = DataManager.get();
+
+    public List<OverviewListItem> getOverviewList(SavedGameParser.SavedGameState newGameState, int jumpNumber){
+        List<OverviewListItem> overview = new ArrayList<>();
+
+        OverviewListItem item;
+
+        item = new OverviewListItem("Ship", dm.getShip(newGameState.getPlayerShipBlueprintId()).getName().getTextValue());
+        overview.add(item);
+
+        item = new OverviewListItem("Difficulty", newGameState.getDifficulty().name());
+        overview.add(item);
+
+        item = new OverviewListItem("Sector", Integer.toString(newGameState.getSectorNumber()+1));
+        overview.add(item);
+
+        item = new OverviewListItem("Jump", Integer.toString(jumpNumber));
+        overview.add(item);
+
+        item = new OverviewListItem("BeaconId", Integer.toString(newGameState.getCurrentBeaconId()));
+        overview.add(item);
+
+        item = new OverviewListItem("Beacons explored", Integer.toString(newGameState.getTotalBeaconsExplored()));
+        overview.add(item);
+
+        item = new OverviewListItem("Ships destroyed", Integer.toString(newGameState.getTotalShipsDefeated()));
+        overview.add(item);
+
+        item = new OverviewListItem("Scrap collected", Integer.toString(newGameState.getTotalScrapCollected()));
+        overview.add(item);
+
+        item = new OverviewListItem("Sector seed", Integer.toString(newGameState.getSectorTreeSeed()));
+        overview.add(item);
+
+        return overview;
+    }
 
     public List<FTLRunEvent> getEventsStartRun(SavedGameParser.SavedGameState newGameState){
         List<FTLRunEvent> events = new ArrayList<>();
@@ -132,47 +168,49 @@ public class FTLEventGenerator {
         FTLRunEvent event;
 
         boolean jumped = true;
+        SavedGameParser.StoreState newStore = newGameState.getBeaconList().get(newGameState.getCurrentBeaconId()).getStore();
+        SavedGameParser.StoreState oldStore = oldGameState.getBeaconList().get(oldGameState.getCurrentBeaconId()).getStore();
         boolean store_present = false;
 
          if (oldGameState.getCurrentBeaconId() == newGameState.getCurrentBeaconId()){
             jumped = false;
         }
 
-        if (jumped == false && newGameState.getBeaconList().get(newGameState.getCurrentBeaconId()) != null &&
-                newGameState.getBeaconList().get(newGameState.getCurrentBeaconId()).getStore() != null &&
-                oldGameState.getBeaconList().get(oldGameState.getCurrentBeaconId()) != null &&
-                newGameState.getBeaconList().get(newGameState.getCurrentBeaconId()).getStore() != null){
+        if (!jumped && newStore != null){
             int fuel_diff = oldGameState.getBeaconList().get(oldGameState.getCurrentBeaconId()).getStore().getFuel() -
                     newGameState.getBeaconList().get(newGameState.getCurrentBeaconId()).getStore().getFuel();
             if (fuel_diff > 0){
-                event = new FTLRunEvent();
-                event.setCategory(Constants.EventCategory.RESOURCE);
-                event.setType(Constants.EventType.BUY);
-                event.setId("FUEL");
-                event.setAmount(fuel_diff);
-                events.add(event);
+                events.add(new FTLRunEvent(Constants.EventCategory.RESOURCE, Constants.EventType.BUY, fuel_diff, "FUEL"));
             }
             int missiles_diff = oldGameState.getBeaconList().get(oldGameState.getCurrentBeaconId()).getStore().getMissiles() -
                     newGameState.getBeaconList().get(newGameState.getCurrentBeaconId()).getStore().getMissiles();
             if (missiles_diff > 0){
-                event = new FTLRunEvent();
-                event.setCategory(Constants.EventCategory.RESOURCE);
-                event.setType(Constants.EventType.BUY);
-                event.setId("MISSILES");
-                event.setAmount(missiles_diff);
-                events.add(event);
+                events.add(new FTLRunEvent(Constants.EventCategory.RESOURCE, Constants.EventType.BUY, missiles_diff, "MISSILES"));
             }
             int drones_diff = oldGameState.getBeaconList().get(oldGameState.getCurrentBeaconId()).getStore().getDroneParts() -
                     newGameState.getBeaconList().get(newGameState.getCurrentBeaconId()).getStore().getDroneParts();
-            if (drones_diff > 0){
-                event = new FTLRunEvent();
-                event.setCategory(Constants.EventCategory.RESOURCE);
-                event.setType(Constants.EventType.BUY);
-                event.setId("DRONE_PARTS");
-                event.setAmount(drones_diff);
-                events.add(event);
+            if (drones_diff > 0) {
+                events.add(new FTLRunEvent(Constants.EventCategory.RESOURCE, Constants.EventType.BUY, fuel_diff, "DRONE_PARTS"));
             }
+
+            // TODO add bought stuff to temporary list so that it's not also considered free
+            for (int i = 0; i < newStore.getShelfList().size(); i++){
+                for (int j = 0; j < newStore.getShelfList().get(i).getItems().size(); j++){
+                    if (!newStore.getShelfList().get(i).getItems().get(j).isAvailable()){
+                        if (oldStore.getShelfList().get(i).getItems().get(j).isAvailable()){
+                            // TODO category =
+                            System.out.println(newStore.getShelfList().get(i).getItemType().name());
+                            events.add(new FTLRunEvent(Constants.EventCategory.WEAPON, Constants.EventType.BUY, 0,
+                                    newStore.getShelfList().get(i).getItems().get(j).getItemId()));
+                        }
+                    }
+                }
+            }
+
+
+
         }
+
 
         ArrayList<String> newWeapons = new ArrayList<>(newCargo.weaponList);
         for (String weapon: oldCargo.weaponList){

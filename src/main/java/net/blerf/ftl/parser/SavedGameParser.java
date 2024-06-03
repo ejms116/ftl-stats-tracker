@@ -5804,12 +5804,12 @@ public class SavedGameParser extends Parser {
 		}
 	}
 
-	public static enum StoreItemType {
-		WEAPON( "Weapon" ), DRONE( "Drone" ), AUGMENT( "Augment" ),
-		CREW( "Crew" ), SYSTEM( "System" );
+	public enum StoreItemType {
+		WEAPON("Weapon"), DRONE("Drone"), AUGMENT("Augment"),
+		CREW("Crew"), SYSTEM("System"), RESOURCE("Resource");
 
 		private String title;
-		private StoreItemType( String title ) { this.title = title; }
+		StoreItemType(String title) { this.title = title; }
 		public String toString() { return title; }
 	}
 

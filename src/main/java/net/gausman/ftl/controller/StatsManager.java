@@ -12,11 +12,13 @@ import net.blerf.ftl.parser.random.NativeRandom;
 import net.blerf.ftl.parser.sectortree.RandomSectorTreeGenerator;
 import net.gausman.ftl.FTLStatsTrackerApplication;
 import net.gausman.ftl.FTLStatsTrackerController;
+import net.gausman.ftl.model.Constants;
 import net.gausman.ftl.model.run.FTLJump;
 import net.gausman.ftl.model.run.FTLRun;
 import net.gausman.ftl.model.run.FTLRunEvent;
 import net.gausman.ftl.util.FileWatcher;
 import net.gausman.ftl.view.EventListItem;
+import net.gausman.ftl.view.OverviewListItem;
 import org.jdom2.JDOMException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -208,6 +210,7 @@ public class StatsManager {
 
         // check if new run was started
         if (currentRun == null || currentRun.getSectorTreeSeed() != currentGameState.getSectorTreeSeed()){
+            controller.clearEventList();
             if (currentRun != null){
                 Path currentPath = Paths.get(currentRunFilename);
                 Path targetPath = Paths.get(currentRun.generateFileNameForRun());
@@ -230,7 +233,6 @@ public class StatsManager {
 
             copySaveFile(currentGameState);
 
-            //currentJump.addEvents(eventGenerator.getEventsStartRun(currentGameState));
             addEventsAll(eventGenerator.getEventsStartRun(currentGameState));
         }
 
@@ -240,6 +242,8 @@ public class StatsManager {
             // add a dummy event in case the jump doesn't contain any events
             if (currentJump.getEvents().size() == 0){
                 FTLRunEvent testEvent = new FTLRunEvent();
+                testEvent.setCategory(Constants.EventCategory.AUGMENT);
+                testEvent.setType(Constants.EventType.UPGRADE);
                 testEvent.setId("DUMMY EMPTY JUMP");
                 currentJump.getEvents().add(testEvent);
             }
@@ -260,6 +264,9 @@ public class StatsManager {
         } catch (IOException e){
             throw new RuntimeException();
         }
+
+        // update overview
+        controller.replaceOverviewList(eventGenerator.getOverviewList(currentGameState, jumpNumber));
 
         lastGameState = currentGameState;
 

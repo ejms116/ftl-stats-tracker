@@ -11,6 +11,13 @@ public class FTLRunEvent {
     private int amount;
     private String id;
 
+    public FTLRunEvent(Constants.EventCategory category, Constants.EventType type, int amount, String id){
+        this.category = category;
+        this.type = type;
+        this.amount = amount;
+        this.id = id;
+    }
+
     public Instant getTs() {
         return ts;
     }

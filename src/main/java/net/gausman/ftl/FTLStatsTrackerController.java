@@ -14,6 +14,7 @@ import net.gausman.ftl.model.Constants;
 
 import net.gausman.ftl.controller.StatsManager;
 import net.gausman.ftl.view.EventListItem;
+import net.gausman.ftl.view.OverviewListItem;
 
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
@@ -61,15 +62,24 @@ public class FTLStatsTrackerController implements Initializable {
     @FXML private CheckBox sellCB;
     @FXML private CheckBox discardCB;
 
+    @FXML private TableColumn<OverviewListItem, String> propertyCol;
+    @FXML private TableColumn<OverviewListItem, String> valueCol;
+    @FXML private TableView<OverviewListItem> overviewTableView;
+
     private List<String> showCategories = new ArrayList<>();
     private List<String> showTypes = new ArrayList<>();
     private String searchString = "";
 
+    private ObservableList<OverviewListItem> overviewMasterData = FXCollections.observableArrayList();
     private ObservableList<EventListItem> masterData = FXCollections.observableArrayList();
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         statsManager = new StatsManager(this);
+
+        propertyCol.setCellValueFactory(new PropertyValueFactory<>("property"));
+        valueCol.setCellValueFactory(new PropertyValueFactory<>("value"));
+        overviewTableView.setItems(overviewMasterData);
 
         time.setCellValueFactory(new PropertyValueFactory<>("time"));
         sectorNumber.setCellValueFactory(new PropertyValueFactory<>("sectorNumber"));
@@ -100,12 +110,7 @@ public class FTLStatsTrackerController implements Initializable {
 
         filterField.textProperty().addListener((observable, oldValue, newValue) -> {
             filteredData.setPredicate(eventListItem -> {
-//                if (newValue == null || newValue.isEmpty()){
-//                    return true;
-//                }
-
                 searchString = newValue.toLowerCase();
-
                 return filterEventList(eventListItem);
             });
         });
@@ -157,9 +162,20 @@ public class FTLStatsTrackerController implements Initializable {
         return true;
     }
 
+    public void replaceOverviewList(List<OverviewListItem> overviewList){
+        overviewMasterData.clear();
+        overviewMasterData.addAll(overviewList);
+    }
+
     public void addEvent(EventListItem event){
         masterData.add(event);
     }
+
+    public void clearEventList(){
+        masterData.clear();
+    }
+
+
 
     @FXML
     void toggleTracking(){
