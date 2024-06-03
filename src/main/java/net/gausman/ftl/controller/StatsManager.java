@@ -89,6 +89,7 @@ public class StatsManager {
                     controller.addEvent(new EventListItem(currentRun, jump, event));
                 }
             }
+            currentJump = currentRun.getJumpList().getLast();
             log.info("Found ongoing run to continue"); // TODO error handling when there is a diffrence between json/sav files
         }
 
@@ -190,7 +191,7 @@ public class StatsManager {
         try {
             return mapper.readValue(new File(file.getAbsolutePath()), FTLRun.class);
         } catch (IOException e){
-            log.error("could not read file");
+            log.error("No file to continue found");
         }
         return null;
     }
@@ -233,25 +234,25 @@ public class StatsManager {
             addEventsAll(eventGenerator.getEventsStartRun(currentGameState));
         }
 
+        // at this point currentJump is never null, so we can safely add events and check it's state
         // check if new jump
         if (currentJump.getCurrentBeaconId() != currentGameState.getCurrentBeaconId()){
+            // add a dummy event in case the jump doesn't contain any events
             if (currentJump.getEvents().size() == 0){
                 FTLRunEvent testEvent = new FTLRunEvent();
-                testEvent.setId("TEST");
+                testEvent.setId("DUMMY EMPTY JUMP");
                 currentJump.getEvents().add(testEvent);
             }
-            // add events to GUI
-//            for (FTLRunEvent event: currentJump.getEvents()){
-//                controller.addEvent(new EventListItem(currentRun, currentJump, event));
-//            }
+
             jumpNumber++;
             currentJump = new FTLJump(currentGameState, jumpNumber);
             currentRun.addJump(currentJump);
             copySaveFile(currentGameState);
         }
 
+
+        // currentJump is a reference to the latest jump that was made, it's already added to the jumpList in the Run
         addEventsAll(eventGenerator.getEventsFromGameStateComparison(lastGameState, currentGameState));
-        //currentJump.addEvents(eventGenerator.getEventsFromGameStateComparison(lastGameState, currentGameState));
 
         // save to json file
         try {
@@ -280,7 +281,8 @@ public class StatsManager {
 
     private void copySaveFile(SavedGameParser.SavedGameState currentGameState){
         try {
-            FileOutputStream out = new FileOutputStream(currentRun.generateFileNameForSave(jumpNumber, currentJump.getSectorNumber()));
+            String fName = currentRun.generateFileNameForSave(jumpNumber, currentJump.getSectorNumber());
+            FileOutputStream out = new FileOutputStream(fName);
             parser.writeSavedGame(out, currentGameState);
 
         } catch (IOException e){

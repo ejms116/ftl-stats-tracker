@@ -23,13 +23,13 @@ public class FTLStatsTrackerApplication extends Application {
         try {
             appConfig = ConfigSetup.init(stage);
             FXMLLoader fxmlLoader = new FXMLLoader(FTLStatsTrackerApplication.class.getResource("main.fxml"));
-            Scene scene = new Scene(fxmlLoader.load(), 1493, 806);
+            Scene scene = new Scene(fxmlLoader.load(), 1715, 900);
             scene.getStylesheets().add(FTLStatsTrackerApplication.class.getResource("main.css").toExternalForm());
             stage.setTitle("FTL Stats Tracker");
             stage.setScene(scene);
             FTLStatsTrackerController FTLStatsTrackerController = fxmlLoader.getController();
             stage.setOnHidden(e -> FTLStatsTrackerController.shutdown());
-            stage.show();
+            stage. show();
         } catch (ExitException e) {
             System.gc();
         }

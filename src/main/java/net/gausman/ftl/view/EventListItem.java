@@ -4,11 +4,14 @@ import net.gausman.ftl.model.Constants;
 import net.gausman.ftl.model.run.FTLJump;
 import net.gausman.ftl.model.run.FTLRun;
 import net.gausman.ftl.model.run.FTLRunEvent;
+import net.gausman.ftl.util.DateUtil;
 
+import java.time.Duration;
 import java.time.Instant;
 
 public class EventListItem {
-    private Instant ts;
+    //private Instant ts;
+    private String time;
     private int sectorNumber;
     private int totalBeaconsExplored;
     private int currentBeaconId;
@@ -19,7 +22,14 @@ public class EventListItem {
     private String id;
 
     public EventListItem(FTLRun run, FTLJump jump, FTLRunEvent event){
-        ts = event.getTs();
+        Instant t1 = event.getTs();
+        Instant t2 = run.getStartTime();
+        Duration dur1 = Duration.between(t1,t2);
+        Duration dur2 = Duration.between(t2,t1);
+        String res1 = DateUtil.formatDuration(dur1);
+        String res2 = DateUtil.formatDuration(dur2);
+
+        time = DateUtil.formatDuration(Duration.between(run.getStartTime(), event.getTs()));
         sectorNumber = jump.getSectorNumber();
         totalBeaconsExplored = jump.getTotalBeaconsExplored();
         currentBeaconId = jump.getCurrentBeaconId();
@@ -30,8 +40,8 @@ public class EventListItem {
         id = event.getId();
     }
 
-    public Instant getTs() {
-        return ts;
+    public String getTime() {
+        return time;
     }
 
     public int getSectorNumber() {
