@@ -1,43 +1,39 @@
 package net.gausman.ftl.view;
 
+import net.blerf.ftl.parser.SavedGameParser;
 import net.gausman.ftl.model.Constants;
 import net.gausman.ftl.model.run.FTLJump;
 import net.gausman.ftl.model.run.FTLRun;
 import net.gausman.ftl.model.run.FTLRunEvent;
-import net.gausman.ftl.util.DateUtil;
+import net.gausman.ftl.util.GausmanUtil;
 
 import java.time.Duration;
-import java.time.Instant;
 
 public class EventListItem {
-    //private Instant ts;
     private String time;
     private int sectorNumber;
     private int totalBeaconsExplored;
     private int currentBeaconId;
     private int jumpNumber;
-    private Constants.EventCategory category;
+    private SavedGameParser.StoreItemType itemType;
     private Constants.EventType type;
     private int amount;
+    private int cost;
     private String id;
+    private String text;
 
     public EventListItem(FTLRun run, FTLJump jump, FTLRunEvent event){
-        Instant t1 = event.getTs();
-        Instant t2 = run.getStartTime();
-        Duration dur1 = Duration.between(t1,t2);
-        Duration dur2 = Duration.between(t2,t1);
-        String res1 = DateUtil.formatDuration(dur1);
-        String res2 = DateUtil.formatDuration(dur2);
-
-        time = DateUtil.formatDuration(Duration.between(run.getStartTime(), event.getTs()));
+        time = GausmanUtil.formatDuration(Duration.between(run.getStartTime(), event.getTs()));
         sectorNumber = jump.getSectorNumber();
         totalBeaconsExplored = jump.getTotalBeaconsExplored();
         currentBeaconId = jump.getCurrentBeaconId();
         jumpNumber = jump.getJumpNumber();
-        category = event.getCategory();
+        itemType = event.getItemType();
         type = event.getType();
         amount = event.getAmount();
+        cost = event.getCost();
         id = event.getId();
+        text = GausmanUtil.getTextToId(itemType, id);
     }
 
     public String getTime() {
@@ -60,8 +56,8 @@ public class EventListItem {
         return currentBeaconId;
     }
 
-    public Constants.EventCategory getCategory() {
-        return category;
+    public SavedGameParser.StoreItemType getItemType() {
+        return itemType;
     }
 
     public Constants.EventType getType() {
@@ -72,7 +68,15 @@ public class EventListItem {
         return amount;
     }
 
+    public int getCost() {
+        return cost;
+    }
+
     public String getId() {
         return id;
+    }
+
+    public String getText(){
+        return text;
     }
 }

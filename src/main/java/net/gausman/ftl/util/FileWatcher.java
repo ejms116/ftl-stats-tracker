@@ -10,7 +10,8 @@ public abstract class FileWatcher extends TimerTask {
 
     public FileWatcher( File file ) {
         this.file = file;
-        this.timeStamp = file.lastModified();
+        //this.timeStamp = file.lastModified();
+        this.timeStamp = 0;
     }
 
     public final void run() {
@@ -22,6 +23,6 @@ public abstract class FileWatcher extends TimerTask {
         }
     }
 
-    protected void onChange(File file){};
+    public void onChange(File file){};
 
 }

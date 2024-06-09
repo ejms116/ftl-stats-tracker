@@ -17,6 +17,7 @@ import net.gausman.ftl.model.run.FTLJump;
 import net.gausman.ftl.model.run.FTLRun;
 import net.gausman.ftl.model.run.FTLRunEvent;
 import net.gausman.ftl.util.FileWatcher;
+import net.gausman.ftl.util.GausmanUtil;
 import net.gausman.ftl.view.EventListItem;
 import net.gausman.ftl.view.OverviewListItem;
 import org.jdom2.JDOMException;
@@ -55,7 +56,7 @@ public class StatsManager {
     public final String savePath = "C:\\Users\\erikj\\Documents\\My Games\\FasterThanLight\\continue.sav";
     public final File chosenFile = new File(savePath);
 
-    private TimerTask task;
+    private FileWatcher task;
     private Timer timer;
 
     private boolean toggleTracking = false;
@@ -74,6 +75,9 @@ public class StatsManager {
     public void setToggleTracking(){
         toggleTracking = !toggleTracking;
         log.info("Stats/File tracking: " + toggleTracking);
+        if (toggleTracking){
+            task.onChange(chosenFile);
+        }
     }
 
     public StatsManager(FTLStatsTrackerController ftlStatsTrackerController){
@@ -101,13 +105,14 @@ public class StatsManager {
 
     public void setupFileWatcher(){
         task = new FileWatcher( chosenFile ) {
-            protected void onChange( File file ) {
+            public void onChange( File file ) {
                 if (toggleTracking == true) {
                     if (chosenFile.exists()){
                         log.info( "FILE "+ file.getName() +" HAS CHANGED" );
                         loadGameStateFile(chosenFile);
                     } else {
-                        log.info( "FILE "+ file.getName() +" WAS DELETED" );
+                        log.info( "FILE "+ file.getName() +" NOT FOUND" ); // TODO prompt when starting a new run
+                        moveCurrentJSON();
                     }
 
                 }
@@ -207,22 +212,16 @@ public class StatsManager {
 //        ShipBlueprint blueprint = dm.getShip("PLAYER_SHIP_HARD");
 
         // TEST
+//        System.out.println(SavedGameParser.StoreItemType.AUGMENT); // Augment
+//        System.out.println(SavedGameParser.StoreItemType.AUGMENT.name()); // AUGMENT
+//        System.out.println(SavedGameParser.StoreItemType.AUGMENT.toString()); // Augment
 
         // check if new run was started
-        if (currentRun == null || currentRun.getSectorTreeSeed() != currentGameState.getSectorTreeSeed()){
+        if (currentRun == null || currentRun.getSectorTreeSeed() != currentGameState.getSectorTreeSeed() ||
+                (lastGameState != null && lastGameState.getTotalBeaconsExplored() > currentGameState.getTotalBeaconsExplored())){
+            lastGameState = null;
             controller.clearEventList();
-            if (currentRun != null){
-                Path currentPath = Paths.get(currentRunFilename);
-                Path targetPath = Paths.get(currentRun.generateFileNameForRun());
-                try {
-                    Files.move(currentPath, targetPath, StandardCopyOption.REPLACE_EXISTING);
-                } catch (IOException e) {
-                    //throw new RuntimeException(e);
-                    System.out.println("cant move file");
-                }
-
-                log.info("Stats file moved to runs folder");
-            }
+            moveCurrentJSON();
             currentRun = new FTLRun(currentGameState);
             jumpNumber = 0;
             currentJump = new FTLJump(currentGameState, jumpNumber);
@@ -236,23 +235,35 @@ public class StatsManager {
             addEventsAll(eventGenerator.getEventsStartRun(currentGameState));
         }
 
+        // if we are in a new sector we want to add stores to the new sector
+        if (currentJump.getSectorNumber() != currentGameState.getSectorNumber() + 1){
+            currentRun.addSector(currentGameState);
+        }
+
+        currentRun.getSectorList().getLast().setBeaconList(currentGameState.getBeaconList());
+
         // at this point currentJump is never null, so we can safely add events and check it's state
         // check if new jump
         if (currentJump.getCurrentBeaconId() != currentGameState.getCurrentBeaconId()){
-            // add a dummy event in case the jump doesn't contain any events
-            if (currentJump.getEvents().size() == 0){
+            // TODO add a dummy event in case the jump doesn't contain any events
+            if (currentJump.getEvents().isEmpty()){
                 FTLRunEvent testEvent = new FTLRunEvent();
-                testEvent.setCategory(Constants.EventCategory.AUGMENT);
+                testEvent.setItemType(SavedGameParser.StoreItemType.RESOURCE);
                 testEvent.setType(Constants.EventType.UPGRADE);
                 testEvent.setId("DUMMY EMPTY JUMP");
-                currentJump.getEvents().add(testEvent);
+                List<FTLRunEvent> testEventList = new ArrayList<>();
+                testEventList.add(testEvent);
+                addEventsAll(testEventList);
             }
 
+            GausmanUtil.consolidateEventList(currentJump);
             jumpNumber++;
             currentJump = new FTLJump(currentGameState, jumpNumber);
             currentRun.addJump(currentJump);
             copySaveFile(currentGameState);
         }
+
+
 
 
         // currentJump is a reference to the latest jump that was made, it's already added to the jumpList in the Run
@@ -262,7 +273,9 @@ public class StatsManager {
         try {
             mapper.writeValue(new File(currentRunFilename), currentRun);
         } catch (IOException e){
-            throw new RuntimeException();
+            log.error("error wring json file");
+            System.out.println(e);
+            //throw new RuntimeException();
         }
 
         // update overview
@@ -277,6 +290,21 @@ public class StatsManager {
         log.info( "Currently in sector: " + currentGameState.getSectorNumber() + 1);
         log.info( "----------------------------------------------------------------");
 
+    }
+
+    private void moveCurrentJSON(){
+        if (currentRun != null){
+            Path currentPath = Paths.get(currentRunFilename);
+            Path targetPath = Paths.get(currentRun.generateFileNameForRun());
+            try {
+                Files.move(currentPath, targetPath, StandardCopyOption.REPLACE_EXISTING);
+            } catch (IOException e) {
+                //throw new RuntimeException(e);
+                System.out.println("cant move file");
+            }
+
+            log.info("Stats file moved to runs folder");
+        }
     }
 
     private void addEventsAll(List<FTLRunEvent> events){

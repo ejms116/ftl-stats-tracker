@@ -3,10 +3,8 @@ package net.gausman.ftl.model.run;
 import net.blerf.ftl.constants.Difficulty;
 import net.blerf.ftl.parser.DataManager;
 import net.blerf.ftl.parser.SavedGameParser;
-import net.blerf.ftl.xml.DefaultDeferredText;
-import net.blerf.ftl.xml.ShipBlueprint;
 import net.gausman.ftl.model.Constants;
-import net.gausman.ftl.util.DateUtil;
+import net.gausman.ftl.util.GausmanUtil;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -21,6 +19,14 @@ public class FTLRun {
     private int sectorTreeSeed = 42;
     private Constants.Result result = Constants.Result.ONGOING;
     private List<FTLJump> jumpList = new ArrayList<>();
+    private List<FTLSector> sectorList = new ArrayList<>();
+
+    // TODO sectorvisitationlist
+    // TODO state-vars
+    // TODO beaconList: do we need more than the stores?
+    // TODO quests?
+    // TODO encounter
+    // TODO environment
 
     public FTLRun(){
         startTime = Instant.now();
@@ -32,24 +38,25 @@ public class FTLRun {
         this.playerShipBlueprintId = gameState.getPlayerShipBlueprintId();
         this.playerShipName = gameState.getPlayerShipName();
         this.sectorTreeSeed = gameState.getSectorTreeSeed();
+        this.sectorList.add(new FTLSector(gameState));
     }
 
     public String generateFileNameForRun(){
         DataManager dm = DataManager.get();
-        String runFileName = String.format("runs\\%s-%s.json", DateUtil.formatInstant(startTime), dm.getShip(playerShipBlueprintId).getName().getTextValue());
+        String runFileName = String.format("runs\\%s-%s.json", GausmanUtil.formatInstant(startTime), dm.getShip(playerShipBlueprintId).getName().getTextValue());
         runFileName = runFileName.replaceAll("\\:", "-");
         return runFileName;
     }
 
     public String generateFolderNameForSave(){
         DataManager dm = DataManager.get();
-        String runFileName = String.format("saves\\%s-%s", DateUtil.formatInstant(startTime), dm.getShip(playerShipBlueprintId).getName().getTextValue());
+        String runFileName = String.format("saves\\%s-%s", GausmanUtil.formatInstant(startTime), dm.getShip(playerShipBlueprintId).getName().getTextValue());
         runFileName = runFileName.replaceAll("\\:", "-");
         return runFileName;
     }
     public String generateFileNameForSave(int jumpNumber, int sectorNumber){
         DataManager dm = DataManager.get();
-        String runFileName = String.format("saves\\%s-%s\\%d(%d).sav", DateUtil.formatInstant(startTime), dm.getShip(playerShipBlueprintId).getName().getTextValue(), jumpNumber, sectorNumber);
+        String runFileName = String.format("saves\\%s-%s\\%d(%d).sav", GausmanUtil.formatInstant(startTime), dm.getShip(playerShipBlueprintId).getName().getTextValue(), jumpNumber, sectorNumber);
         runFileName = runFileName.replaceAll("\\:", "-");
         return runFileName;
     }
@@ -93,5 +100,13 @@ public class FTLRun {
 
     public List<FTLJump> getJumpList() {
         return jumpList;
+    }
+
+    public void addSector(SavedGameParser.SavedGameState gameState){
+        sectorList.add(new FTLSector(gameState));
+    }
+
+    public List<FTLSector> getSectorList(){
+        return sectorList;
     }
 }

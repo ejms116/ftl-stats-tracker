@@ -10,6 +10,7 @@ import javafx.scene.chart.BarChart;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import net.blerf.ftl.parser.SavedGameParser;
 import net.gausman.ftl.model.Constants;
 
 import net.gausman.ftl.controller.StatsManager;
@@ -39,10 +40,12 @@ public class FTLStatsTrackerController implements Initializable {
     @FXML private TableColumn<EventListItem, Integer> totalBeaconsExplored;
     @FXML private TableColumn<EventListItem, Integer> currentBeaconId;
     @FXML private TableColumn<EventListItem, Integer> jumpNumber;
-    @FXML private TableColumn<EventListItem, Constants.EventCategory> category;
+    @FXML private TableColumn<EventListItem, SavedGameParser.StoreItemType> itemType;
     @FXML private TableColumn<EventListItem, Constants.EventType> type;
     @FXML private TableColumn<EventListItem, ObjectProperty<Integer>> amount;
+    @FXML private TableColumn<EventListItem, ObjectProperty<Integer>> cost;
     @FXML private TableColumn<EventListItem, String> id;
+    @FXML private TableColumn<EventListItem, String> text;
 
     @FXML private TableView<EventListItem> eventTableView;
 
@@ -61,12 +64,13 @@ public class FTLStatsTrackerController implements Initializable {
     @FXML private CheckBox buyCB;
     @FXML private CheckBox sellCB;
     @FXML private CheckBox discardCB;
+    @FXML private CheckBox useCB;
 
     @FXML private TableColumn<OverviewListItem, String> propertyCol;
     @FXML private TableColumn<OverviewListItem, String> valueCol;
     @FXML private TableView<OverviewListItem> overviewTableView;
 
-    private List<String> showCategories = new ArrayList<>();
+    private List<String> showItemTypes = new ArrayList<>();
     private List<String> showTypes = new ArrayList<>();
     private String searchString = "";
 
@@ -86,20 +90,23 @@ public class FTLStatsTrackerController implements Initializable {
         totalBeaconsExplored.setCellValueFactory(new PropertyValueFactory<>("totalBeaconsExplored"));
         currentBeaconId.setCellValueFactory(new PropertyValueFactory<>("currentBeaconId"));
         jumpNumber.setCellValueFactory(new PropertyValueFactory<>("jumpNumber"));
-        category.setCellValueFactory(new PropertyValueFactory<>("category"));
+        itemType.setCellValueFactory(new PropertyValueFactory<>("itemType"));
         type.setCellValueFactory(new PropertyValueFactory<>("type"));
         amount.setCellValueFactory(new PropertyValueFactory<>("amount"));
+        cost.setCellValueFactory(new PropertyValueFactory<>("cost"));
         id.setCellValueFactory(new PropertyValueFactory<>("id"));
+        text.setCellValueFactory(new PropertyValueFactory<>("text"));
 
-        FilteredList<EventListItem> filteredData = new FilteredList<>(masterData, p -> false);
+
+        FilteredList<EventListItem> filteredData = new FilteredList<>(masterData, p -> true);
 
 
-        resourceCB.selectedProperty().addListener((observable, oldValue, newValue) -> dynamicListener(filteredData, showCategories, "RESOURCE", newValue));
-        systemCB.selectedProperty().addListener((observable, oldValue, newValue) -> dynamicListener(filteredData, showCategories, "SYSTEM", newValue));
-        crewCB.selectedProperty().addListener((observable, oldValue, newValue) -> dynamicListener(filteredData, showCategories, "CREW", newValue));
-        weaponCB.selectedProperty().addListener((observable, oldValue, newValue) -> dynamicListener(filteredData, showCategories, "WEAPON", newValue));
-        droneCB.selectedProperty().addListener((observable, oldValue, newValue) -> dynamicListener(filteredData, showCategories, "DRONE", newValue));
-        augmentCB.selectedProperty().addListener((observable, oldValue, newValue) -> dynamicListener(filteredData, showCategories, "AUGMENT", newValue));
+        resourceCB.selectedProperty().addListener((observable, oldValue, newValue) -> dynamicListener(filteredData, showItemTypes, SavedGameParser.StoreItemType.RESOURCE.name(), newValue));
+        systemCB.selectedProperty().addListener((observable, oldValue, newValue) -> dynamicListener(filteredData, showItemTypes, SavedGameParser.StoreItemType.SYSTEM.name(), newValue));
+        crewCB.selectedProperty().addListener((observable, oldValue, newValue) -> dynamicListener(filteredData, showItemTypes, SavedGameParser.StoreItemType.CREW.name(), newValue));
+        weaponCB.selectedProperty().addListener((observable, oldValue, newValue) -> dynamicListener(filteredData, showItemTypes, SavedGameParser.StoreItemType.WEAPON.name(), newValue));
+        droneCB.selectedProperty().addListener((observable, oldValue, newValue) -> dynamicListener(filteredData, showItemTypes, SavedGameParser.StoreItemType.DRONE.name(), newValue));
+        augmentCB.selectedProperty().addListener((observable, oldValue, newValue) -> dynamicListener(filteredData, showItemTypes, SavedGameParser.StoreItemType.AUGMENT.name(), newValue));
 
         startCB.selectedProperty().addListener((observable, oldValue, newValue) -> dynamicListener(filteredData, showTypes, "START", newValue));
         upgradeCB.selectedProperty().addListener((observable, oldValue, newValue) -> dynamicListener(filteredData, showTypes, "UPGRADE", newValue));
@@ -107,6 +114,7 @@ public class FTLStatsTrackerController implements Initializable {
         buyCB.selectedProperty().addListener((observable, oldValue, newValue) -> dynamicListener(filteredData, showTypes, "BUY", newValue));
         sellCB.selectedProperty().addListener((observable, oldValue, newValue) -> dynamicListener(filteredData, showTypes, "SELL", newValue));
         discardCB.selectedProperty().addListener((observable, oldValue, newValue) -> dynamicListener(filteredData, showTypes, "DISCARD", newValue));
+        useCB.selectedProperty().addListener((observable, oldValue, newValue) -> dynamicListener(filteredData, showTypes, "USE", newValue));
 
         filterField.textProperty().addListener((observable, oldValue, newValue) -> {
             filteredData.setPredicate(eventListItem -> {
@@ -131,6 +139,7 @@ public class FTLStatsTrackerController implements Initializable {
         buyCB.selectedProperty().set(true);
         sellCB.selectedProperty().set(true);
         discardCB.selectedProperty().set(true);
+        useCB.selectedProperty().set(true);
 
         setTestDataBarChart();
     }
@@ -149,7 +158,7 @@ public class FTLStatsTrackerController implements Initializable {
 
 
     private boolean filterEventList(EventListItem item){
-        if (!showCategories.contains(item.getCategory().toString())){
+        if (!showItemTypes.contains(item.getItemType().name())){
             return false;
         }
         if (!showTypes.contains(item.getType().toString())){

@@ -2401,6 +2401,9 @@ public class SavedGameParser extends Parser {
 		 */
 		public int getStateVar( String stateVarId ) {
 			Integer result = stateVars.get( stateVarId );
+			if (result == null){
+				return 0;
+			}
 			return result.intValue();
 		}
 
@@ -5806,7 +5809,7 @@ public class SavedGameParser extends Parser {
 
 	public enum StoreItemType {
 		WEAPON("Weapon"), DRONE("Drone"), AUGMENT("Augment"),
-		CREW("Crew"), SYSTEM("System"), RESOURCE("Resource");
+		CREW("Crew"), SYSTEM("System"), RESOURCE("Resource"), REACTOR("Reactor");
 
 		private String title;
 		StoreItemType(String title) { this.title = title; }
