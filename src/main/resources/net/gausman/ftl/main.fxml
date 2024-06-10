@@ -45,6 +45,7 @@
             <CheckBox fx:id="weaponCB" layoutX="10.0" layoutY="63.0" mnemonicParsing="false" text="Weapon" />
             <CheckBox fx:id="droneCB" layoutX="10.0" layoutY="80.0" mnemonicParsing="false" text="Drone" />
             <CheckBox fx:id="augmentCB" layoutX="10.0" layoutY="98.0" mnemonicParsing="false" text="Augment" />
+            <CheckBox fx:id="reactorCB" layoutX="10.0" layoutY="116.0" mnemonicParsing="false" text="Reactor" />
             <Label layoutX="10.0" layoutY="10.0" text="Type" />
             <CheckBox fx:id="startCB" layoutX="10.0" layoutY="116.0" mnemonicParsing="false" text="START" />
             <CheckBox fx:id="upgradeCB" layoutX="10.0" layoutY="151.0" mnemonicParsing="false" text="UPGRADE" />

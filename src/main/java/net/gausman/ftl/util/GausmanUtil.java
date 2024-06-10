@@ -3,6 +3,7 @@ package net.gausman.ftl.util;
 import net.blerf.ftl.parser.DataManager;
 import net.blerf.ftl.parser.SavedGameParser;
 import net.blerf.ftl.xml.FTLEvent;
+import net.blerf.ftl.xml.SystemBlueprint;
 import net.gausman.ftl.controller.StatsManager;
 import net.gausman.ftl.model.run.FTLJump;
 import net.gausman.ftl.model.run.FTLRunEvent;
@@ -46,9 +47,21 @@ public class GausmanUtil {
 
     }
 
+    public static int getUpgradeCostSystem(String systemId, int levelBefore, int levelAfter){
+        DataManager dm = DataManager.get();
+        SystemBlueprint systemBlueprint = dm.getSystem(systemId);
+        int upgradeCost = 0;
+
+        while (levelAfter > levelBefore){
+            upgradeCost += systemBlueprint.getUpgradeCosts().get(levelBefore-1);
+            levelBefore++;
+        }
+
+        return upgradeCost;
+    }
+
     public static int getCostStoreItemType(SavedGameParser.StoreItemType type, SavedGameParser.StoreItem item){
         DataManager dm = DataManager.get();
-        int cost = 0;
         return switch (type){
             case WEAPON -> dm.getWeapon(item.getItemId()).getCost();
             case DRONE -> dm.getDrone(item.getItemId()).getCost();
@@ -58,8 +71,19 @@ public class GausmanUtil {
             case RESOURCE -> 0; // should not get called
             case REACTOR -> 0;
         };
+    }
 
-        //return cost;
+    public static int getCostSellStoreItemType(SavedGameParser.StoreItemType type, String item){
+        DataManager dm = DataManager.get();
+        return switch (type){
+            case WEAPON -> dm.getWeapon(item).getCost()/2;
+            case DRONE -> dm.getDrone(item).getCost()/2;
+            case AUGMENT -> dm.getAugment(item).getCost()/2;
+            case CREW -> dm.getCrew(item).getCost()/2;
+            case SYSTEM -> dm.getSystem(item).getCost()/2;
+            case RESOURCE -> 0; // should not get called
+            case REACTOR -> 0;
+        };
     }
 
     public static int getCostResource(String id, int amount, int sector){

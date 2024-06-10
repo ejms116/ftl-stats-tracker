@@ -57,6 +57,7 @@ public class FTLStatsTrackerController implements Initializable {
     @FXML private CheckBox weaponCB;
     @FXML private CheckBox droneCB;
     @FXML private CheckBox augmentCB;
+    @FXML private CheckBox reactorCB;
 
     @FXML private CheckBox startCB;
     @FXML private CheckBox upgradeCB;
@@ -107,6 +108,7 @@ public class FTLStatsTrackerController implements Initializable {
         weaponCB.selectedProperty().addListener((observable, oldValue, newValue) -> dynamicListener(filteredData, showItemTypes, SavedGameParser.StoreItemType.WEAPON.name(), newValue));
         droneCB.selectedProperty().addListener((observable, oldValue, newValue) -> dynamicListener(filteredData, showItemTypes, SavedGameParser.StoreItemType.DRONE.name(), newValue));
         augmentCB.selectedProperty().addListener((observable, oldValue, newValue) -> dynamicListener(filteredData, showItemTypes, SavedGameParser.StoreItemType.AUGMENT.name(), newValue));
+        reactorCB.selectedProperty().addListener((observable, oldValue, newValue) -> dynamicListener(filteredData, showItemTypes, SavedGameParser.StoreItemType.REACTOR.name(), newValue));
 
         startCB.selectedProperty().addListener((observable, oldValue, newValue) -> dynamicListener(filteredData, showTypes, "START", newValue));
         upgradeCB.selectedProperty().addListener((observable, oldValue, newValue) -> dynamicListener(filteredData, showTypes, "UPGRADE", newValue));
@@ -132,6 +134,7 @@ public class FTLStatsTrackerController implements Initializable {
         weaponCB.selectedProperty().set(true);
         droneCB.selectedProperty().set(true);
         augmentCB.selectedProperty().set(true);
+        reactorCB.selectedProperty().set(true);
 
         startCB.selectedProperty().set(true);
         upgradeCB.selectedProperty().set(true);

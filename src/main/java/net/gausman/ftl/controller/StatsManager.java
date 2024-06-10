@@ -16,6 +16,7 @@ import net.gausman.ftl.model.Constants;
 import net.gausman.ftl.model.run.FTLJump;
 import net.gausman.ftl.model.run.FTLRun;
 import net.gausman.ftl.model.run.FTLRunEvent;
+import net.gausman.ftl.model.run.FTLSector;
 import net.gausman.ftl.util.FileWatcher;
 import net.gausman.ftl.util.GausmanUtil;
 import net.gausman.ftl.view.EventListItem;
@@ -90,12 +91,14 @@ public class StatsManager {
         currentRun = readFTLRunFromJSON(new File(currentRunFilename));
         if (currentRun != null){
             // add events to GUI
-            for (FTLJump jump: currentRun.getJumpList()){
-                for (FTLRunEvent event: jump.getEvents()){
-                    controller.addEvent(new EventListItem(currentRun, jump, event));
+            for (FTLSector sector: currentRun.getSectorList()) {
+                for (FTLJump jump : sector.getJumpList()) {
+                    for (FTLRunEvent event : jump.getEvents()) {
+                        controller.addEvent(new EventListItem(currentRun, sector, jump, event));
+                    }
                 }
             }
-            currentJump = currentRun.getJumpList().getLast();
+            currentJump = currentRun.getSectorList().getLast().getJumpList().getLast();
             log.info("Found ongoing run to continue"); // TODO error handling when there is a diffrence between json/sav files
         }
 
@@ -235,8 +238,8 @@ public class StatsManager {
             addEventsAll(eventGenerator.getEventsStartRun(currentGameState));
         }
 
-        // if we are in a new sector we want to add stores to the new sector
-        if (currentJump.getSectorNumber() != currentGameState.getSectorNumber() + 1){
+        // if we are in a new sector we want to add stores to the new sector and also initialize the sector object
+        if (currentRun.getSectorList().getLast().getSectorNumber() != currentGameState.getSectorNumber() + 1){
             currentRun.addSector(currentGameState);
         }
 
@@ -287,7 +290,8 @@ public class StatsManager {
         log.info( "Total beacons explored: " + currentGameState.getTotalBeaconsExplored());
         log.info( "Currently at beacon Id: " + currentGameState.getCurrentBeaconId());
         log.info( "Jump number: " + jumpNumber);
-        log.info( "Currently in sector: " + currentGameState.getSectorNumber() + 1);
+        int sectorNumberDebug = currentGameState.getSectorNumber() + 1;
+        log.info( "Currently in sector : " +  sectorNumberDebug);
         log.info( "----------------------------------------------------------------");
 
     }
@@ -310,18 +314,18 @@ public class StatsManager {
     private void addEventsAll(List<FTLRunEvent> events){
         currentJump.addEvents(events);
         for (FTLRunEvent event: events){
-            controller.addEvent(new EventListItem(currentRun, currentJump, event));
+            controller.addEvent(new EventListItem(currentRun, currentRun.getSectorList().getLast(), currentJump, event));
         }
     }
 
     private void copySaveFile(SavedGameParser.SavedGameState currentGameState){
         try {
-            String fName = currentRun.generateFileNameForSave(jumpNumber, currentJump.getSectorNumber());
+            String fName = currentRun.generateFileNameForSave(jumpNumber, currentRun.getSectorList().getLast().getSectorNumber());
             FileOutputStream out = new FileOutputStream(fName);
             parser.writeSavedGame(out, currentGameState);
 
         } catch (IOException e){
-
+            log.error("Error copying save file");
         }
 
 //        Path localSavePath = Paths.get(savePath);
@@ -338,7 +342,8 @@ public class StatsManager {
         log.info( "------" );
         log.info( "Ship Name : " + currentGameState.getPlayerShipName() );
         log.info( "Currently at beacon number : " + currentGameState.getTotalBeaconsExplored() );
-        log.info( "Currently in sector : " + currentGameState.getSectorNumber() + 1 );
+        int sectorNumberDebug = currentGameState.getSectorNumber() + 1;
+        log.info( "Currently in sector : " +  sectorNumberDebug);
 
         if (gameStateArray.isEmpty() ||
                 currentGameState.getTotalBeaconsExplored() > lastGameState.getTotalBeaconsExplored()

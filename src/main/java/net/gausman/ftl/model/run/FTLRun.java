@@ -93,6 +93,10 @@ public class FTLRun {
         endTime = Instant.now();
     }
 
+    public void addJump(FTLJump jump){
+        sectorList.getLast().addJump(jump);
+    }
+
     public void addSector(SavedGameParser.SavedGameState gameState){
         sectorList.add(new FTLSector(gameState));
     }

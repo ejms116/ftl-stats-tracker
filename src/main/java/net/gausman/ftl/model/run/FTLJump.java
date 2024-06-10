@@ -6,26 +6,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class FTLJump {
-    private int sectorNumber;
     private int totalBeaconsExplored;
     private int currentBeaconId;
     private int jumpNumber = 0;
     private List<FTLRunEvent> events = new ArrayList<>();
 
-    public FTLJump(){
-        this.sectorNumber = 0;
-    }
 
     public FTLJump(SavedGameParser.SavedGameState gameState, int jumpNumber){
-        this.sectorNumber = gameState.getSectorNumber() + 1;
         this.totalBeaconsExplored = gameState.getTotalBeaconsExplored();
         this.currentBeaconId = gameState.getCurrentBeaconId();
         this.jumpNumber = jumpNumber;
     }
 
-    public int getSectorNumber() {
-        return sectorNumber;
-    }
 
     public int getTotalBeaconsExplored() {
         return totalBeaconsExplored;

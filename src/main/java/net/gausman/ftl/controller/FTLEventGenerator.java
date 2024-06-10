@@ -68,7 +68,7 @@ public class FTLEventGenerator {
 
         // Crew
         for (SavedGameParser.CrewState crewState: newGameState.getPlayerShip().getCrewList()){
-            events.add(new FTLRunEvent(SavedGameParser.StoreItemType.CREW, Constants.EventType.START, 0, 0,crewState.getRace().getId()));
+            events.add(new FTLRunEvent(SavedGameParser.StoreItemType.CREW, Constants.EventType.START, 1, 0,crewState.getRace().getId()));
         }
 
         // Systems
@@ -84,17 +84,17 @@ public class FTLEventGenerator {
 
         // Weapons
         for (SavedGameParser.WeaponState weaponState: newGameState.getPlayerShip().getWeaponList()){
-            events.add(new FTLRunEvent(SavedGameParser.StoreItemType.WEAPON, Constants.EventType.START, 0,0, weaponState.getWeaponId()));
+            events.add(new FTLRunEvent(SavedGameParser.StoreItemType.WEAPON, Constants.EventType.START, 1,0, weaponState.getWeaponId()));
         }
 
         // Drones
         for (SavedGameParser.DroneState droneState: newGameState.getPlayerShip().getDroneList()){
-            events.add(new FTLRunEvent(SavedGameParser.StoreItemType.DRONE, Constants.EventType.START, 0,0, droneState.getDroneId()));
+            events.add(new FTLRunEvent(SavedGameParser.StoreItemType.DRONE, Constants.EventType.START, 1,0, droneState.getDroneId()));
         }
 
         // Augments
         for (String augmentId: newGameState.getPlayerShip().getAugmentIdList()){
-            events.add(new FTLRunEvent(SavedGameParser.StoreItemType.AUGMENT, Constants.EventType.START, 0,0, augmentId));
+            events.add(new FTLRunEvent(SavedGameParser.StoreItemType.AUGMENT, Constants.EventType.START, 1,0, augmentId));
         }
 
         // INFO We assume here that the player ship does not start with anything in the cargo, which is true for vanilla FTL
@@ -224,15 +224,15 @@ public class FTLEventGenerator {
         }
 
         for (String weapon: newWeapons){
-            events.add(new FTLRunEvent(SavedGameParser.StoreItemType.WEAPON, Constants.EventType.REWARD, 0,0, weapon));
+            events.add(new FTLRunEvent(SavedGameParser.StoreItemType.WEAPON, Constants.EventType.REWARD, 1,GausmanUtil.getCostSellStoreItemType(SavedGameParser.StoreItemType.WEAPON, weapon), weapon));
         }
 
         for (String drone: newDrones){
-            events.add(new FTLRunEvent(SavedGameParser.StoreItemType.DRONE, Constants.EventType.REWARD, 0,0, drone));
+            events.add(new FTLRunEvent(SavedGameParser.StoreItemType.DRONE, Constants.EventType.REWARD, 1,GausmanUtil.getCostSellStoreItemType(SavedGameParser.StoreItemType.DRONE, drone), drone));
         }
 
         for (String augment: newAugments){
-            events.add(new FTLRunEvent(SavedGameParser.StoreItemType.AUGMENT, Constants.EventType.REWARD, 0,0, augment));
+            events.add(new FTLRunEvent(SavedGameParser.StoreItemType.AUGMENT, Constants.EventType.REWARD, 1,GausmanUtil.getCostSellStoreItemType(SavedGameParser.StoreItemType.AUGMENT, augment), augment));
         }
 
         // Removed Items
@@ -259,16 +259,32 @@ public class FTLEventGenerator {
             removedAugments.remove(augment);
         }
 
+        int sellCost = 0;
         for (String weapon: removedWeapons){
-            events.add(new FTLRunEvent(SavedGameParser.StoreItemType.WEAPON, typeNow, 0,0, weapon));
+            if (typeNow == Constants.EventType.SELL){
+                sellCost = GausmanUtil.getCostSellStoreItemType(SavedGameParser.StoreItemType.WEAPON, weapon);
+            } else {
+                sellCost = 0;
+            }
+            events.add(new FTLRunEvent(SavedGameParser.StoreItemType.WEAPON, typeNow, 1,sellCost, weapon));
         }
 
         for (String drone: removedDrones){
-            events.add(new FTLRunEvent(SavedGameParser.StoreItemType.DRONE, typeNow, 0,0, drone));
+            if (typeNow == Constants.EventType.SELL){
+                sellCost = GausmanUtil.getCostSellStoreItemType(SavedGameParser.StoreItemType.DRONE, drone);
+            } else {
+                sellCost = 0;
+            }
+            events.add(new FTLRunEvent(SavedGameParser.StoreItemType.DRONE, typeNow, 1,sellCost, drone));
         }
 
         for (String augment: removedAugments){
-            events.add(new FTLRunEvent(SavedGameParser.StoreItemType.AUGMENT, typeNow, 0,0, augment));
+            if (typeNow == Constants.EventType.SELL){
+                sellCost = GausmanUtil.getCostSellStoreItemType(SavedGameParser.StoreItemType.AUGMENT, augment);
+            } else {
+                sellCost = 0;
+            }
+            events.add(new FTLRunEvent(SavedGameParser.StoreItemType.AUGMENT, typeNow, 1,sellCost, augment));
         }
 
         // ship power
@@ -283,7 +299,7 @@ public class FTLEventGenerator {
                 oldReactorCapacity++;
                 oldCapacitySV++;
                 events.add(new FTLRunEvent(SavedGameParser.StoreItemType.REACTOR, Constants.EventType.UPGRADE, 1,
-                       GausmanUtil.getReactorUpgradeCost(oldCapacitySV) ,"REACTOR"));
+                       GausmanUtil.getReactorUpgradeCost(oldReactorCapacity) ,"REACTOR"));
             }
         }
 
@@ -296,6 +312,26 @@ public class FTLEventGenerator {
 
 
         // ship upgrades
+        SavedGameParser.ShipState newShipState = newGameState.getPlayerShip();
+        SavedGameParser.ShipState oldShipState = oldGameState.getPlayerShip();
+
+        Map<SavedGameParser.SystemType, List<SavedGameParser.SystemState>> systemsMap = newGameState.getPlayerShip().getSystemsMap();
+
+        SavedGameParser.SystemState oldSystemState;
+        int systemDiff = 0;
+        for (Map.Entry<SavedGameParser.SystemType, List<SavedGameParser.SystemState>> entry: systemsMap.entrySet()){
+            for (SavedGameParser.SystemState newSystemState: entry.getValue()){
+                oldSystemState = oldShipState.getSystem(newSystemState.getSystemType());
+                systemDiff = newSystemState.getCapacity() - oldSystemState.getCapacity();
+                if (systemDiff > 0 && oldSystemState.getCapacity() > 0){
+                    events.add(new FTLRunEvent(SavedGameParser.StoreItemType.SYSTEM, Constants.EventType.UPGRADE, systemDiff,
+                            GausmanUtil.getUpgradeCostSystem(newSystemState.getSystemType().getId(), oldSystemState.getCapacity(), newSystemState.getCapacity()) ,newSystemState.getSystemType().getId()));
+
+                }
+            }
+        }
+
+        // TODO free upgrade system events
 
         return events;
     }
