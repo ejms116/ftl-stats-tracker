@@ -12,10 +12,11 @@
 <?import javafx.scene.control.ToggleButton?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Pane?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 
-<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="900.0" prefWidth="1715.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="net.gausman.ftl.FTLStatsTrackerController">
+<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="934.0" prefWidth="1761.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="net.gausman.ftl.FTLStatsTrackerController">
    <top>
       <VBox BorderPane.alignment="CENTER">
          <children>
@@ -57,7 +58,7 @@
          </children></VBox>
    </right>
    <center>
-      <TableView fx:id="eventTableView" maxHeight="1.7976931348623157E308" prefHeight="566.0" prefWidth="786.0" BorderPane.alignment="CENTER">
+      <TableView fx:id="eventTableView" maxHeight="1.7976931348623157E308" onMouseClicked="#mouseClickEventList" prefHeight="566.0" prefWidth="786.0" BorderPane.alignment="CENTER">
         <columns>
           <TableColumn fx:id="time" prefWidth="44.800048828125" text="Time" />
           <TableColumn fx:id="sectorNumber" prefWidth="28.0" text="Sec" />
@@ -76,14 +77,91 @@
    <left>
       <VBox prefHeight="200.0" prefWidth="100.0" BorderPane.alignment="CENTER">
          <children>
-            <HBox prefHeight="438.0" prefWidth="800.0">
+            <HBox prefHeight="471.0" prefWidth="800.0">
                <children>
-                  <TableView fx:id="overviewTableView" prefHeight="250.0" prefWidth="358.0">
+                  <TableView fx:id="overviewTableView" prefHeight="345.0" prefWidth="243.0">
                     <columns>
                       <TableColumn fx:id="propertyCol" prefWidth="114.39996182918549" text="Property" />
-                      <TableColumn fx:id="valueCol" prefWidth="239.20001983642578" text="Value" />
+                      <TableColumn fx:id="valueCol" prefWidth="148.80004119873047" text="Value" />
                     </columns>
+                     <columnResizePolicy>
+                        <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+                     </columnResizePolicy>
                   </TableView>
+                  <Pane prefHeight="311.0" prefWidth="530.0">
+                     <children>
+                        <HBox prefHeight="343.0" prefWidth="555.0">
+                           <children>
+                              <VBox prefHeight="314.0" prefWidth="154.0">
+                                 <children>
+                                    <TableView fx:id="systemTab" maxHeight="324.0" minWidth="-Infinity" prefHeight="324.0" prefWidth="186.0">
+                                      <columns>
+                                        <TableColumn fx:id="systemCol" prefWidth="123.19995421171188" text="System" />
+                                        <TableColumn fx:id="systemLevelCol" prefWidth="60.800048828125" text="Level" />
+                                      </columns>
+                                       <columnResizePolicy>
+                                          <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+                                       </columnResizePolicy>
+                                    </TableView>
+                                 </children>
+                              </VBox>
+                              <VBox prefHeight="314.0" prefWidth="135.0">
+                                 <children>
+                                    <TableView fx:id="subSystemTab" prefHeight="200.0" prefWidth="178.0">
+                                      <columns>
+                                        <TableColumn fx:id="subSystemCol" prefWidth="99.19998013973236" text="Subsystem" />
+                                        <TableColumn fx:id="subSystemLevelCol" prefWidth="33.60010528564453" text="Level" />
+                                      </columns>
+                                       <columnResizePolicy>
+                                          <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+                                       </columnResizePolicy>
+                                    </TableView>
+                                 </children>
+                              </VBox>
+                              <VBox prefHeight="314.0" prefWidth="127.0">
+                                 <children>
+                                    <TableView fx:id="weaponsTab" prefHeight="200.0" prefWidth="200.0">
+                                      <columns>
+                                        <TableColumn fx:id="weaponsCol" prefWidth="75.0" text="Weapons" />
+                                      </columns>
+                                       <columnResizePolicy>
+                                          <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+                                       </columnResizePolicy>
+                                    </TableView>
+                                    <TableView fx:id="dronesTab" prefHeight="200.0" prefWidth="200.0">
+                                      <columns>
+                                        <TableColumn fx:id="dronesCol" prefWidth="75.0" text="Drones" />
+                                      </columns>
+                                       <columnResizePolicy>
+                                          <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+                                       </columnResizePolicy>
+                                    </TableView>
+                                    <TableView fx:id="augmentsTab" prefHeight="200.0" prefWidth="200.0">
+                                      <columns>
+                                        <TableColumn fx:id="augmentsCol" prefWidth="75.0" text="Augments" />
+                                      </columns>
+                                       <columnResizePolicy>
+                                          <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+                                       </columnResizePolicy>
+                                    </TableView>
+                                 </children>
+                              </VBox>
+                              <VBox prefHeight="314.0" prefWidth="112.0">
+                                 <children>
+                                    <TableView fx:id="crewTab" prefHeight="227.0" prefWidth="111.0">
+                                      <columns>
+                                        <TableColumn fx:id="crewCol" prefWidth="97.59997713565826" text="Crew" />
+                                      </columns>
+                                       <columnResizePolicy>
+                                          <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+                                       </columnResizePolicy>
+                                    </TableView>
+                                 </children>
+                              </VBox>
+                           </children>
+                        </HBox>
+                     </children>
+                  </Pane>
                </children>
             </HBox>
             <BarChart fx:id="barChart" minWidth="800.0">

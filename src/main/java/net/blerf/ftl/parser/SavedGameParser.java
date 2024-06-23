@@ -24,6 +24,8 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.TreeMap;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -5881,7 +5883,9 @@ public class SavedGameParser extends Parser {
 		 *
 		 * @param itemId a weapon/drone/augment blueprint or crew-race/system id
 		 */
-		public StoreItem( String itemId ) {
+		@JsonCreator
+
+		public StoreItem( @JsonProperty("itemId") String itemId ) {
 			this.itemId = itemId;
 		}
 

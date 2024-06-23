@@ -13,6 +13,9 @@ public class FTLSector {
     private List<FTLJump> jumpList = new ArrayList<>();
     private List<SavedGameParser.BeaconState> beaconList = new ArrayList<>();
 
+    public FTLSector(){
+
+    }
 
     public FTLSector(SavedGameParser.SavedGameState gameState){
         this.sectorNumber = gameState.getSectorNumber() + 1;

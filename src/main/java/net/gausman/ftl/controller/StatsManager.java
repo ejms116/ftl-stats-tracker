@@ -13,6 +13,8 @@ import net.blerf.ftl.parser.sectortree.RandomSectorTreeGenerator;
 import net.gausman.ftl.FTLStatsTrackerApplication;
 import net.gausman.ftl.FTLStatsTrackerController;
 import net.gausman.ftl.model.Constants;
+import net.gausman.ftl.model.FTLEventBox;
+import net.gausman.ftl.model.ShipStatus;
 import net.gausman.ftl.model.run.FTLJump;
 import net.gausman.ftl.model.run.FTLRun;
 import net.gausman.ftl.model.run.FTLRunEvent;
@@ -69,9 +71,11 @@ public class StatsManager {
     private FTLRun currentRun;
     private List<FTLRun> runList = new ArrayList<>();
     private FTLJump currentJump;
+    private FTLJump lastJump;
     private int jumpNumber = 0;
     ObjectMapper mapper = new ObjectMapper();
 
+    private ShipStatus shipStatus = new ShipStatus();
 
     public void setToggleTracking(){
         toggleTracking = !toggleTracking;
@@ -223,10 +227,12 @@ public class StatsManager {
         if (currentRun == null || currentRun.getSectorTreeSeed() != currentGameState.getSectorTreeSeed() ||
                 (lastGameState != null && lastGameState.getTotalBeaconsExplored() > currentGameState.getTotalBeaconsExplored())){
             lastGameState = null;
-            controller.clearEventList();
+            controller.startNewRun();
+            shipStatus = new ShipStatus();
             moveCurrentJSON();
             currentRun = new FTLRun(currentGameState);
             jumpNumber = 0;
+            FTLRunEvent.nextEventNumber = 0;
             currentJump = new FTLJump(currentGameState, jumpNumber);
             currentRun.addJump(currentJump);
 
@@ -234,7 +240,6 @@ public class StatsManager {
             newSaveDir.mkdirs();
 
             copySaveFile(currentGameState);
-
             addEventsAll(eventGenerator.getEventsStartRun(currentGameState));
         }
 
@@ -256,10 +261,10 @@ public class StatsManager {
                 testEvent.setId("DUMMY EMPTY JUMP");
                 List<FTLRunEvent> testEventList = new ArrayList<>();
                 testEventList.add(testEvent);
-                addEventsAll(testEventList);
+                addEventsAll(new FTLEventBox(testEventList, testEventList));
             }
 
-            GausmanUtil.consolidateEventList(currentJump);
+
             jumpNumber++;
             currentJump = new FTLJump(currentGameState, jumpNumber);
             currentRun.addJump(currentJump);
@@ -284,6 +289,7 @@ public class StatsManager {
         // update overview
         controller.replaceOverviewList(eventGenerator.getOverviewList(currentGameState, jumpNumber));
 
+        lastJump = currentJump;
         lastGameState = currentGameState;
 
         log.info( "Ship Name: " + currentGameState.getPlayerShipName());
@@ -311,10 +317,19 @@ public class StatsManager {
         }
     }
 
-    private void addEventsAll(List<FTLRunEvent> events){
-        currentJump.addEvents(events);
-        for (FTLRunEvent event: events){
-            controller.addEvent(new EventListItem(currentRun, currentRun.getSectorList().getLast(), currentJump, event));
+    private void addEventsAll(FTLEventBox eventBox){
+        currentJump.addEvents(eventBox.getNewJumpEvents());
+        if (!eventBox.getLastJumpEvents().isEmpty()){
+            if (lastJump != null){
+                lastJump.addEvents(eventBox.getLastJumpEvents());
+            }
+        }
+        for (FTLRunEvent event: eventBox.getLastJumpEvents()){
+            controller.addEvent(new EventListItem(currentRun, currentRun.getSectorList().getLast(), lastJump, event), true);
+        }
+
+        for (FTLRunEvent event: eventBox.getNewJumpEvents()){
+            controller.addEvent(new EventListItem(currentRun, currentRun.getSectorList().getLast(), currentJump, event), true);
         }
     }
 
@@ -335,6 +350,66 @@ public class StatsManager {
 //        } catch (IOException e) {
 //            throw new RuntimeException(e);
 //        }
+    }
+
+    public ShipStatus getNewShipStatus(int currentSectorNumber, int targetSectorNumber, int currentJumpNumber, int targetJumpNumber, int currentEventNumber, int targetEventNumber){
+        List<FTLJump> jumpList;
+        FTLJump jump;
+        List<FTLRunEvent> eventList;
+        FTLRunEvent event;
+        if (currentEventNumber < targetEventNumber){ // FORWARD
+            for (int i = currentSectorNumber; i <= targetSectorNumber; i++){
+                jumpList = currentRun.getSectorList().get(i-1).getJumpList();
+                for (int j = 0; j < jumpList.size(); j++){
+                    jump = jumpList.get(j);
+                    if (jump.getJumpNumber() > targetJumpNumber || jump.getJumpNumber() < currentJumpNumber){
+                        continue;
+                    }
+                    eventList = jump.getEvents();
+                    for (int k = 0; k < eventList.size(); k++){
+                    event = eventList.get(k);
+                        if (event.getEventNumber() > targetEventNumber || event.getEventNumber() <= currentEventNumber){
+                            continue;
+                        }
+                        shipStatus.applyEvent(event, true);
+
+                    }
+                }
+
+            }
+
+        } else if (currentEventNumber > targetEventNumber){ //BACKWARDS
+            for (int i = currentSectorNumber; i >= targetSectorNumber; i--){
+                jumpList = currentRun.getSectorList().get(i-1).getJumpList();
+                for (int j = jumpList.size()-1; j >= 0; j--){
+                    jump = jumpList.get(j);
+                    if (jump.getJumpNumber() < targetJumpNumber || jump.getJumpNumber() > currentJumpNumber){
+                        continue;
+                    }
+                    eventList = jump.getEvents();
+                    for (int k = eventList.size()-1; k >= 0; k--){
+                        event = eventList.get(k);
+                        if (event.getEventNumber() <= targetEventNumber || event.getEventNumber() > currentEventNumber){
+                            continue;
+                        }
+                        shipStatus.applyEvent(event, false);
+
+                    }
+                }
+            }
+        } else {
+            log.info("Ship Status not changed");
+        }
+
+        return shipStatus;
+    }
+
+    private void applyEvent(){
+        System.out.println("apply");
+    }
+
+    private void unApplyEvent(){
+        System.out.println("undo");
     }
 
     // deprecated
