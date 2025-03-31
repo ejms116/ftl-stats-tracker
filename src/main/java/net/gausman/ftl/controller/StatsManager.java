@@ -253,17 +253,21 @@ public class StatsManager {
         // at this point currentJump is never null, so we can safely add events and check it's state
         // check if new jump
         if (currentJump.getCurrentBeaconId() != currentGameState.getCurrentBeaconId()){
-            // TODO add a dummy event in case the jump doesn't contain any events
-            if (currentJump.getEvents().isEmpty()){
-                FTLRunEvent testEvent = new FTLRunEvent();
-                testEvent.setItemType(SavedGameParser.StoreItemType.RESOURCE);
-                testEvent.setType(Constants.EventType.UPGRADE);
-                testEvent.setId("DUMMY EMPTY JUMP");
-                List<FTLRunEvent> testEventList = new ArrayList<>();
-                testEventList.add(testEvent);
-                addEventsAll(new FTLEventBox(testEventList, testEventList));
-            }
 
+            // When backtracking the game does not necessarily save the game
+            // so we need to compare the beacons explored and for create "empty jumps" (just a fuel-used event)
+            // the amount is the difference between the new and last beacons explored stats minus 1 (for the new jump)
+            int beaconsExploredDiff = currentGameState.getTotalBeaconsExplored() - currentJump.getTotalBeaconsExplored();
+            if (beaconsExploredDiff > 1){
+                int beaconsExploredTemp = currentJump.getTotalBeaconsExplored();
+                for (int i = 0; i < beaconsExploredDiff-1; i++){
+                    beaconsExploredTemp++;
+                    jumpNumber++;
+                    currentJump = new FTLJump(beaconsExploredTemp, -1, jumpNumber);
+                    currentRun.addJump(currentJump);
+                    addEventsAll(eventGenerator.getFuelUsedEventBox());
+                }
+            }
 
             jumpNumber++;
             currentJump = new FTLJump(currentGameState, jumpNumber);

@@ -55,6 +55,16 @@ public class FTLEventGenerator {
         return overview;
     }
 
+    public FTLEventBox getFuelUsedEventBox(){
+        List<FTLRunEvent> events = new ArrayList<>();
+        List<FTLRunEvent> lastJumpEvents = new ArrayList<>();
+        FTLEventBox eventBox = new FTLEventBox(events, lastJumpEvents);
+
+        events.add(new FTLRunEvent(SavedGameParser.StoreItemType.RESOURCE, Constants.EventType.USE, 1, 0, "FUEL"));
+
+        return eventBox;
+    }
+
     public FTLEventBox getEventsStartRun(SavedGameParser.SavedGameState newGameState){
         List<FTLRunEvent> events = new ArrayList<>();
         List<FTLRunEvent> lastJumpEvents = new ArrayList<>();
@@ -363,6 +373,8 @@ public class FTLEventGenerator {
         }
 
         // TODO free upgrade system events
+
+        // Crew
 
         return box;
     }

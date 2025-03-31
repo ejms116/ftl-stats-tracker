@@ -22,6 +22,8 @@ public class ShipStatus {
     private List<SimpleListItem> augmentsList = new ArrayList<>();
     private List<SimpleListItem> crewList = new ArrayList<>();
 
+    private List<SystemListItem> resourceList = new ArrayList<>();
+
 
 
     public ShipStatus(){
@@ -44,6 +46,11 @@ public class ShipStatus {
         subSystemList.add(new SystemListItem("Door System", 0));
         subSystemList.add(new SystemListItem("Backup Battery", 0));
 
+        resourceList.add(new SystemListItem("HULL", 0));
+        resourceList.add(new SystemListItem("FUEL", 0));
+        resourceList.add(new SystemListItem("MISSILE", 0));
+        resourceList.add(new SystemListItem("DRONE_PART", 0));
+
 
 
 
@@ -63,6 +70,20 @@ public class ShipStatus {
                     } else {
                         System.out.println("no item found");
                     }
+
+                }
+            }
+            case RESOURCE -> {
+                Optional<SystemListItem> item = resourceList.stream().filter(x -> x.getName().equals(GausmanUtil.getTextToId(event.getItemType(), event.getId()))).findFirst();
+                if (item.isPresent()){
+                    switch (event.getType()){
+                        case START, BUY -> item.get().changeLevel(multiplier*event.getAmount());
+                        case USE -> item.get().changeLevel(-multiplier*event.getAmount());
+                        default -> log.info("Resouce Event with Type not allowed: " + event.getType());
+                    }
+
+                } else {
+                    System.out.println("Resource not found");
 
                 }
             }
@@ -113,6 +134,10 @@ public class ShipStatus {
 
     public List<SystemListItem> getSubSystemList() {
         return subSystemList;
+    }
+
+    public List<SystemListItem> getResourceList() {
+        return resourceList;
     }
 
     public List<SimpleListItem> getWeaponsList() {

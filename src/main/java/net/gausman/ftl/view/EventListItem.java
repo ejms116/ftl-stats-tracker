@@ -27,7 +27,7 @@ public class EventListItem {
     public EventListItem(){
         sectorNumber = 1;
         jumpNumber = 0;
-        eventNumber = 0;
+        eventNumber = -1;
     }
 
     public EventListItem(FTLRun run, FTLSector sector, FTLJump jump, FTLRunEvent event){

@@ -116,6 +116,15 @@
                                           <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
                                        </columnResizePolicy>
                                     </TableView>
+                                    <TableView fx:id="resourceTab" layoutX="10.0" layoutY="10.0" prefHeight="200.0" prefWidth="178.0">
+                                       <columns>
+                                          <TableColumn fx:id="resourceCol" prefWidth="99.19998013973236" text="Resource" />
+                                          <TableColumn fx:id="resourceAmountCol" prefWidth="33.60010528564453" text="Amount" />
+                                       </columns>
+                                       <columnResizePolicy>
+                                          <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+                                       </columnResizePolicy>
+                                    </TableView>
                                  </children>
                               </VBox>
                               <VBox prefHeight="314.0" prefWidth="127.0">

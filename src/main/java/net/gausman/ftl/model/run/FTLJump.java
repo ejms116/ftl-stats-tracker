@@ -15,6 +15,12 @@ public class FTLJump {
 
     }
 
+    public FTLJump(int totalBeaconsExplored, int currentBeaconId, int jumpNumber) {
+        this.totalBeaconsExplored = totalBeaconsExplored;
+        this.currentBeaconId = currentBeaconId;
+        this.jumpNumber = jumpNumber;
+    }
+
     public FTLJump(SavedGameParser.SavedGameState gameState, int jumpNumber){
         this.totalBeaconsExplored = gameState.getTotalBeaconsExplored();
         this.currentBeaconId = gameState.getCurrentBeaconId();

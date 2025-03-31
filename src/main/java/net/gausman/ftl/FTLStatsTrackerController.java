@@ -78,6 +78,10 @@ public class FTLStatsTrackerController implements Initializable {
     @FXML private TableColumn<SystemListItem, String> subSystemLevelCol;
     @FXML private TableView<SystemListItem> subSystemTab;
 
+    @FXML private TableColumn<SystemListItem, String> resourceCol;
+    @FXML private TableColumn<SystemListItem, String> resourceAmountCol;
+    @FXML private TableView<SystemListItem> resourceTab;
+
     @FXML private TableColumn<SimpleListItem, String> weaponsCol;
     @FXML private TableView<SimpleListItem> weaponsTab;
 
@@ -102,6 +106,7 @@ public class FTLStatsTrackerController implements Initializable {
     private ObservableList<EventListItem> masterData = FXCollections.observableArrayList();
     private ObservableList<SystemListItem> systemListItemObservableList = FXCollections.observableArrayList();
     private ObservableList<SystemListItem> subSystemListItemObservableList = FXCollections.observableArrayList();
+    private ObservableList<SystemListItem> resourceListItemObservableList = FXCollections.observableArrayList();
     private ObservableList<SimpleListItem> weaponsListItemObservableList = FXCollections.observableArrayList();
     private ObservableList<SimpleListItem> dronesListItemObservableList = FXCollections.observableArrayList();
     private ObservableList<SimpleListItem> augmentsListItemObservableList = FXCollections.observableArrayList();
@@ -134,6 +139,9 @@ public class FTLStatsTrackerController implements Initializable {
 
         subSystemCol.setCellValueFactory(new PropertyValueFactory<>("name"));
         subSystemLevelCol.setCellValueFactory(new PropertyValueFactory<>("level"));
+
+        resourceCol.setCellValueFactory(new PropertyValueFactory<>("name"));
+        resourceAmountCol.setCellValueFactory(new PropertyValueFactory<>("level"));
 
         weaponsCol.setCellValueFactory(new PropertyValueFactory<>("name"));
         dronesCol.setCellValueFactory(new PropertyValueFactory<>("name"));
@@ -171,6 +179,9 @@ public class FTLStatsTrackerController implements Initializable {
 
         FilteredList<SystemListItem> subSystemListItems = new FilteredList<>(subSystemListItemObservableList, p -> true);
         subSystemTab.setItems(subSystemListItems);
+
+        FilteredList<SystemListItem> resourceListItems = new FilteredList<>(resourceListItemObservableList, p -> true);
+        resourceTab.setItems(resourceListItems);
 
         FilteredList<SimpleListItem> weaponsListItems = new FilteredList<>(weaponsListItemObservableList, p -> true);
         weaponsTab.setItems(weaponsListItems);
@@ -257,6 +268,8 @@ public class FTLStatsTrackerController implements Initializable {
         masterData.clear();
         systemListItemObservableList.clear();
         subSystemListItemObservableList.clear();
+        resourceListItemObservableList.clear();
+
         weaponsListItemObservableList.clear();
         dronesListItemObservableList.clear();
         augmentsListItemObservableList.clear();
@@ -275,6 +288,9 @@ public class FTLStatsTrackerController implements Initializable {
 
         subSystemListItemObservableList.clear();
         subSystemListItemObservableList.addAll(shipStatus.getSubSystemList());
+
+        resourceListItemObservableList.clear();
+        resourceListItemObservableList.addAll(shipStatus.getResourceList());
 
         weaponsListItemObservableList.clear();
         weaponsListItemObservableList.addAll(shipStatus.getWeaponsList());
