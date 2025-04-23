@@ -92,4 +92,52 @@ public class EventListItem {
     public String getText(){
         return text;
     }
+
+    public void setTime(String time) {
+        this.time = time;
+    }
+
+    public void setSectorNumber(int sectorNumber) {
+        this.sectorNumber = sectorNumber;
+    }
+
+    public void setTotalBeaconsExplored(int totalBeaconsExplored) {
+        this.totalBeaconsExplored = totalBeaconsExplored;
+    }
+
+    public void setCurrentBeaconId(int currentBeaconId) {
+        this.currentBeaconId = currentBeaconId;
+    }
+
+    public void setJumpNumber(int jumpNumber) {
+        this.jumpNumber = jumpNumber;
+    }
+
+    public void setEventNumber(int eventNumber) {
+        this.eventNumber = eventNumber;
+    }
+
+    public void setItemType(SavedGameParser.StoreItemType itemType) {
+        this.itemType = itemType;
+    }
+
+    public void setType(Constants.EventType type) {
+        this.type = type;
+    }
+
+    public void setAmount(int amount) {
+        this.amount = amount;
+    }
+
+    public void setCost(int cost) {
+        this.cost = cost;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public void setText(String text) {
+        this.text = text;
+    }
 }

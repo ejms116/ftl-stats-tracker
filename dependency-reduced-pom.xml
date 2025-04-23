@@ -46,7 +46,7 @@
             <configuration>
               <transformers>
                 <transformer>
-                  <mainClass>net.gausman.ftl.FTLStatsTracker</mainClass>
+                  <mainClass>net.gausman.ftl.FTLStatsTrackerTest</mainClass>
                 </transformer>
               </transformers>
             </configuration>

@@ -79,7 +79,7 @@ public class ShipStatus {
                     switch (event.getType()){
                         case START, BUY -> item.get().changeLevel(multiplier*event.getAmount());
                         case USE -> item.get().changeLevel(-multiplier*event.getAmount());
-                        default -> log.info("Resouce Event with Type not allowed: " + event.getType());
+                        default -> log.info("Resource Event with Type not allowed: " + event.getType());
                     }
 
                 } else {
