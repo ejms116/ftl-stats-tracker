@@ -18,7 +18,6 @@ public class FTLRun {
     private Difficulty difficulty;
     private int sectorTreeSeed = 42;
     private Constants.Result result = Constants.Result.ONGOING;
-    private List<FTLJump> jumpList = new ArrayList<>();
     private List<FTLSector> sectorList = new ArrayList<>();
 
     // TODO sectorvisitationlist
@@ -95,11 +94,7 @@ public class FTLRun {
     }
 
     public void addJump(FTLJump jump){
-        jumpList.add(jump);
-    }
-
-    public List<FTLJump> getJumpList() {
-        return jumpList;
+        sectorList.getLast().addJump(jump);
     }
 
     public void addSector(SavedGameParser.SavedGameState gameState){

@@ -850,9 +850,9 @@ public class DefaultDataManager extends DataManager {
 		}
 
 		DroneBlueprint result = drones.get( id );
-		if ( result == null ) {
-			log.error( "No DroneBlueprint found for id: "+ id );
-		}
+//		if ( result == null ) {
+//			log.error( "No DroneBlueprint found for id: "+ id );
+//		}
 		return result;
 	}
 
@@ -894,9 +894,9 @@ public class DefaultDataManager extends DataManager {
 		}
 
 		WeaponBlueprint result = weapons.get( id );
-		if ( result == null ) {
-			log.error( "No WeaponBlueprint found for id: "+ id );
-		}
+//		if ( result == null ) {
+//			log.error( "No WeaponBlueprint found for id: "+ id );
+//		}
 		return result;
 	}
 

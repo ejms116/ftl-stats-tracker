@@ -1,11 +1,13 @@
 package net.gausman.ftl.controller;
 
+import net.blerf.ftl.constants.Difficulty;
 import net.blerf.ftl.parser.DataManager;
 import net.blerf.ftl.parser.SavedGameParser;
 import net.blerf.ftl.xml.DroneBlueprint;
 import net.blerf.ftl.xml.ShipBlueprint;
 import net.blerf.ftl.xml.WeaponBlueprint;
 import net.gausman.ftl.model.Constants;
+import net.gausman.ftl.model.FTLEventBox;
 import net.gausman.ftl.model.run.FTLRunEvent;
 import net.gausman.ftl.util.GausmanUtil;
 import net.gausman.ftl.view.OverviewListItem;
@@ -53,22 +55,45 @@ public class FTLEventGenerator {
         return overview;
     }
 
-    public List<FTLRunEvent> getEventsStartRun(SavedGameParser.SavedGameState newGameState){
+    public FTLEventBox getFuelUsedEventBox(){
         List<FTLRunEvent> events = new ArrayList<>();
+        List<FTLRunEvent> lastJumpEvents = new ArrayList<>();
+        FTLEventBox eventBox = new FTLEventBox(events, lastJumpEvents);
+
+        events.add(new FTLRunEvent(SavedGameParser.StoreItemType.RESOURCE, Constants.EventType.USE, 1, 0, "FUEL"));
+
+        return eventBox;
+    }
+
+    public FTLEventBox getEventsStartRun(SavedGameParser.SavedGameState newGameState){
+        List<FTLRunEvent> events = new ArrayList<>();
+        List<FTLRunEvent> lastJumpEvents = new ArrayList<>();
+        FTLEventBox eventBox = new FTLEventBox(events, lastJumpEvents);
 
         ShipBlueprint shipBlueprint = dm.getShip(newGameState.getPlayerShipBlueprintId());
 
         SavedGameParser.ShipState shipState = newGameState.getPlayerShip();
 
+        int startingScrap = 0;
+        if (newGameState.getDifficulty().equals(Difficulty.NORMAL)){
+            startingScrap += 10;
+        } else if (newGameState.getDifficulty().equals(Difficulty.EASY)){
+            startingScrap += 30;
+        }
+
+        // Resources
         events.add(new FTLRunEvent(SavedGameParser.StoreItemType.RESOURCE, Constants.EventType.START, shipBlueprint.getHealth().amount, 0, "HULL"));
-        events.add(new FTLRunEvent(SavedGameParser.StoreItemType.RESOURCE, Constants.EventType.START, shipState.getFuelAmt(), 0, "FUEL"));
-        events.add(new FTLRunEvent(SavedGameParser.StoreItemType.RESOURCE, Constants.EventType.START, shipState.getDronePartsAmt(), 0,"DRONE_PART"));
-        events.add(new FTLRunEvent(SavedGameParser.StoreItemType.RESOURCE, Constants.EventType.START, shipState.getMissilesAmt(), 0,"MISSILE"));
-        events.add(new FTLRunEvent(SavedGameParser.StoreItemType.RESOURCE, Constants.EventType.START, shipState.getScrapAmt(), 0,"SCRAP"));
+        events.add(new FTLRunEvent(SavedGameParser.StoreItemType.RESOURCE, Constants.EventType.START, 16, 0, "FUEL"));
+        events.add(new FTLRunEvent(SavedGameParser.StoreItemType.RESOURCE, Constants.EventType.START, shipBlueprint.getDroneList().drones, 0,"DRONE_PART"));
+        events.add(new FTLRunEvent(SavedGameParser.StoreItemType.RESOURCE, Constants.EventType.START, shipBlueprint.getWeaponList().missiles, 0,"MISSILE"));
+        events.add(new FTLRunEvent(SavedGameParser.StoreItemType.RESOURCE, Constants.EventType.START, startingScrap, 0,"SCRAP"));
+
+        // Power
+        events.add(new FTLRunEvent(SavedGameParser.StoreItemType.REACTOR, Constants.EventType.START, shipBlueprint.getMaxPower().amount, 0, "REACTOR"));
 
         // Crew
         for (SavedGameParser.CrewState crewState: newGameState.getPlayerShip().getCrewList()){
-            events.add(new FTLRunEvent(SavedGameParser.StoreItemType.CREW, Constants.EventType.START, 0, 0,crewState.getRace().getId()));
+            events.add(new FTLRunEvent(SavedGameParser.StoreItemType.CREW, Constants.EventType.START, 1, 0,crewState.getRace().getId()));
         }
 
         // Systems
@@ -84,30 +109,33 @@ public class FTLEventGenerator {
 
         // Weapons
         for (SavedGameParser.WeaponState weaponState: newGameState.getPlayerShip().getWeaponList()){
-            events.add(new FTLRunEvent(SavedGameParser.StoreItemType.WEAPON, Constants.EventType.START, 0,0, weaponState.getWeaponId()));
+            events.add(new FTLRunEvent(SavedGameParser.StoreItemType.WEAPON, Constants.EventType.START, 1,0, weaponState.getWeaponId()));
         }
 
         // Drones
         for (SavedGameParser.DroneState droneState: newGameState.getPlayerShip().getDroneList()){
-            events.add(new FTLRunEvent(SavedGameParser.StoreItemType.DRONE, Constants.EventType.START, 0,0, droneState.getDroneId()));
+            events.add(new FTLRunEvent(SavedGameParser.StoreItemType.DRONE, Constants.EventType.START, 1,0, droneState.getDroneId()));
         }
 
         // Augments
         for (String augmentId: newGameState.getPlayerShip().getAugmentIdList()){
-            events.add(new FTLRunEvent(SavedGameParser.StoreItemType.AUGMENT, Constants.EventType.START, 0,0, augmentId));
+            events.add(new FTLRunEvent(SavedGameParser.StoreItemType.AUGMENT, Constants.EventType.START, 1,0, augmentId));
         }
 
         // INFO We assume here that the player ship does not start with anything in the cargo, which is true for vanilla FTL
         // TODO if the run was started late the beacons explored stat is wrong...
 
-        return events;
+        return eventBox;
     }
 
-    public List<FTLRunEvent> getEventsFromGameStateComparison(SavedGameParser.SavedGameState oldGameState, SavedGameParser.SavedGameState newGameState){
+    public FTLEventBox getEventsFromGameStateComparison(SavedGameParser.SavedGameState oldGameState, SavedGameParser.SavedGameState newGameState){
+
         List<FTLRunEvent> events = new ArrayList<>();
+        List<FTLRunEvent> lastJumpEvents = new ArrayList<>();
+        FTLEventBox box = new FTLEventBox(events, lastJumpEvents);
 
         if (oldGameState == null || newGameState == null){
-            return events;
+            return box;
         }
 
         CargoConsolidator oldCargo = new CargoConsolidator(oldGameState);
@@ -127,6 +155,8 @@ public class FTLEventGenerator {
 
         if (oldGameState.getCurrentBeaconId() == newGameState.getCurrentBeaconId()){
             jumped = false;
+        } else {
+            events.add(new FTLRunEvent(SavedGameParser.StoreItemType.RESOURCE, Constants.EventType.USE, 1, 0, "FUEL"));
         }
 
         if (!jumped && newStore != null){
@@ -224,22 +254,27 @@ public class FTLEventGenerator {
         }
 
         for (String weapon: newWeapons){
-            events.add(new FTLRunEvent(SavedGameParser.StoreItemType.WEAPON, Constants.EventType.REWARD, 0,0, weapon));
+            events.add(new FTLRunEvent(SavedGameParser.StoreItemType.WEAPON, Constants.EventType.REWARD, 1,GausmanUtil.getCostSellStoreItemType(SavedGameParser.StoreItemType.WEAPON, weapon), weapon));
         }
 
         for (String drone: newDrones){
-            events.add(new FTLRunEvent(SavedGameParser.StoreItemType.DRONE, Constants.EventType.REWARD, 0,0, drone));
+            events.add(new FTLRunEvent(SavedGameParser.StoreItemType.DRONE, Constants.EventType.REWARD, 1,GausmanUtil.getCostSellStoreItemType(SavedGameParser.StoreItemType.DRONE, drone), drone));
         }
 
         for (String augment: newAugments){
-            events.add(new FTLRunEvent(SavedGameParser.StoreItemType.AUGMENT, Constants.EventType.REWARD, 0,0, augment));
+            events.add(new FTLRunEvent(SavedGameParser.StoreItemType.AUGMENT, Constants.EventType.REWARD, 1,GausmanUtil.getCostSellStoreItemType(SavedGameParser.StoreItemType.AUGMENT, augment), augment));
         }
 
         // Removed Items
         Constants.EventType typeNow;
+        boolean addToLastJump = false;
+        List<FTLRunEvent> tempSellEvents = new ArrayList<>();
 
         if (newStore != null || oldStore != null){
             typeNow = Constants.EventType.SELL;
+            if (newStore == null){
+                addToLastJump = true;
+            }
         } else {
             typeNow = Constants.EventType.DISCARD;
         }
@@ -259,16 +294,38 @@ public class FTLEventGenerator {
             removedAugments.remove(augment);
         }
 
+        int sellCost = 0;
         for (String weapon: removedWeapons){
-            events.add(new FTLRunEvent(SavedGameParser.StoreItemType.WEAPON, typeNow, 0,0, weapon));
+            if (typeNow == Constants.EventType.SELL){
+                sellCost = GausmanUtil.getCostSellStoreItemType(SavedGameParser.StoreItemType.WEAPON, weapon);
+            } else {
+                sellCost = 0;
+            }
+            tempSellEvents.add(new FTLRunEvent(SavedGameParser.StoreItemType.WEAPON, typeNow, 1,sellCost, weapon));
         }
 
         for (String drone: removedDrones){
-            events.add(new FTLRunEvent(SavedGameParser.StoreItemType.DRONE, typeNow, 0,0, drone));
+            if (typeNow == Constants.EventType.SELL){
+                sellCost = GausmanUtil.getCostSellStoreItemType(SavedGameParser.StoreItemType.DRONE, drone);
+            } else {
+                sellCost = 0;
+            }
+            tempSellEvents.add(new FTLRunEvent(SavedGameParser.StoreItemType.DRONE, typeNow, 1,sellCost, drone));
         }
 
         for (String augment: removedAugments){
-            events.add(new FTLRunEvent(SavedGameParser.StoreItemType.AUGMENT, typeNow, 0,0, augment));
+            if (typeNow == Constants.EventType.SELL){
+                sellCost = GausmanUtil.getCostSellStoreItemType(SavedGameParser.StoreItemType.AUGMENT, augment);
+            } else {
+                sellCost = 0;
+            }
+            tempSellEvents.add(new FTLRunEvent(SavedGameParser.StoreItemType.AUGMENT, typeNow, 1,sellCost, augment));
+        }
+
+        if (addToLastJump){
+            lastJumpEvents.addAll(tempSellEvents);
+        } else {
+            events.addAll(tempSellEvents);
         }
 
         // ship power
@@ -283,7 +340,7 @@ public class FTLEventGenerator {
                 oldReactorCapacity++;
                 oldCapacitySV++;
                 events.add(new FTLRunEvent(SavedGameParser.StoreItemType.REACTOR, Constants.EventType.UPGRADE, 1,
-                       GausmanUtil.getReactorUpgradeCost(oldCapacitySV) ,"REACTOR"));
+                       GausmanUtil.getReactorUpgradeCost(oldReactorCapacity) ,"REACTOR"));
             }
         }
 
@@ -296,8 +353,30 @@ public class FTLEventGenerator {
 
 
         // ship upgrades
+        SavedGameParser.ShipState newShipState = newGameState.getPlayerShip();
+        SavedGameParser.ShipState oldShipState = oldGameState.getPlayerShip();
 
-        return events;
+        Map<SavedGameParser.SystemType, List<SavedGameParser.SystemState>> systemsMap = newGameState.getPlayerShip().getSystemsMap();
+
+        SavedGameParser.SystemState oldSystemState;
+        int systemDiff = 0;
+        for (Map.Entry<SavedGameParser.SystemType, List<SavedGameParser.SystemState>> entry: systemsMap.entrySet()){
+            for (SavedGameParser.SystemState newSystemState: entry.getValue()){
+                oldSystemState = oldShipState.getSystem(newSystemState.getSystemType());
+                systemDiff = newSystemState.getCapacity() - oldSystemState.getCapacity();
+                if (systemDiff > 0 && oldSystemState.getCapacity() > 0){
+                    events.add(new FTLRunEvent(SavedGameParser.StoreItemType.SYSTEM, Constants.EventType.UPGRADE, systemDiff,
+                            GausmanUtil.getUpgradeCostSystem(newSystemState.getSystemType().getId(), oldSystemState.getCapacity(), newSystemState.getCapacity()) ,newSystemState.getSystemType().getId()));
+
+                }
+            }
+        }
+
+        // TODO free upgrade system events
+
+        // Crew
+
+        return box;
     }
 
 

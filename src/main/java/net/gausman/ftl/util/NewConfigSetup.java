@@ -15,9 +15,9 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.util.Properties;
 
-public class ConfigSetup {
+public class NewConfigSetup {
     private static final Logger log = LoggerFactory.getLogger(FTLStatsTrackerApplication.class);
-    public static EditorConfig init(Stage stage){
+    public static EditorConfig init(){
 
         boolean writeConfig = false;
         Properties props = new Properties();
@@ -53,7 +53,7 @@ public class ConfigSetup {
         EditorConfig appConfig = new EditorConfig(props, configFile);
 
         String savePath = appConfig.getProperty(EditorConfig.FTL_SAVE_PATH);
-        if (savePath.length() > 0){
+        if (!savePath.isEmpty()){
             log.info("Using Save file location from config: " + savePath);
             // TODO: check valid savegame path
         } else {
