@@ -1,5 +1,7 @@
 package net.gausman.ftl.view;
 
+import net.gausman.ftl.view.shipstatus.CrewTableModel;
+import net.gausman.ftl.view.shipstatus.ItemTableModel;
 import net.gausman.ftl.view.shipstatus.ShipStatusPanel;
 import net.gausman.ftl.view.table.EventTablePanel;
 
@@ -37,7 +39,7 @@ public class TrackerView extends JFrame {
         add(toolbarPanel, BorderLayout.NORTH);
         add(leftPanel, BorderLayout.WEST);
         add(eventListPanel, BorderLayout.CENTER);
-        add(eventFilterPanel, BorderLayout.EAST);
+        add(eventFilterPanel, BorderLayout.SOUTH);
 
         // Optional: menus, toolbars, status bar, etc.
     }

@@ -5810,8 +5810,15 @@ public class SavedGameParser extends Parser {
 	}
 
 	public enum StoreItemType {
-		WEAPON("Weapon"), DRONE("Drone"), AUGMENT("Augment"),
-		CREW("Crew"), SYSTEM("System"), RESOURCE("Resource"), REACTOR("Reactor");
+		WEAPON("Weapon"),
+		DRONE("Drone"),
+		AUGMENT("Augment"),
+		CREW("Crew"),
+		SYSTEM("System"),
+		RESOURCE("Resource"),
+		REACTOR("Reactor"),
+		GENERAL("General"),
+		;
 
 		private String title;
 		StoreItemType(String title) { this.title = title; }

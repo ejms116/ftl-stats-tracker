@@ -2,19 +2,12 @@ package net.gausman.ftl.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import net.blerf.ftl.parser.SavedGameParser;
-import net.gausman.ftl.controller.TrackerController;
-import net.gausman.ftl.model.FTLEventBox;
 import net.gausman.ftl.model.RunUpdateResponse;
 import net.gausman.ftl.model.ShipStatusModel;
 import net.gausman.ftl.model.record.*;
-import net.gausman.ftl.model.record.Event;
-import net.gausman.ftl.model.run.FTLJump;
-import net.gausman.ftl.model.run.FTLRunEvent;
-import net.gausman.ftl.view.EventListItem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.awt.*;
 import java.util.*;
 
 public class RunService {
@@ -33,22 +26,6 @@ public class RunService {
 
     public RunUpdateResponse update(SavedGameParser.SavedGameState currentGameState){
         boolean newRun = false;
-
-//        if (lastGameState != null && currentGameState != null){
-//            try {
-//                String oldSave = mapper.writeValueAsString(lastGameState);
-//                String newSave = mapper.writeValueAsString(currentGameState);
-//                if (oldSave.equals(newSave)){
-//                    log.info("SAME");
-//                } else {
-//                    log.info("!!!!!!!NEW!!!!!!!!");
-//                    copySaveFile(currentGameState);
-//                }
-//            } catch (Exception e){
-//
-//            }
-//
-//        }
 
         // New Run, creates Sector+Jump automatically
         if (currentRun == null || currentRun.getSectorTreeSeed() != currentGameState.getSectorTreeSeed() ||
@@ -112,8 +89,6 @@ public class RunService {
         addEventsFromEventBox(box); // assigns the EventIds
 
 
-
-
         // Todo possible merge events
 
         // save to json file
@@ -153,6 +128,15 @@ public class RunService {
             eventMapFlat.put(e.getId(), e);
         }
 
+        if (box.getEncounterState() == null){
+            return;
+        }
+
+        List<SavedGameParser.EncounterState> encounterStates = currentRun.getCurrentJump().getEncounterStates();
+
+        if (encounterStates.isEmpty() || !encounterStates.getLast().toString().equals(box.getEncounterState().toString())){
+            currentRun.getCurrentJump().getEncounterStates().add(box.getEncounterState());
+        }
     }
 
     public NavigableMap<Integer, Event> getEventMapFlat() {
@@ -162,19 +146,6 @@ public class RunService {
     public Run getCurrentRun() {
         return currentRun;
     }
-
-    //    public List<Event> getAllEventsFlat(){
-//        List<Event> events = new ArrayList<>();
-//
-//        for (Map.Entry<Integer, Sector> sector : currentRun.getSectors().entrySet()){
-//            for (Map.Entry<Integer, Jump> jump : sector.getValue().getJumps().entrySet()){
-//                for (Map.Entry<Integer, Event> event : jump.getValue().getEvents().entrySet() ){
-//                    events.add(event.getValue());
-//                }
-//            }
-//        }
-//        return events;
-//    }
 
     public ShipStatusModel getStatusAtId(int targetId){
         var entry = getClosestEntry(targetId);

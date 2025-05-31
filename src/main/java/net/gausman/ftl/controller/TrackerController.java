@@ -1,5 +1,6 @@
 package net.gausman.ftl.controller;
 
+import net.blerf.ftl.parser.DataManager;
 import net.blerf.ftl.parser.MysteryBytes;
 import net.blerf.ftl.parser.SavedGameParser;
 import net.gausman.ftl.model.RunUpdateResponse;
@@ -10,22 +11,24 @@ import net.gausman.ftl.model.table.EventTableModel;
 import net.gausman.ftl.service.RunService;
 import net.gausman.ftl.util.FileWatcher;
 import net.gausman.ftl.util.GausmanUtil;
-import net.gausman.ftl.view.table.EventTablePanel;
+import net.gausman.ftl.view.browser.EventBrowserView;
 import net.gausman.ftl.view.TrackerView;
+import net.gausman.ftl.view.browser.EventTreeBrowserView;
+import net.gausman.ftl.view.table.EventTablePanel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import java.awt.*;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
-import java.util.*;
+import java.util.List;
 import java.util.Timer;
+import java.util.*;
 
 public class TrackerController {
     private static final Logger log = LoggerFactory.getLogger(TrackerController.class);
@@ -48,7 +51,8 @@ public class TrackerController {
 
 //    private StatsModel model;
     private TrackerView view;
-
+    private EventBrowserView eventBrowserView;
+    private EventTreeBrowserView eventTreeBrowserView;
 
     private List<Event> events;
     private EventTableModel eventTableModel;
@@ -56,15 +60,35 @@ public class TrackerController {
 
     private static int saveFileId = 0;
 
+    private DataManager dm = DataManager.get(); // todo remove from here
+
     public TrackerController() {
-        runService = new RunService();
+
 //        model = new StatsModel();
+
         view = new TrackerView();
+        runService = new RunService();
+
 
         eventTableModel = new EventTableModel();
 
         eventTablePanel = new EventTablePanel(eventTableModel);
         view.setEventTablePanel(eventTablePanel);
+
+        // >>> NEW CODE: Open window on second monitor if available
+        GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+        GraphicsDevice[] screens = ge.getScreenDevices();
+
+        if (screens.length > 1) {
+            // Get bounds of second screen
+            Rectangle bounds = screens[0].getDefaultConfiguration().getBounds();
+            // Position the window near the top-left of the second screen
+            view.setLocation(bounds.x + 50, bounds.y + 50);
+        } else {
+            // Center on primary screen
+            view.setLocationRelativeTo(null);
+        }
+        // <<< END NEW CODE
 
         view.setVisible(true);
 
@@ -87,6 +111,26 @@ public class TrackerController {
             testSaveFileReading();
         });
 
+        view.getToolbarPanel().setEventBrowserButtonListener(e -> {
+            if (eventBrowserView == null || !eventBrowserView.isDisplayable()){
+                eventBrowserView = new EventBrowserView(dm.getEventNodeIdMap(), dm.getDlcTextListIdMap());
+                eventBrowserView.setVisible(true);
+            } else {
+                eventBrowserView.toFront();
+                eventBrowserView.requestFocus();
+            }
+        });
+
+        view.getToolbarPanel().setEventTreeBrowserButtonListener(e -> {
+            if (eventTreeBrowserView == null || !eventTreeBrowserView.isDisplayable()){
+                eventTreeBrowserView = new EventTreeBrowserView(dm.getEventNodeIdMap(), dm.getDlcTextListIdMap(), dm.getShipEvents());
+                eventTreeBrowserView.setVisible(true);
+            } else {
+                eventTreeBrowserView.toFront();
+                eventTreeBrowserView.requestFocus();
+            }
+        });
+
         for (EventFilter filter : EventFilter.values()){
             eventFilterMap.put(filter, true);
         }
@@ -107,23 +151,12 @@ public class TrackerController {
             if (!e.getValueIsAdjusting()){
                 int selected = table.getSelectedRow();
                 if (selected != -1){
-                    int eventId = (int) table.getValueAt(selected, 10);
+                    int eventId = eventTableModel.getRowEvent(selected).getId();
                     ShipStatusModel model = runService.getStatusAtId(eventId);
                     view.getShipStatusPanel().update(model);
                 }
             }
         });
-
-//        eventTablePanel.getTable().addMouseListener(new MouseAdapter() {
-//            @Override
-//            public void mouseClicked(MouseEvent e) {
-//                int row = eventTablePanel.getTable().rowAtPoint(e.getPoint());
-//
-//                Integer eventId = (Integer) eventTablePanel.getTable().getValueAt(row, 10);
-//                System.out.println("click");
-//
-//            }
-//        });
 
     }
 
@@ -179,6 +212,11 @@ public class TrackerController {
                 eventTableModel.setEvents(runService.getEventMapFlat());
             }
             eventTableModel.fireTableDataChanged(); // optimize
+            SwingUtilities.invokeLater(() -> {
+                if (eventTablePanel.getTable().getRowCount() > 0) {
+                    eventTablePanel.getTable().changeSelection(0, 0, false, false);
+                }
+            });
             log.info("Game state read successfully.");
 
             if (!gs.getMysteryList().isEmpty()) {
@@ -270,6 +308,8 @@ public class TrackerController {
             loadGameStateFile(file);
 
         }
+
+        log.info("Testing done");
 
 //        eventTableModel.setEvents(runService.getEventMapFlat());
 

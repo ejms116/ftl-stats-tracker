@@ -1,6 +1,5 @@
 package net.blerf.ftl.parser;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
@@ -12,8 +11,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import net.gausman.ftl.util.GausmanUtil;
+import org.w3c.dom.Element;
 import jakarta.xml.bind.JAXBException;
 
+import net.blerf.ftl.xml.*;
+import net.blerf.ftl.xml.event.*;
 import org.jdom2.JDOMException;
 
 import org.slf4j.Logger;
@@ -26,32 +30,6 @@ import net.vhati.ftldat.PackContainer;
 import net.vhati.ftldat.PkgPack;
 
 import net.blerf.ftl.model.shiplayout.ShipLayout;
-import net.blerf.ftl.parser.DatParser;
-import net.blerf.ftl.xml.Achievement;
-import net.blerf.ftl.xml.Anim;
-import net.blerf.ftl.xml.Animations;
-import net.blerf.ftl.xml.AnimSheet;
-import net.blerf.ftl.xml.AugBlueprint;
-import net.blerf.ftl.xml.BackgroundImageList;
-import net.blerf.ftl.xml.Blueprints;
-import net.blerf.ftl.xml.CrewBlueprint;
-import net.blerf.ftl.xml.CrewNameList;
-import net.blerf.ftl.xml.DefaultDeferredText;
-import net.blerf.ftl.xml.DroneBlueprint;
-import net.blerf.ftl.xml.Encounters;
-import net.blerf.ftl.xml.FTLEvent;
-import net.blerf.ftl.xml.FTLEventList;
-import net.blerf.ftl.xml.NamedText;
-import net.blerf.ftl.xml.SectorData;
-import net.blerf.ftl.xml.SectorDescription;
-import net.blerf.ftl.xml.SectorType;
-import net.blerf.ftl.xml.ShipBlueprint;
-import net.blerf.ftl.xml.ShipEvent;
-import net.blerf.ftl.xml.ShipEvents;
-import net.blerf.ftl.xml.ShipChassis;
-import net.blerf.ftl.xml.SystemBlueprint;
-import net.blerf.ftl.xml.WeaponAnim;
-import net.blerf.ftl.xml.WeaponBlueprint;
 
 
 public class DefaultDataManager extends DataManager {
@@ -98,6 +76,12 @@ public class DefaultDataManager extends DataManager {
 
 	private Map<String, ShipEvent> stdShipEventIdMap;
 	private Map<String, ShipEvent> dlcShipEventIdMap;
+
+	// Gausman
+	private Map<String, FTLEventNode> dlcEventNodeIdMap;
+	private Map<String, FTLEvent> dlcEventOldIdMap; // todo del
+	private Map<String, FTLEventList> dlcEventListIdMap; // todo del
+	private Map<String, TextList> dlcTextListIdMap;
 
 	private Map<String, Achievement> achievementIdMap;
 	private Map<ShipBlueprint, List<Achievement>> stdShipAchievementIdMap;
@@ -644,12 +628,52 @@ public class DefaultDataManager extends DataManager {
 				}
 			}
 			dlcShipEventIdMap = new LinkedHashMap<String, ShipEvent>( stdShipEventIdMap );
+
+			dlcEventNodeIdMap = new LinkedHashMap<String, FTLEventNode>();
+			dlcEventOldIdMap = new LinkedHashMap<String, FTLEvent>();
+			dlcEventListIdMap = new LinkedHashMap<String, FTLEventList>();
+			dlcTextListIdMap = new LinkedHashMap<String, TextList>();
+
 			for ( Map.Entry<String, Encounters> entry : dlcEventsFileMap.entrySet() ) {
 				Encounters tmpEncounters = entry.getValue();
+
 				List<ShipEvent> shipEventList = tmpEncounters.getShipEvents();
 				for ( ShipEvent shipEvent : shipEventList ) {
 					dlcShipEventIdMap.put( shipEvent.getId(), shipEvent );
+					List<String> occurence = new ArrayList<>();
+					occurence.add("ShipEvent");
+					occurence.add(shipEvent.getId());
+					GausmanUtil.logXmlWarningsRecoursive(shipEvent, occurence);
 				}
+
+				// Gausman: FTLEvent
+				List<FTLEvent> ftlEventList = tmpEncounters.getEvents();
+				for (FTLEvent ftlEvent : ftlEventList){
+					ftlEvent.setSourceFile(entry.getKey());
+					dlcEventNodeIdMap.put(ftlEvent.getId() , ftlEvent);
+					dlcEventOldIdMap.put(ftlEvent.getId() , ftlEvent);
+					List<String> occurence = new ArrayList<>();
+					occurence.add(ftlEvent.getSourceFile());
+					occurence.add(ftlEvent.getId());
+					GausmanUtil.logXmlWarningsRecoursive(ftlEvent, occurence);
+				}
+				// Gausman: FTLEventList
+				List<FTLEventList> ftlEventListList = tmpEncounters.getEventLists();
+				for (FTLEventList ftlEventListItem : ftlEventListList){
+					ftlEventListItem.setSourceFile(entry.getKey());
+					dlcEventNodeIdMap.put(ftlEventListItem.getId(), ftlEventListItem);
+					dlcEventListIdMap.put(ftlEventListItem.getId(), ftlEventListItem);
+					List<String> occurence = new ArrayList<>();
+					occurence.add(ftlEventListItem.getSourceFile());
+					occurence.add(ftlEventListItem.getId());
+					GausmanUtil.logXmlWarningsRecoursive(ftlEventListItem, occurence);
+				}
+				// Gausman: TextList
+				List<TextList> textListList = tmpEncounters.getTextLists();
+				for (TextList tl : textListList){
+					dlcTextListIdMap.put(tl.getName(), tl);
+				}
+
 			}
 
 			stdAnimSheetIdMap = new LinkedHashMap<String, AnimSheet>();
@@ -702,6 +726,7 @@ public class DefaultDataManager extends DataManager {
 
 			if ( meltdown ) this.close();
 		}
+		log.info("dm done");
 	}
 
 	@Override
@@ -1151,6 +1176,21 @@ public class DefaultDataManager extends DataManager {
 	}
 
 	@Override
+	public Map<String, FTLEventNode> getEventNodeIdMap(){
+		return dlcEventNodeIdMap;
+	}
+
+	@Override
+	public FTLEventNode getEventNodeById(String id){
+		FTLEventNode result = dlcEventNodeIdMap.get(id);
+
+		if ( result == null ) {
+			log.error( "No EventNode found for id: "+ id );
+		}
+		return result;
+	}
+
+	@Override
 	public ShipEvent getShipEventById( String id, boolean dlcEnabled ) {
 		Map<String, ShipEvent> shipEvents = null;
 		if ( dlcEnabled ) {
@@ -1302,5 +1342,29 @@ public class DefaultDataManager extends DataManager {
 			log.error( "No AnimSheet found for id: "+ id );
 		}
 		return result;
+	}
+
+	@Override
+	public Map<String, ShipEvent> getDlcShipEventIdMap() {
+		return dlcShipEventIdMap;
+	}
+
+	@Override
+	public Map<String, FTLEvent> getDlcEventOldIdMap() {
+		return dlcEventOldIdMap;
+	}
+
+	@Override
+	public Map<String, FTLEventList> getDlcEventListIdMap() {
+		return dlcEventListIdMap;
+	}
+
+	@Override
+	public Map<String, TextList> getDlcTextListIdMap() {
+		return dlcTextListIdMap;
+	}
+
+	public String getTextForId(String id) {
+		return textLookupMap.getOrDefault(id, "");
 	}
 }

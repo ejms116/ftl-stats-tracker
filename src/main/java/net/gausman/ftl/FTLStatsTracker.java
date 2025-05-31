@@ -1,5 +1,6 @@
 package net.gausman.ftl;
 
+import com.formdev.flatlaf.FlatDarkLaf;
 import com.formdev.flatlaf.FlatLaf;
 import com.formdev.flatlaf.FlatLightLaf;
 import net.blerf.ftl.core.EditorConfig;
@@ -20,7 +21,7 @@ public class FTLStatsTracker {
 
     private static void initGUI(){
         javax.swing.SwingUtilities.invokeLater(() -> {
-            FlatLaf.setup(new FlatLightLaf());
+            FlatLaf.setup(new FlatDarkLaf());
             new TrackerController();
         });
     }

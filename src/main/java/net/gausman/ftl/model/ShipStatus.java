@@ -1,6 +1,5 @@
 package net.gausman.ftl.model;
 
-import net.blerf.ftl.parser.SavedGameParser;
 import net.gausman.ftl.controller.StatsManager;
 import net.gausman.ftl.model.run.FTLRunEvent;
 import net.gausman.ftl.util.GausmanUtil;

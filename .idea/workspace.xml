@@ -5,46 +5,100 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="0576553e-3a2b-4a46-bcd5-687c909a3c0a" name="Changes" comment="new 2025">
-      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/FTLStatsTrackerTest.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/GridLayoutExample.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/controller/TrackerController.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/model/RunUpdateResponse.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/model/ShipStatusModel.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/model/StatsModel.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/model/factory/EventFactory.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/model/record/Event.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/model/record/EventBox.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/model/record/Jump.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/model/record/Run.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/model/record/Sector.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/model/table/EventFilter.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/model/table/EventTableModel.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/service/EventService.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/service/RunService.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/util/NewConfigSetup.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/view/ChartsPanel.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/view/EventFilterPanel.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/view/EventTableModelTest.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/view/ScrapGainedChartPanel.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/view/ScrapSpentChartPanel.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/view/ToolbarPanel.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/view/TrackerView.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/view/shipstatus/ShipStatusPanel.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/view/shipstatus/ShipStatusPanelRow.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/view/table/EventTablePanel.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/view/table/GroupRowColorJTable.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/view/table/TableRenderer.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/event/AbstractBuildableTreeNode.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/event/AbstractFTLEventNode.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/event/Augment.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/event/AutoReward.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/event/Boarders.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/event/BuildContext.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/event/BuildableTreeNode.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/event/Choice.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/event/Crew.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/event/CrewMember.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/event/Damage.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/event/DeadCrew.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/event/Destroyed.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/event/DistressBeacon.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/event/Drone.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/event/Environment.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/event/Escape.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/event/FTLEvent.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/event/FTLEventList.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/event/FTLEventNode.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/event/FTLText.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/event/Fleet.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/event/Gotaway.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/event/Img.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/event/Item.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/event/ItemModify.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/event/ModifyPursuit.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/event/Quest.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/event/Remove.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/event/RemoveCrew.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/event/Repair.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/event/RevealMap.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/event/SecretSector.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/event/ShipEvent.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/event/Status.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/event/Store.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/event/Surrender.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/event/TextList.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/event/UnlockShip.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/event/Upgrade.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/event/Weapon.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/event/WeaponOverride.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/model/Crew.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/model/Item.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/model/ShipSystem.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/model/SimpleTableItem.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/model/record/CrewEvent.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/model/record/GeneralEvent.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/model/record/MasteryEvent.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/model/record/NameEvent.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/model/record/SkillEvent.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/model/record/StatEvent.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/model/record/SystemEvent.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/test/Crew2.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/test/CrewMatchTest.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/util/CrewMatcher.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/view/browser/EventBrowserListItem.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/view/browser/EventBrowserView.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/view/browser/EventNodeListModel.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/view/browser/EventNodeTableModel.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/view/browser/EventTreeBrowserView.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/view/browser/EventTreeCellRenderer.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/view/browser/EventTreeNodeData.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/view/shipstatus/CrewTableModel.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/view/shipstatus/ItemTableModel.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/view/shipstatus/SimpleTableModel.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/view/shipstatus/SystemTableModel.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dependency-reduced-pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/dependency-reduced-pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/module-info.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/asdf-module-info.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/parser/DatParser.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/parser/DatParser.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/parser/DataManager.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/parser/DataManager.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/parser/DefaultDataManager.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/parser/DefaultDataManager.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/parser/SavedGameParser.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/parser/SavedGameParser.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/ui/SavedGameSectorMapPanel.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/ui/SavedGameSectorMapPanel.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/Encounters.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/Encounters.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/FTLEvent.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/FTLEventList.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/SectorData.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/SectorData.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/ShipEvent.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/ShipEvents.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/ShipEvents.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/FTLStatsTracker.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/FTLStatsTracker.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/controller/TrackerController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/controller/TrackerController.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/model/Constants.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/model/Constants.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/model/ShipStatus.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/model/ShipStatus.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/util/ConfigSetup.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/util/ConfigSetup.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/model/ShipStatusModel.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/model/ShipStatusModel.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/model/record/Event.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/model/record/Event.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/model/record/EventBox.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/model/record/EventBox.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/model/record/Jump.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/model/record/Jump.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/model/table/EventTableModel.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/model/table/EventTableModel.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/service/EventService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/service/EventService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/service/RunService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/service/RunService.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/util/GausmanUtil.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/util/GausmanUtil.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/view/EventListItem.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/view/EventListItem.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/view/ToolbarPanel.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/view/ToolbarPanel.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/view/TrackerView.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/view/TrackerView.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/view/shipstatus/ShipStatusPanel.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/net/gausman/ftl/view/shipstatus/ShipStatusPanel.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -57,8 +111,8 @@
         <option value="module-info" />
         <option value="FxmlFile" />
         <option value="Record" />
-        <option value="Interface" />
         <option value="Enum" />
+        <option value="Interface" />
         <option value="Class" />
       </list>
     </option>
@@ -86,6 +140,7 @@
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
+    "Application.CrewMatchTest.executor": "Debug",
     "Application.FTLStatsTracker.executor": "Run",
     "Application.FullRowSelectionDemo.executor": "Run",
     "Application.GridBagExample.executor": "Run",
@@ -93,15 +148,17 @@
     "Application.Hello.executor": "Run",
     "Application.HelloApplication.executor": "Run",
     "Application.Main.executor": "Run",
-    "Application.Run.executor": "Run",
+    "Application.Run.executor": "Debug",
+    "Application.Run2.executor": "Run",
     "Application.RunTest.executor": "Run",
+    "Application.TreeExample.executor": "Run",
     "Maven.ftl-stats-tracker [deploy].executor": "Run",
     "Maven.ftl-stats-tracker [install].executor": "Run",
     "Maven.ftl-stats-tracker [package].executor": "Run",
     "RunOnceActivity.OpenProjectViewOnStart": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "git-widget-placeholder": "feature/refactor-jumps-into-sector",
+    "git-widget-placeholder": "main",
     "ignore.virus.scanning.warn.message": "true",
     "kotlin-language-version-configured": "true",
     "last_opened_file_path": "C:/Users/erikj/Coding/IdeaProjects/ftl-profile-editor",
@@ -126,6 +183,13 @@
         <option name="Make" enabled="true" />
       </method>
     </configuration>
+    <configuration name="Run2" type="Application" factoryName="Application">
+      <option name="MAIN_CLASS_NAME" value="net.gausman.ftl.FTLStatsTracker" />
+      <module name="ftl-stats-tracker" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
     <configuration name="RunTest" type="Application" factoryName="Application">
       <option name="MAIN_CLASS_NAME" value="net.gausman.ftl.FTLStatsTrackerTest" />
       <module name="ftl-stats-tracker" />
@@ -137,7 +201,15 @@
       <item itemvalue="Application.FTLStatsTracker" />
       <item itemvalue="Application.RunTest" />
       <item itemvalue="Application.Run" />
+      <item itemvalue="Application.Run2" />
     </list>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="jdk-22-openjdk-22-3183f394aec4-bad0321e" />
+      </set>
+    </attachedChunks>
   </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
@@ -181,6 +253,10 @@
           <properties class="java.lang.NullPointerException" package="java.lang" />
           <option name="timeStamp" value="18" />
         </breakpoint>
+        <breakpoint enabled="true" type="java-exception">
+          <properties class="java.lang.ArrayIndexOutOfBoundsException" package="java.lang" />
+          <option name="timeStamp" value="194" />
+        </breakpoint>
         <line-breakpoint enabled="true" type="java-line">
           <url>file://$PROJECT_DIR$/src/main/java/net/gausman/ftl/controller/StatsManager.java</url>
           <line>262</line>
@@ -218,25 +294,96 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" type="java-line">
           <url>file://$PROJECT_DIR$/src/main/java/net/gausman/ftl/model/ShipStatusModel.java</url>
-          <line>36</line>
-          <option name="timeStamp" value="167" />
+          <line>183</line>
+          <option name="timeStamp" value="181" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/net/gausman/ftl/model/ShipStatusModel.java</url>
+          <line>320</line>
+          <option name="timeStamp" value="187" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="java-line">
           <url>file://$PROJECT_DIR$/src/main/java/net/gausman/ftl/controller/TrackerController.java</url>
-          <line>108</line>
-          <option name="timeStamp" value="168" />
+          <line>311</line>
+          <option name="timeStamp" value="208" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/net/blerf/ftl/parser/DatParser.java</url>
+          <line>351</line>
+          <option name="timeStamp" value="209" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/net/gausman/ftl/view/browser/EventBrowserView.java</url>
+          <line>107</line>
+          <option name="timeStamp" value="219" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/net/gausman/ftl/view/browser/EventBrowserView.java</url>
+          <line>121</line>
+          <option name="timeStamp" value="221" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/net/gausman/ftl/view/browser/EventBrowserView.java</url>
+          <line>160</line>
+          <option name="timeStamp" value="223" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/net/gausman/ftl/view/browser/EventTreeBrowserView.java</url>
+          <line>299</line>
+          <option name="timeStamp" value="234" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/net/gausman/ftl/view/browser/EventTreeBrowserView.java</url>
+          <line>222</line>
+          <option name="timeStamp" value="235" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/event/ShipEvent.java</url>
+          <line>172</line>
+          <option name="timeStamp" value="244" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/event/Surrender.java</url>
+          <line>122</line>
+          <option name="timeStamp" value="245" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/event/Augment.java</url>
+          <line>27</line>
+          <option name="timeStamp" value="247" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/event/FTLText.java</url>
+          <line>65</line>
+          <option name="timeStamp" value="248" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/net/gausman/ftl/view/browser/EventTreeBrowserView.java</url>
+          <line>148</line>
+          <option name="timeStamp" value="250" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-field">
+          <url>file://$PROJECT_DIR$/src/main/java/net/blerf/ftl/xml/event/Surrender.java</url>
+          <line>24</line>
+          <properties field="choices" class="net.blerf.ftl.xml.event.Surrender" />
+          <option name="timeStamp" value="238" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
     <pin-to-top-manager>
       <pinned-members>
         <PinnedItemInfo parentTag="net.gausman.ftl.model.run.FTLJump" memberName="currentBeaconId" />
+        <PinnedItemInfo parentTag="net.blerf.ftl.xml.Encounters" memberName="textLists" />
+        <PinnedItemInfo parentTag="net.blerf.ftl.xml.FTLEventList" memberName="eventList" />
         <PinnedItemInfo parentTag="net.gausman.ftl.model.run.FTLRun" memberName="playerShipBlueprintId" />
       </pinned-members>
     </pin-to-top-manager>
     <watches-manager>
       <configuration name="Application">
-        <watch expression="systemsMap" />
+        <watch expression="root.userObject" />
+        <watch expression="((TreeMap.Entry)currentRun.sectors.entrySet().toArray()[0]).getValue()" custom="java.util.TreeMap.Entry" />
+        <watch expression="((java.util.ArrayList)((Jump)((TreeMap.Entry)((TreeMap)((Sector)((TreeMap.Entry)((TreeMap)((Run)((RunService)((TrackerController)this).runService).currentRun).sectors).entrySet().toArray()[0]).getValue()).jumps).entrySet().toArray()[1]).getValue()).encounterStates).get(3)" custom="net.gausman.ftl.model.record.Run,java.util.TreeMap,net.gausman.ftl.model.record.Jump,net.gausman.ftl.controller.TrackerController,net.gausman.ftl.model.record.Sector,java.util.TreeMap.Entry,net.gausman.ftl.service.RunService,java.util.ArrayList" />
+        <watch expression="((EncounterState)((ArrayList)((Jump)((TreeMap.Entry)((TreeMap)((Sector)((TreeMap.Entry)((TreeMap)((Run)((RunService)((TrackerController)this).runService).currentRun).sectors).entrySet().toArray()[0]).getValue()).jumps).entrySet().toArray()[3]).getValue()).encounterStates).get(0)).text" custom="net.gausman.ftl.model.record.Run,java.util.TreeMap,net.gausman.ftl.model.record.Jump,net.gausman.ftl.controller.TrackerController,net.gausman.ftl.model.record.Sector,java.util.TreeMap.Entry,net.blerf.ftl.parser.SavedGameParser.EncounterState,net.gausman.ftl.service.RunService,java.util.ArrayList" />
       </configuration>
     </watches-manager>
   </component>

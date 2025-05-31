@@ -11,7 +11,7 @@ import java.util.TreeMap;
 
 public class EventTableModel extends AbstractTableModel {
     private NavigableMap<Integer, Event> events = new TreeMap<>();
-    private final String[] columnNames = {"Time", "Sec", "BId", "Jump", "Expl", "Type", "Category", "Object", "Amt", "Cost",  "Event"};
+    private final String[] columnNames = {"Time", "Sec", "BId", "Jump", "Expl", "Type", "Category", "Object", "Amt", "Scrap",  "Value"};
     private Instant startTime;
 
 
@@ -34,6 +34,12 @@ public class EventTableModel extends AbstractTableModel {
         return columnNames.length;
     }
 
+    public Event getRowEvent(int rowIndex){
+        int displayIndex = events.size() - 1 - rowIndex;
+
+        return events.get(displayIndex);
+    }
+
     @Override
     public Object getValueAt(int rowIndex, int columnIndex) {
         int displayIndex = events.size() - 1 - rowIndex;
@@ -50,10 +56,10 @@ public class EventTableModel extends AbstractTableModel {
             case 4 -> event.getJump().getTotalBeaconsExplored();
             case 5 -> event.getEventType();
             case 6 -> event.getItemType();
-            case 7 -> GausmanUtil.getTextToId(event.getItemType(), event.getText());
+            case 7 -> event.getDisplayText();
             case 8 -> event.getAmount();
-            case 9 -> event.getCost();
-            case 10 -> event.getId();
+            case 9 -> event.getScrap();
+            case 10 -> event.getScrapChange();
 
             default -> null;
         };
