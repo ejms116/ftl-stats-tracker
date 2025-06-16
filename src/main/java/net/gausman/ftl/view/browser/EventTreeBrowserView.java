@@ -1,11 +1,16 @@
 package net.gausman.ftl.view.browser;
 
 import net.blerf.ftl.parser.DataManager;
-import net.blerf.ftl.xml.event.*;
 import net.blerf.ftl.xml.event.Choice;
+import net.blerf.ftl.xml.event.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.TreeNode;
+import javax.swing.tree.TreePath;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -13,12 +18,14 @@ import java.util.List;
 import java.util.Map;
 
 public class EventTreeBrowserView extends JFrame {
+    private static final Logger log = LoggerFactory.getLogger(EventTreeBrowserView.class);
 
     private DataManager dm = DataManager.get();
     private Map<String, FTLEventNode> allEvents;
     private Map<String, TextList> textListMap;
     private Map<String, ShipEvent> shipEventMap;
 
+    private EventNodeTableModel model;
     private BuildContext context;
     private JTree tree;
 
@@ -26,6 +33,7 @@ public class EventTreeBrowserView extends JFrame {
     private JScrollPane treeScrollPane;
 
     private List<EventBrowserListItem> originalItems;
+
 
     public EventTreeBrowserView(Map<String, FTLEventNode> allEvents, Map<String, TextList> textListMap, Map<String, ShipEvent> shipEventMap) {
         this.allEvents = allEvents;
@@ -64,7 +72,7 @@ public class EventTreeBrowserView extends JFrame {
         add(topPanel, BorderLayout.NORTH);
 
         // === Event table setup ===
-        EventNodeTableModel model = new EventNodeTableModel();
+        model = new EventNodeTableModel();
         List<FTLEventNode> nodeList = new ArrayList<>(allEvents.values());
         nodeList.sort(Comparator.comparing(FTLEventNode::getId, String.CASE_INSENSITIVE_ORDER));
 
@@ -115,8 +123,18 @@ public class EventTreeBrowserView extends JFrame {
 
         // === CHECKBOX LISTENER TO TOGGLE TEXT/ID DISPLAY ===
         showTextCheckbox.addActionListener(e -> {
+            // Store current state of the tree
+            TreePath rootPath = new TreePath(tree.getModel().getRoot());
+            List<TreePath> expandedPaths = new ArrayList<>();
+            saveExpandedPaths(tree, rootPath, expandedPaths);
+
             context.setShowText(showTextCheckbox.isSelected());
-            model.fireTableDataChanged();
+            ((DefaultTreeModel) tree.getModel()).nodeStructureChanged((TreeNode) tree.getModel().getRoot());
+
+            // restore state of the tree
+            for (TreePath path : expandedPaths) {
+                tree.expandPath(path);
+            }
         });
 
 
@@ -179,6 +197,31 @@ public class EventTreeBrowserView extends JFrame {
         });
 
         setVisible(true);
+    }
+
+    public void selectEventById(String eventId){
+        for (int i = 0; i < model.getRowCount(); i++){
+            EventBrowserListItem item = model.getRowItem(i);
+            if (item.getId().equals(eventId)){
+                eventTable.setRowSelectionInterval(i, i);
+                eventTable.scrollRectToVisible(eventTable.getCellRect(i, 0, true));
+                return;
+            }
+        }
+        log.info("Event not found: " + eventId);
+    }
+
+    private void saveExpandedPaths(JTree tree, TreePath parent, List<TreePath> paths) {
+        if (tree.isExpanded(parent)) {
+            paths.add(parent);
+            Object node = parent.getLastPathComponent();
+            int count = tree.getModel().getChildCount(node);
+            for (int i = 0; i < count; i++) {
+                Object child = tree.getModel().getChild(node, i);
+                TreePath path = parent.pathByAddingChild(child);
+                saveExpandedPaths(tree, path, paths);
+            }
+        }
     }
 
     private DefaultMutableTreeNode buildEventTreeRecoursive(FTLEventNode node){
@@ -299,7 +342,7 @@ public class EventTreeBrowserView extends JFrame {
 
         tree = new JTree(root);
 
-        tree.setCellRenderer(new EventTreeCellRenderer());
+        tree.setCellRenderer(new EventTreeCellRenderer(dm, context));
         JScrollPane newScrollPane = new JScrollPane(tree);
 
         // Remove old scroll pane if it exists

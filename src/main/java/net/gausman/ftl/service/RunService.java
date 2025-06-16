@@ -1,18 +1,22 @@
 package net.gausman.ftl.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import net.blerf.ftl.parser.SavedGameParser;
 import net.gausman.ftl.model.RunUpdateResponse;
 import net.gausman.ftl.model.ShipStatusModel;
 import net.gausman.ftl.model.record.*;
+import net.gausman.ftl.model.run.FTLRun;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.*;
 
 public class RunService {
     private static final Logger log = LoggerFactory.getLogger(RunService.class);
-
+    private static final String currentRunFilename = "current_run.json";
     private EventService eventService = new EventService();
 
     private Run currentRun = null;
@@ -23,6 +27,11 @@ public class RunService {
     private SavedGameParser.SavedGameState lastGameState = null;
 
     ObjectMapper mapper = new ObjectMapper();
+
+    public RunService(){
+        mapper.registerModule(new JavaTimeModule());
+//        readRunFromJSON(new File(currentRunFilename));
+    }
 
     public RunUpdateResponse update(SavedGameParser.SavedGameState currentGameState){
         boolean newRun = false;
@@ -92,6 +101,8 @@ public class RunService {
         // Todo possible merge events
 
         // save to json file
+        saveRunToJson();
+
 
         lastGameState = currentGameState;
 
@@ -106,6 +117,26 @@ public class RunService {
 
         return new RunUpdateResponse(newRun);
 
+    }
+
+    public void saveRunToJson(){
+        try {
+            mapper.writeValue(new File(currentRunFilename), currentRun);
+        } catch (IOException e){
+            log.error("Error writing json file");
+        }
+    }
+
+    private Run readRunFromJSON(File file){
+        if (!file.exists()){
+            return null;
+        }
+        try {
+            return mapper.readValue(new File(file.getAbsolutePath()), Run.class);
+        } catch (IOException e){
+            log.error("No file to continue found");
+        }
+        return null;
     }
 
 

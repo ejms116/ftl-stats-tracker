@@ -168,7 +168,7 @@ public class Destroyed extends AbstractBuildableTreeNode {
         StringBuilder sb = new StringBuilder("<html><b>")
                 .append("Destroyed")
                 .append("</b> ")
-                .append(text != null ? dataManager.getTextForId(text.getId()) : "")
+                .append(text != null ? context.getTextForId(dataManager, text.getId()) : "")
                 .append("</html>");
         return sb.toString();
     }
@@ -183,9 +183,7 @@ public class Destroyed extends AbstractBuildableTreeNode {
                 DefaultMutableTreeNode treeNode = eventNode.build(dataManager, context);
                 node.add(treeNode);
             }
-
         }
-
         return node;
     }
 }

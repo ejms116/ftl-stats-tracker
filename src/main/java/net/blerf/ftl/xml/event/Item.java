@@ -40,7 +40,8 @@ public class Item extends AbstractBuildableTreeNode {
         this.max = max;
     }
 
-    public String getDisplayText(DataManager dataManager){
+    @Override
+    public String getDisplayText(DataManager dataManager, BuildContext context){
         return String.format("Item Modify: %s, min: %s, max: %s", type, min, max);
     }
 }

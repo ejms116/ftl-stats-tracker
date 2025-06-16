@@ -1,5 +1,6 @@
 package net.gausman.ftl.model.record;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.deser.BasicDeserializerFactory;
 import net.blerf.ftl.constants.Difficulty;
 import net.blerf.ftl.parser.SavedGameParser;
@@ -19,6 +20,7 @@ public class Run {
     private int sectorTreeSeed = 42;
     private Constants.Result result = Constants.Result.ONGOING;
     private final NavigableMap<Integer, Sector> sectors = new TreeMap<>();
+    @JsonIgnore
     private final NavigableMap<Integer, Event> events = new TreeMap<>();
 
     /*

@@ -113,7 +113,7 @@ public class Surrender extends AbstractBuildableTreeNode {
         StringBuilder sb = new StringBuilder("<html><b>")
                 .append("Surrender")
                 .append("</b> ")
-                .append(text != null ? dataManager.getTextForId(text.getId()) : "")
+                .append(text != null ? context.getTextForId(dataManager, text.getId()) : "")
                 .append("</html>");
         return sb.toString();
     }

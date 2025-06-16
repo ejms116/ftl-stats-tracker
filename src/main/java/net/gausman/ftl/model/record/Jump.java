@@ -1,5 +1,6 @@
 package net.gausman.ftl.model.record;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import net.blerf.ftl.parser.SavedGameParser;
 import net.gausman.ftl.model.factory.EventFactory;
 
@@ -15,8 +16,9 @@ public class Jump {
     private final int totalBeaconsExplored;
     private final int currentBeaconId;
     private final NavigableMap<Integer,Event> events = new TreeMap<>();
-    private Sector sector;
     private List<SavedGameParser.EncounterState> encounterStates = new ArrayList<>();
+    @JsonBackReference
+    private Sector sector;
 
     public Jump(int totalBeaconsExplored, int currentBeaconId, Sector sector) {
         this.totalBeaconsExplored = totalBeaconsExplored;

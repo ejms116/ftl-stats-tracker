@@ -14,6 +14,7 @@ public class ToolbarPanel extends JPanel {
     private final JButton testButton = new JButton("Test");
     private final JButton eventBrowserButton = new JButton("Event Browser");
     private final JButton eventTreeBrowserButton = new JButton("Event Tree Browser");
+    private final JButton openEventInBrowserButton = new JButton("Open in Event Browser");
 
     public ToolbarPanel() {
         trackingToggleButton.setBackground(Color.RED);
@@ -21,6 +22,7 @@ public class ToolbarPanel extends JPanel {
         add(testButton);
         add(eventBrowserButton);
         add(eventTreeBrowserButton);
+        add(openEventInBrowserButton);
     }
 
     public void setEventBrowserButtonListener(ActionListener listener){
@@ -37,6 +39,10 @@ public class ToolbarPanel extends JPanel {
 
     public void setTrackingToggleListener(ActionListener listener){
         trackingToggleButton.addActionListener(listener);
+    }
+
+    public void setOpenEventInBrowserButton(ActionListener listener){
+        openEventInBrowserButton.addActionListener(listener);
     }
 
     public void setTrackingToggleState(boolean isOn){

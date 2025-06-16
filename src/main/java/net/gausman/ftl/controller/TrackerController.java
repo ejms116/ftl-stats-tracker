@@ -95,6 +95,7 @@ public class TrackerController {
         setupListeners();
         setupFileWatcher();
 
+
     }
 
     private void setupListeners(){
@@ -122,12 +123,24 @@ public class TrackerController {
         });
 
         view.getToolbarPanel().setEventTreeBrowserButtonListener(e -> {
-            if (eventTreeBrowserView == null || !eventTreeBrowserView.isDisplayable()){
-                eventTreeBrowserView = new EventTreeBrowserView(dm.getEventNodeIdMap(), dm.getDlcTextListIdMap(), dm.getShipEvents());
-                eventTreeBrowserView.setVisible(true);
-            } else {
-                eventTreeBrowserView.toFront();
-                eventTreeBrowserView.requestFocus();
+            showEventTreeBrowserView();
+        });
+        
+        view.getToolbarPanel().setOpenEventInBrowserButton(e -> {
+            showEventTreeBrowserView();
+            int selected = eventTablePanel.getTable().getSelectedRow();
+            if (selected != -1){
+                Event event = eventTableModel.getRowEvent(selected);
+                if (event != null){
+                    List<SavedGameParser.EncounterState> encounterStates = event.getJump().getEncounterStates();
+                    if (encounterStates != null && !encounterStates.isEmpty()){
+                        String encounterText = encounterStates.getFirst().getText();
+                        eventTreeBrowserView.selectEventById(GausmanUtil.extractId(encounterText));
+                        eventTreeBrowserView.toFront();
+                        eventTreeBrowserView.requestFocus();
+                    }
+
+                }
             }
         });
 
@@ -158,6 +171,16 @@ public class TrackerController {
             }
         });
 
+    }
+
+    private void showEventTreeBrowserView() {
+        if (eventTreeBrowserView == null || !eventTreeBrowserView.isDisplayable()){
+            eventTreeBrowserView = new EventTreeBrowserView(dm.getEventNodeIdMap(), dm.getDlcTextListIdMap(), dm.getShipEvents());
+            eventTreeBrowserView.setVisible(true);
+        } else {
+            eventTreeBrowserView.toFront();
+            eventTreeBrowserView.requestFocus();
+        }
     }
 
     private void setupFileWatcher(){
@@ -309,6 +332,7 @@ public class TrackerController {
 
         }
 
+        runService.saveRunToJson();
         log.info("Testing done");
 
 //        eventTableModel.setEvents(runService.getEventMapFlat());

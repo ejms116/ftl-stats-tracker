@@ -23,7 +23,7 @@ public class AbstractBuildableTreeNode implements BuildableTreeNode {
 
     @Override
     public DefaultMutableTreeNode build(DataManager dataManager, BuildContext context) {
-        DefaultMutableTreeNode node = new DefaultMutableTreeNode(getDisplayText(dataManager, context));
+        DefaultMutableTreeNode node = new DefaultMutableTreeNode(this);
 
         for (Field field : this.getClass().getDeclaredFields()) {
             field.setAccessible(true);

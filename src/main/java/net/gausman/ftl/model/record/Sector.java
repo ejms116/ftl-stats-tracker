@@ -1,5 +1,6 @@
 package net.gausman.ftl.model.record;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import net.blerf.ftl.parser.SavedGameParser;
 import net.gausman.ftl.model.run.FTLJump;
 
@@ -16,6 +17,7 @@ public class Sector {
     private Jump lastJump = null;
     private List<SavedGameParser.BeaconState> beaconList = new ArrayList<>();
     private final NavigableMap<Integer,Jump> jumps = new TreeMap<>();
+    @JsonBackReference
     private Run run;
 
     public Sector(SavedGameParser.SavedGameState gameState, Run run){

@@ -1,5 +1,6 @@
 package net.gausman.ftl.model.record;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import net.blerf.ftl.parser.SavedGameParser;
 import net.gausman.ftl.model.Constants;
 import net.gausman.ftl.util.GausmanUtil;
@@ -14,9 +15,8 @@ public class Event {
     private int amount;
     private int scrap;
     private String text;
+    @JsonBackReference
     private Jump jump;
-
-
 
     public Event(){
         ts = Instant.now();

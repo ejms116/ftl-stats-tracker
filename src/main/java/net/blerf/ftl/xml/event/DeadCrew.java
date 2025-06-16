@@ -183,9 +183,7 @@ public class DeadCrew extends AbstractBuildableTreeNode {
                 DefaultMutableTreeNode treeNode = eventNode.build(dataManager, context);
                 node.add(treeNode);
             }
-
         }
-
         return node;
     }
 
