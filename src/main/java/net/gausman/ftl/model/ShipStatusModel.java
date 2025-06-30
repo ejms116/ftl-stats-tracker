@@ -2,8 +2,7 @@ package net.gausman.ftl.model;
 
 import net.blerf.ftl.parser.SavedGameParser;
 import net.blerf.ftl.parser.SavedGameParser.SystemType;
-import net.gausman.ftl.model.record.*;
-import net.gausman.ftl.util.CrewMatcher;
+import net.gausman.ftl.model.change.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,6 +24,7 @@ public class ShipStatusModel {
 
     private final List<Item> itemList;
     private final List<Crew> crewList;
+    private final List<Crew> deadCrewList;
 
     // New ShipStatus
     public ShipStatusModel(){
@@ -54,6 +54,7 @@ public class ShipStatusModel {
 
         itemList = new ArrayList<>();
         crewList = new ArrayList<>();
+        deadCrewList = new ArrayList<>();
 
     }
 
@@ -69,6 +70,7 @@ public class ShipStatusModel {
 
         itemList = new ArrayList<>(status.itemList.stream().map(Item::new).toList());
         crewList = new ArrayList<>(status.crewList.stream().map(Crew::new).toList());
+        deadCrewList = new ArrayList<>(status.deadCrewList.stream().map(Crew::new).toList());
 
     }
 
@@ -173,198 +175,121 @@ public class ShipStatusModel {
                 CrewEvent ce = (CrewEvent) event;
                 switch (event.getEventType()){
                     case START, BUY, REWARD -> {
+                        if (!(event instanceof NewCrewEvent nce)){
+                            log.info("START, BUY, REWARD Event without Crew");
+                            return;
+                        }
                         if (apply){
-                            crewList.add(new Crew(ce.getCrew()));
+                            crewList.add(new Crew(nce.getCrew()));
                         } else {
-                            crewList.remove(ce.getCrew());
+                            crewList.remove(nce.getCrew());
                         }
                     }
+
                     case DISCARD -> {
                         if (apply){
-                            Crew c = findCrew(crewList, ce.getCrew(), Constants.CrewAliveOrDead.ALIVE);
-                            if (c != null){
-                                c.setState(Constants.CrewAliveOrDead.DEAD);
-                            } else {
-                                log.info("Can't find crew to DISCARD.");
-                            }
+                            Optional<Crew> removedCrew = removeCrewIfPresent(ce.getCrewPosition(), crewList);
+                            removedCrew.ifPresentOrElse(
+                                    crew -> {
+                                        crew.setState(Constants.CrewAliveOrDead.DEAD);
+                                        deadCrewList.add(crew);
+                                    },
+                                    () -> log.info("Can't find crew to DISCARD.")
+                            );
 
                         } else {
-                            Crew c = findCrew(crewList, ce.getCrew(), Constants.CrewAliveOrDead.DEAD);
-                            if (c != null){
-                                c.setState(Constants.CrewAliveOrDead.ALIVE);
-                            } else {
-                                log.info("Can't find DISCARDED Crew to revert.");
-                            }
+                            Optional<Crew> removedDeadCrew = removeCrewIfPresent(deadCrewList.size() - 1, deadCrewList);
+                            removedDeadCrew.ifPresentOrElse(
+                                    crew -> {
+                                        crew.setState(Constants.CrewAliveOrDead.ALIVE);
+                                        crewList.add(ce.getCrewPosition(), crew);
+                                    },
+                                    () -> log.info("Can't find DISCARDED Crew to revert.")
+                            );
+
                         }
                     }
 
                     case NAME -> {
-                        // Find crew with the same values AND the old name and change the name to the new one
-                        List<String> fieldsToCompare = new ArrayList<>();
-                        Map<String, Object> fieldOverrides = new HashMap<>();
-                        initFieldToCompareList(fieldsToCompare);
-                        fieldsToCompare.remove("name");
-
-                        NameEvent ne = (NameEvent) event;
-
+                        if (!(event instanceof NameEvent nameEvent)){
+                            log.info("NAME Event issue");
+                            return;
+                        }
+                        Crew crewToChange = crewList.get(nameEvent.getCrewPosition());
                         if (apply){
-                            fieldOverrides.put("name", ne.getOldName());
+                            crewToChange.setName(nameEvent.getNewName());
                         } else {
-                            fieldOverrides.put("name", ne.getNewName());
+                            crewToChange.setName(nameEvent.getOldName());
                         }
-
-                        Crew match = CrewMatcher.findMatchingCrew(
-                                crewList,
-                                ne.getCrew(),
-                                fieldsToCompare,
-                                fieldOverrides
-                        );
-
-                        if (match != null){
-                            if (apply){
-                                match.setName(ne.getNewName());
-                            } else {
-                                match.setName(ne.getOldName());
-                            }
-
-                        } else {
-                            String errorRename = String.format("Crew rename failed. Old: %s, New: %s", ne.getOldName(), ne.getNewName());
-                            log.error(errorRename);
-                        }
-
-
                     }
 
                     case STAT -> {
-                        List<String> fieldsToCompare = new ArrayList<>();
-                        Map<String, Object> fieldOverrides = new HashMap<>();
-                        initFieldToCompareList(fieldsToCompare);
+                        if (!(event instanceof StatEvent statEvent)){
+                            log.info("STAT Event issue");
+                            return;
+                        }
 
-                        StatEvent ne = (StatEvent) event;
+                        String statString = convertStatToAttributename(statEvent.getStat());
+                        Crew crewToChange = crewList.get(statEvent.getCrewPosition());
+                        int attributeValueBefore = (int) getValueInCrewByAttributename(crewToChange, statString);
 
-                        String statString = convertStatToAttributename(ne.getStat());
-                        fieldsToCompare.remove(statString);
-
-                        int attributeValueBefore = (int) getValueInCrewByAttributename(ne.getCrew(), statString);
-
-                        // the Crew inside the event has the event already applied to
-                        // so when going forward (apply = true) we need to subtract the amount in the event first
-                        // when going backwards the value in the Crew should be right
                         if (apply){
-                            fieldOverrides.put(statString, attributeValueBefore);
+                            setValueInCrewByAttributename(crewToChange, statString, attributeValueBefore + statEvent.getAmount());
                         } else {
-                            fieldOverrides.put(statString, attributeValueBefore + ne.getAmount());
+                            setValueInCrewByAttributename(crewToChange, statString, attributeValueBefore);
                         }
 
-                        Crew match = CrewMatcher.findMatchingCrew(
-                                crewList,
-                                ne.getCrew(),
-                                fieldsToCompare,
-                                fieldOverrides
-                        );
-
-                        if (match != null){
-                            if (apply){
-                                setValueInCrewByAttributename(match, statString, attributeValueBefore + ne.getAmount());
-                            } else {
-                                setValueInCrewByAttributename(match, statString, attributeValueBefore);
-                            }
-
-                        } else {
-                            String errorStatChange = String.format("Stat change failed. %s", ne.getStat());
-                            log.error(errorStatChange);
-                        }
                     }
 
                     case SKILL -> {
-                        List<String> fieldsToCompare = new ArrayList<>();
-                        Map<String, Object> fieldOverrides = new HashMap<>();
-                        initFieldToCompareList(fieldsToCompare);
-
-                        SkillEvent se = (SkillEvent) event;
-
-                        String skillString = convertSkillToAttributename(se.getSkill());
-                        fieldsToCompare.remove(skillString);
-
-                        int attributeValueBefore = (int) getValueInCrewByAttributename(se.getCrew(), skillString);
-
-                        // the Crew inside the event has the event already applied to
-                        // so when going forward (apply = true) we need to subtract the amount in the event first
-                        // when going backwards the value in the Crew should be right
-                        if (apply){
-                            fieldOverrides.put(skillString, attributeValueBefore);
-                        } else {
-                            fieldOverrides.put(skillString, attributeValueBefore + se.getAmount());
+                        if (!(event instanceof SkillEvent skillEvent)){
+                            log.info("SKILL Event issue");
+                            return;
                         }
 
-                        Crew match = CrewMatcher.findMatchingCrew(
-                                crewList,
-                                se.getCrew(),
-                                fieldsToCompare,
-                                fieldOverrides
-                        );
+                        String skillString = convertSkillToAttributename(skillEvent.getSkill());
+                        Crew crewToChange = crewList.get(skillEvent.getCrewPosition());
+                        int attributeValueBefore = (int) getValueInCrewByAttributename(crewToChange, skillString);
 
-                        if (match != null){
-                            if (apply){
-                                setValueInCrewByAttributename(match, skillString, attributeValueBefore + se.getAmount());
-                            } else {
-                                setValueInCrewByAttributename(match, skillString, attributeValueBefore);
-                            }
-
+                        if (apply){
+                            setValueInCrewByAttributename(crewToChange, skillString, attributeValueBefore + skillEvent.getAmount());
                         } else {
-                            String errorStatChange = String.format("Skill change failed. %s", se.getSkill());
-                            log.error(errorStatChange);
+                            setValueInCrewByAttributename(crewToChange, skillString, attributeValueBefore);
                         }
                     }
 
                     case MASTERY -> {
-                        List<String> fieldsToCompare = new ArrayList<>();
-                        Map<String, Object> fieldOverrides = new HashMap<>();
-                        initFieldToCompareList(fieldsToCompare);
-
-                        MasteryEvent se = (MasteryEvent) event;
-
-                        String masteryString = convertMasteryToAttributename(se.getMastery(), se.getLevel());
-                        fieldsToCompare.remove(masteryString);
-
-                        boolean attributeValueBefore = (boolean) getValueInCrewByAttributename(se.getCrew(), masteryString);
-
-                        // the Crew inside the event has the event already applied to
-                        // so when going forward (apply = true) we need to subtract the amount in the event first
-                        // when going backwards the value in the Crew should be right
-                        if (apply){
-                            fieldOverrides.put(masteryString, attributeValueBefore);
-                        } else {
-                            fieldOverrides.put(masteryString, !attributeValueBefore);
+                        if (!(event instanceof MasteryEvent masteryEvent)){
+                            log.info("MASTERY Event issue");
+                            return;
                         }
 
-                        Crew match = CrewMatcher.findMatchingCrew(
-                                crewList,
-                                se.getCrew(),
-                                fieldsToCompare,
-                                fieldOverrides
-                        );
+                        String masteryString = convertMasteryToAttributename(masteryEvent.getMastery(), masteryEvent.getLevel());
+                        Crew crewToChange = crewList.get(masteryEvent.getCrewPosition());
+                        int attributeValueBefore = (int) getValueInCrewByAttributename(crewToChange, masteryString);
 
-                        if (match != null){
-                            if (apply){
-                                setValueInCrewByAttributename(match, masteryString, se.getNewValue());
-                            } else {
-                                setValueInCrewByAttributename(match, masteryString, !se.getNewValue());
-                            }
-
+                        if (apply){
+                            setValueInCrewByAttributename(crewToChange, masteryString, masteryEvent.getNewValue());
                         } else {
-                            String errorStatChange = String.format("Skill change failed. %s", se.getMastery());
-                            log.error(errorStatChange);
+                            setValueInCrewByAttributename(crewToChange, masteryString, !masteryEvent.getNewValue());
                         }
                     }
 
                     default -> log.info("Crew Event with Type not implemented: " + event.getEventType());
+
                 }
 
             }
 
             default -> log.info("Apply not implemented for ItemType: "+ event.getItemType());
         }
+    }
+
+    public Optional<Crew> removeCrewIfPresent(int index, List<Crew> list) {
+        if (index < 0 || index >= list.size()) {
+            return Optional.empty();
+        }
+        return Optional.of(list.remove(index));
     }
 
     private Object getValueInCrewByAttributename(Crew crew, String attributename){
@@ -385,15 +310,6 @@ public class ShipStatusModel {
         } catch (NoSuchFieldException | IllegalAccessException e) {
             throw new RuntimeException("Could not set field '" + attributename + "'", e);
         }
-    }
-
-    private Crew findCrew(List<Crew> list, Crew toFind, Constants.CrewAliveOrDead cs){
-        for (int i = 0; i < list.size(); i++){
-            if (list.get(i).equalsWithoutOrigin(toFind, cs)){
-                return list.get(i);
-            }
-        }
-        return null;
     }
 
     private Constants.ItemState convertEventTypeToItemState(Constants.EventType eventType){
@@ -459,37 +375,7 @@ public class ShipStatusModel {
         return crewList;
     }
 
-
-
-    private void initFieldToCompareList(List<String> fieldsToCompare){
-        fieldsToCompare.add("crewType");
-//        fieldsToCompare.add("origin");
-        fieldsToCompare.add("name");
-        fieldsToCompare.add("state");
-        fieldsToCompare.add("male");
-        fieldsToCompare.add("spriteTintIndeces");
-        fieldsToCompare.add("repairs");
-        fieldsToCompare.add("combatKills");
-        fieldsToCompare.add("pilotedEvasions");
-        fieldsToCompare.add("jumpsSurvived");
-        fieldsToCompare.add("skillMasteriesEarned");
-        fieldsToCompare.add("pilotSkill");
-        fieldsToCompare.add("engineSkill");
-        fieldsToCompare.add("shieldSkill");
-        fieldsToCompare.add("weaponSkill");
-        fieldsToCompare.add("repairSkill");
-        fieldsToCompare.add("combatSkill");
-        fieldsToCompare.add("pilotMasteryOne");
-        fieldsToCompare.add("pilotMasteryTwo");
-        fieldsToCompare.add("engineMasteryOne");
-        fieldsToCompare.add("engineMasteryTwo");
-        fieldsToCompare.add("shieldMasteryOne");
-        fieldsToCompare.add("shieldMasteryTwo");
-        fieldsToCompare.add("weaponMasteryOne");
-        fieldsToCompare.add("weaponMasteryTwo");
-        fieldsToCompare.add("repairMasteryOne");
-        fieldsToCompare.add("repairMasteryTwo");
-        fieldsToCompare.add("combatMasteryOne");
-        fieldsToCompare.add("combatMasteryTwo");
+    public List<Crew> getDeadCrewList() {
+        return deadCrewList;
     }
 }

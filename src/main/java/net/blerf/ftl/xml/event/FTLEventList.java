@@ -43,6 +43,8 @@ public class FTLEventList extends AbstractFTLEventNode {
 				.append(id != null ? id : "")
 				.append("</b> ")
 				.append("The game normally chooses one randomly")
+				.append(" File: ")
+				.append(getSourceFile())
 				.append("</html>");
 		return sb.toString();
 	}

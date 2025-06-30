@@ -5,8 +5,8 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import net.blerf.ftl.parser.SavedGameParser;
 import net.gausman.ftl.model.RunUpdateResponse;
 import net.gausman.ftl.model.ShipStatusModel;
+import net.gausman.ftl.model.change.Event;
 import net.gausman.ftl.model.record.*;
-import net.gausman.ftl.model.run.FTLRun;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

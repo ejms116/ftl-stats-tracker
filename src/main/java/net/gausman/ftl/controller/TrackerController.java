@@ -5,7 +5,7 @@ import net.blerf.ftl.parser.MysteryBytes;
 import net.blerf.ftl.parser.SavedGameParser;
 import net.gausman.ftl.model.RunUpdateResponse;
 import net.gausman.ftl.model.ShipStatusModel;
-import net.gausman.ftl.model.record.Event;
+import net.gausman.ftl.model.change.Event;
 import net.gausman.ftl.model.table.EventFilter;
 import net.gausman.ftl.model.table.EventTableModel;
 import net.gausman.ftl.service.RunService;
@@ -145,12 +145,12 @@ public class TrackerController {
         });
 
         for (EventFilter filter : EventFilter.values()){
-            eventFilterMap.put(filter, true);
+            eventFilterMap.put(filter, false);
         }
 
-        for (Map.Entry<EventFilter, JCheckBox> entry : view.getEventFilterPanel().getFilterJCheckBoxMap().entrySet()){
+        for (Map.Entry<EventFilter, JCheckBoxMenuItem> entry : view.getToolbarPanel().getFilterJCheckBoxMap().entrySet()){
             EventFilter filter = entry.getKey();
-            JCheckBox box = entry.getValue();
+            JCheckBoxMenuItem box = entry.getValue();
             box.addActionListener(e -> {
                 eventFilterMap.put(filter, box.isSelected());
                 eventTablePanel.updateRowFilter(eventFilterMap);
@@ -167,6 +167,7 @@ public class TrackerController {
                     int eventId = eventTableModel.getRowEvent(selected).getId();
                     ShipStatusModel model = runService.getStatusAtId(eventId);
                     view.getShipStatusPanel().update(model);
+                    view.getEventTablePanel().updateJumpInfoPanel(eventTableModel.getRowEvent(selected).getJump());
                 }
             }
         });

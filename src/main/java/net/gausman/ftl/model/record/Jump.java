@@ -2,6 +2,7 @@ package net.gausman.ftl.model.record;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import net.blerf.ftl.parser.SavedGameParser;
+import net.gausman.ftl.model.change.Event;
 import net.gausman.ftl.model.factory.EventFactory;
 
 import java.util.ArrayList;
@@ -15,7 +16,7 @@ public class Jump {
     private final int id;
     private final int totalBeaconsExplored;
     private final int currentBeaconId;
-    private final NavigableMap<Integer,Event> events = new TreeMap<>();
+    private final NavigableMap<Integer, Event> events = new TreeMap<>();
     private List<SavedGameParser.EncounterState> encounterStates = new ArrayList<>();
     @JsonBackReference
     private Sector sector;

@@ -1,7 +1,8 @@
-package net.gausman.ftl.model.record;
+package net.gausman.ftl.model.change;
 
 import net.blerf.ftl.parser.SavedGameParser;
 import net.gausman.ftl.model.Constants;
+import net.gausman.ftl.model.record.Jump;
 
 public class MasteryEvent extends CrewEvent {
     private final Constants.Skill mastery;
@@ -13,11 +14,6 @@ public class MasteryEvent extends CrewEvent {
         this.mastery = mastery;
         this.level = level;
         this.newValue = newValue;
-    }
-
-    @Override
-    public String getDisplayText(){
-        return String.format("%s - Mastery %s L%s: %s", getCrew().getName(), mastery.toString(), level, newValue);
     }
 
     public Constants.Skill getMastery() {

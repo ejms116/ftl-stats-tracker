@@ -38,7 +38,7 @@ public class CrewTableModel extends AbstractTableModel {
             case 1 -> crew.getCrewType().toString();
             case 2 -> crew.getOrigin();
             case 3 -> getMasteriesText(crew);
-            case 4 -> crew.getState();
+            case 4 -> crew.getState().toString().charAt(0);
 
             default -> null;
         };

@@ -1,10 +1,10 @@
 package net.gausman.ftl.model.record;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.deser.BasicDeserializerFactory;
 import net.blerf.ftl.constants.Difficulty;
 import net.blerf.ftl.parser.SavedGameParser;
 import net.gausman.ftl.model.Constants;
+import net.gausman.ftl.model.change.Event;
 import net.gausman.ftl.model.factory.EventFactory;
 
 import java.time.Instant;

@@ -1,6 +1,6 @@
 package net.gausman.ftl.model.table;
 
-import net.gausman.ftl.model.record.Event;
+import net.gausman.ftl.model.change.Event;
 import net.gausman.ftl.util.GausmanUtil;
 
 import javax.swing.table.AbstractTableModel;
@@ -17,7 +17,7 @@ public class EventTableModel extends AbstractTableModel {
 
     public void setEvents(NavigableMap<Integer, Event> newEvents) {
         this.events = newEvents.descendingMap();
-        fireTableDataChanged(); // 🚨 notifies JTable to refresh
+        fireTableDataChanged();
     }
 
     public void setStartTime(Instant startTime) {

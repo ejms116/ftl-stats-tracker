@@ -1,8 +1,10 @@
-package net.gausman.ftl.model.record;
+package net.gausman.ftl.model.change;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import net.blerf.ftl.parser.SavedGameParser;
 import net.gausman.ftl.model.Constants;
+import net.gausman.ftl.model.record.Jump;
 import net.gausman.ftl.util.GausmanUtil;
 
 import java.time.Instant;
@@ -15,6 +17,7 @@ public class Event {
     private int amount;
     private int scrap;
     private String text;
+    private String displayText;
     @JsonBackReference
     private Jump jump;
 
@@ -30,10 +33,16 @@ public class Event {
         this.scrap = scrap;
         this.text = text;
         this.jump = jump;
+        this.displayText = text;
     }
 
     public String getDisplayText(){
-        return GausmanUtil.getTextToId(itemType, text);
+//        return GausmanUtil.getTextToId(itemType, text);
+        return displayText;
+    }
+
+    public void setDisplayText(String displayText) {
+        this.displayText = displayText;
     }
 
     public void assignId(int id) {
@@ -68,6 +77,7 @@ public class Event {
         return scrap;
     }
 
+    @JsonIgnore
     public int getScrapChange(){
         int result = 0;
         switch (eventType){

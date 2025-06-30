@@ -1,6 +1,6 @@
 package net.gausman.ftl.model.factory;
 
-import net.gausman.ftl.model.record.Event;
+import net.gausman.ftl.model.change.Event;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;

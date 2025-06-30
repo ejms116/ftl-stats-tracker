@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 public class ShipStatusPanel extends JPanel {
+    public static final int PREFERRED_WIDTH_1_DIGITS = 4;
     public static final int PREFERRED_WIDTH_3_DIGITS = 10;
 
     private SimpleTableModel runInfoTableModel;
@@ -24,17 +25,6 @@ public class ShipStatusPanel extends JPanel {
 
 
     public ShipStatusPanel() {
-
-//        for (Constants.General general: Constants.General.values()){
-//            ShipStatusPanelRow row = new ShipStatusPanelRow(general.toString(), "0");
-//            generalInfoPanelMap.put(general, row);
-//        }
-//
-//        for (Constants.Resource resource : Constants.Resource.values()){
-//            ShipStatusPanelRow row = new ShipStatusPanelRow(resource.toString(), "0");
-//            resourcesPanelMap.put(resource, row);
-//        }
-
         setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
         setAlignmentX(Component.LEFT_ALIGNMENT);
         setPreferredSize(new Dimension(900, 500));
@@ -70,6 +60,7 @@ public class ShipStatusPanel extends JPanel {
         // Systems
         systemTableModel = new SystemTableModel();
         JTable systemsTable = new JTable(systemTableModel);
+        systemsTable.getColumnModel().getColumn(2).setPreferredWidth(PREFERRED_WIDTH_1_DIGITS);
         JScrollPane jScrollPane = new JScrollPane(systemsTable);
         secondCol.add(jScrollPane);
 
@@ -87,9 +78,11 @@ public class ShipStatusPanel extends JPanel {
         // Crew
         crewTableModel = new CrewTableModel();
         JTable crewTable = new JTable(crewTableModel);
-        crewTable.getColumnModel().getColumn(0).setPreferredWidth(PREFERRED_WIDTH_3_DIGITS);
-        crewTable.getColumnModel().getColumn(1).setPreferredWidth(PREFERRED_WIDTH_3_DIGITS);
-        crewTable.getColumnModel().getColumn(2).setPreferredWidth(PREFERRED_WIDTH_3_DIGITS);
+//        crewTable.getColumnModel().getColumn(0).setPreferredWidth(PREFERRED_WIDTH_3_DIGITS);
+//        crewTable.getColumnModel().getColumn(1).setPreferredWidth(PREFERRED_WIDTH_3_DIGITS);
+//        crewTable.getColumnModel().getColumn(2).setPreferredWidth(PREFERRED_WIDTH_3_DIGITS);
+        crewTable.getColumnModel().getColumn(3).setPreferredWidth(PREFERRED_WIDTH_3_DIGITS);
+        crewTable.getColumnModel().getColumn(4).setPreferredWidth(PREFERRED_WIDTH_3_DIGITS);
         JScrollPane jScrollPaneCrew = new JScrollPane(crewTable);
         fourthCol.add(jScrollPaneCrew);
 
@@ -148,7 +141,10 @@ public class ShipStatusPanel extends JPanel {
         resourcesTableModel.setContent(resources);
         systemTableModel.setSystems(shipSystems);
         itemTableModel.setItems(model.getItemList());
-        crewTableModel.setCrewList(model.getCrewList());
+        List<Crew> fullCrewList = new ArrayList<>();
+        fullCrewList.addAll(model.getCrewList());
+        fullCrewList.addAll(model.getDeadCrewList());
+        crewTableModel.setCrewList(fullCrewList);
 
     }
 

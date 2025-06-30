@@ -1,7 +1,7 @@
 package net.gausman.ftl.model.record;
 
 import net.blerf.ftl.parser.SavedGameParser;
-import net.gausman.ftl.model.run.FTLRunEvent;
+import net.gausman.ftl.model.change.Event;
 
 import java.util.List;
 

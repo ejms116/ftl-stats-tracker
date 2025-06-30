@@ -5,9 +5,9 @@ import net.blerf.ftl.parser.DataManager;
 import net.blerf.ftl.parser.SavedGameParser;
 import net.blerf.ftl.parser.SavedGameParser.StateVar;
 import net.blerf.ftl.xml.*;
-import net.blerf.ftl.xml.event.*;
 import net.gausman.ftl.model.Constants;
 import net.gausman.ftl.model.Crew;
+import net.gausman.ftl.model.change.*;
 import net.gausman.ftl.model.record.*;
 import net.gausman.ftl.util.GausmanUtil;
 import org.slf4j.Logger;
@@ -74,8 +74,9 @@ public class EventService {
         events.add(new Event(SavedGameParser.StoreItemType.REACTOR, Constants.EventType.START, shipBlueprint.getMaxPower().amount, 0, Constants.Reactor.POWER_BAR.name(), jump));
 
         // Crew
+        int index = 0;
         for (SavedGameParser.CrewState crewState: newGameState.getPlayerShip().getCrewList()){
-            CrewEvent event = new CrewEvent(
+            NewCrewEvent event = new NewCrewEvent(
                     SavedGameParser.StoreItemType.CREW,
                     Constants.EventType.START,
                     1,
@@ -83,8 +84,10 @@ public class EventService {
                     GausmanUtil.getCrewTypeName(crewState.getRace().getId()) + " - " + crewState.getName(),
                     jump
             );
+            event.setCrewPosition(index);
             event.setCrew(new Crew(crewState, Constants.EventType.START));
             events.add(event);
+            index++;
         }
 
         // Systems
@@ -94,14 +97,15 @@ public class EventService {
                 if (capacity == 0){
                     continue;
                 }
-                events.add(new SystemEvent(
+                SystemEvent systemEvent = new SystemEvent(
                         Constants.EventType.START, capacity,
                         0, // todo scrap of starting systems (Buy+uprades)
                         systemState.getSystemType().getId(),
                         jump,
                         systemState.getSystemType(),
-                        true
-                ));
+                        true);
+
+                events.add(systemEvent);
             }
         }
 
@@ -596,7 +600,7 @@ public class EventService {
         // Create events for every Crew-match
         // If the old crew does not match with one in the new list the crew is dead/discarded
         for (Map.Entry<Integer, Integer> entry : mapOldToNew.entrySet()) {
-            events.addAll(compareCrewState(lastCrewState.get(entry.getKey()), entry.getValue() != null ? newCrewState.get(entry.getValue()) : null, jump));
+            events.addAll(compareCrewState(lastCrewState.get(entry.getKey()), entry.getValue() != null ? newCrewState.get(entry.getValue()) : null, jump, entry.getKey()));
         }
 
         // Last we have to check if all new crew were matched with an old crew
@@ -608,7 +612,7 @@ public class EventService {
             SavedGameParser.CrewState cs = newCrewState.get(i);
             boolean crewBought = removeStringFromList(boughtCrew, cs.getRace().getId());
             Constants.EventType eventType = crewBought ? Constants.EventType.BUY : Constants.EventType.REWARD;
-            CrewEvent event = new CrewEvent(
+            NewCrewEvent event = new NewCrewEvent(
                     SavedGameParser.StoreItemType.CREW,
                     eventType,
                     1,
@@ -616,7 +620,8 @@ public class EventService {
                     GausmanUtil.getCrewTypeName(cs.getRace().getId()) + " - " + cs.getName(),
                     jump
             );
-            event.setCrew(new Crew(cs, eventType)); // TODO: Is this fine, since we changed to the lastCrewState?
+            event.setCrewPosition(i);
+            event.setCrew(new Crew(cs, eventType));
             events.add(event);
 
         }
@@ -624,7 +629,7 @@ public class EventService {
         return events;
     }
 
-    private List<Event> compareCrewState(SavedGameParser.CrewState lastCrewState, SavedGameParser.CrewState newCrewState, Jump jump){
+    private List<Event> compareCrewState(SavedGameParser.CrewState lastCrewState, SavedGameParser.CrewState newCrewState, Jump jump, Integer crewPosition){
         List<Event> events = new ArrayList<>();
         // Crew dead
         if (newCrewState == null){
@@ -636,16 +641,12 @@ public class EventService {
                     GausmanUtil.getCrewTypeName(lastCrewState.getRace().getId()) + " - " + lastCrewState.getName(),
                     jump
             );
-            Crew crew = new Crew(lastCrewState, Constants.EventType.DISCARD);
-            event.setCrew(crew);
+            event.setCrewPosition(crewPosition);
             events.add(event);
             return events;
         }
 
         assert lastCrewState != null;
-
-        Crew crew = new Crew(lastCrewState, Constants.EventType.NAME); // EventType is irrelevant
-        Crew crewTemp;
 
         // Name Change
         if (!newCrewState.getName().equals(lastCrewState.getName())){
@@ -654,10 +655,7 @@ public class EventService {
                     lastCrewState.getName(),
                     jump
             );
-            event.setCrew(crew);
-            crewTemp = new Crew(crew);
-            applyEventToCrew(crewTemp, event);
-            crew = crewTemp;
+            event.setCrewPosition(crewPosition);
             events.add(event);
         }
 
@@ -669,10 +667,8 @@ public class EventService {
                     repairsChange,
                     jump
             );
-            event.setCrew(crew);
-            crewTemp = new Crew(crew);
-            applyEventToCrew(crewTemp, event);
-            crew = crewTemp;
+            event.setDisplayText(String.format("%s - %s: %s", newCrewState.getName(), Constants.Stats.REPAIRS, newCrewState.getRepairs()));
+            event.setCrewPosition(crewPosition);
             events.add(event);
         }
 
@@ -683,10 +679,8 @@ public class EventService {
                     combatKillsChange,
                     jump
             );
-            event.setCrew(crew);
-            crewTemp = new Crew(crew);
-            applyEventToCrew(crewTemp, event);
-            crew = crewTemp;
+            event.setDisplayText(String.format("%s - %s: %s", newCrewState.getName(), Constants.Stats.COMBAT_KILLS, newCrewState.getCombatKills()));
+            event.setCrewPosition(crewPosition);
             events.add(event);
         }
 
@@ -697,10 +691,7 @@ public class EventService {
                     pilotedEvasionsChange,
                     jump
             );
-            event.setCrew(crew);
-            crewTemp = new Crew(crew);
-            applyEventToCrew(crewTemp, event);
-            crew = crewTemp;
+            event.setCrewPosition(crewPosition);
             events.add(event);
         }
 
@@ -711,10 +702,8 @@ public class EventService {
                     jumpsSurvivedChange,
                     jump
             );
-            event.setCrew(crew);
-            crewTemp = new Crew(crew);
-            applyEventToCrew(crewTemp, event);
-            crew = crewTemp;
+            event.setDisplayText(String.format("%s - %s: %s", newCrewState.getName(), Constants.Stats.JUMPS_SURVIVED, newCrewState.getJumpsSurvived()));
+            event.setCrewPosition(crewPosition);
             events.add(event);
         }
 
@@ -725,10 +714,8 @@ public class EventService {
                     skillMasteriesEarnedChange,
                     jump
             );
-            event.setCrew(crew);
-            crewTemp = new Crew(crew);
-            applyEventToCrew(crewTemp, event);
-            crew = crewTemp;
+            event.setDisplayText(String.format("%s - %s: %s", newCrewState.getName(), Constants.Stats.SKILL_MASTERIES_EARNED, newCrewState.getSkillMasteriesEarned()));
+            event.setCrewPosition(crewPosition);
             events.add(event);
         }
 
@@ -741,10 +728,8 @@ public class EventService {
                     pilotSkillChange,
                     jump
             );
-            event.setCrew(crew);
-            crewTemp = new Crew(crew);
-            applyEventToCrew(crewTemp, event);
-            crew = crewTemp;
+            event.setDisplayText(String.format("%s - %s Skill: %s", newCrewState.getName(), Constants.Skill.PILOT, newCrewState.getPilotSkill()));
+            event.setCrewPosition(crewPosition);
             events.add(event);
         }
 
@@ -755,10 +740,8 @@ public class EventService {
                     engineSkillChange,
                     jump
             );
-            event.setCrew(crew);
-            crewTemp = new Crew(crew);
-            applyEventToCrew(crewTemp, event);
-            crew = crewTemp;
+            event.setDisplayText(String.format("%s - %s Skill: %s", newCrewState.getName(), Constants.Skill.ENGINE, newCrewState.getPilotSkill()));
+            event.setCrewPosition(crewPosition);
             events.add(event);
         }
 
@@ -769,10 +752,8 @@ public class EventService {
                     shieldSkillChange,
                     jump
             );
-            event.setCrew(crew);
-            crewTemp = new Crew(crew);
-            applyEventToCrew(crewTemp, event);
-            crew = crewTemp;
+            event.setDisplayText(String.format("%s - %s Skill: %s", newCrewState.getName(), Constants.Skill.SHIELD, newCrewState.getShieldSkill()));
+            event.setCrewPosition(crewPosition);
             events.add(event);
         }
 
@@ -783,10 +764,8 @@ public class EventService {
                     weaponSkillChange,
                     jump
             );
-            event.setCrew(crew);
-            crewTemp = new Crew(crew);
-            applyEventToCrew(crewTemp, event);
-            crew = crewTemp;
+            event.setDisplayText(String.format("%s - %s Skill: %s", newCrewState.getName(), Constants.Skill.WEAPON, newCrewState.getWeaponSkill()));
+            event.setCrewPosition(crewPosition);
             events.add(event);
         }
 
@@ -797,10 +776,8 @@ public class EventService {
                     repairSkillChange,
                     jump
             );
-            event.setCrew(crew);
-            crewTemp = new Crew(crew);
-            applyEventToCrew(crewTemp, event);
-            crew = crewTemp;
+            event.setDisplayText(String.format("%s - %s Skill: %s", newCrewState.getName(), Constants.Skill.REPAIR, newCrewState.getRepairSkill()));
+            event.setCrewPosition(crewPosition);
             events.add(event);
         }
 
@@ -811,10 +788,8 @@ public class EventService {
                     combatSkillChange,
                     jump
             );
-            event.setCrew(crew);
-            crewTemp = new Crew(crew);
-            applyEventToCrew(crewTemp, event);
-            crew = crewTemp;
+            event.setDisplayText(String.format("%s - %s Skill: %s", newCrewState.getName(), Constants.Skill.COMBAT, newCrewState.getCombatSkill()));
+            event.setCrewPosition(crewPosition);
             events.add(event);
         }
 
@@ -827,10 +802,7 @@ public class EventService {
                     newCrewState.getPilotMasteryOne(),
                     jump
             );
-            event.setCrew(crew);
-            crewTemp = new Crew(crew);
-            applyEventToCrew(crewTemp, event);
-            crew = crewTemp;
+            event.setCrewPosition(crewPosition);
             events.add(event);
         }
 
@@ -841,10 +813,7 @@ public class EventService {
                     newCrewState.getPilotMasteryTwo(),
                     jump
             );
-            event.setCrew(crew);
-            crewTemp = new Crew(crew);
-            applyEventToCrew(crewTemp, event);
-            crew = crewTemp;
+            event.setCrewPosition(crewPosition);
             events.add(event);
         }
 
@@ -855,10 +824,7 @@ public class EventService {
                     newCrewState.getEngineMasteryOne(),
                     jump
             );
-            event.setCrew(crew);
-            crewTemp = new Crew(crew);
-            applyEventToCrew(crewTemp, event);
-            crew = crewTemp;
+            event.setCrewPosition(crewPosition);
             events.add(event);
         }
 
@@ -869,10 +835,7 @@ public class EventService {
                     newCrewState.getEngineMasteryTwo(),
                     jump
             );
-            event.setCrew(crew);
-            crewTemp = new Crew(crew);
-            applyEventToCrew(crewTemp, event);
-            crew = crewTemp;
+            event.setCrewPosition(crewPosition);
             events.add(event);
         }
 
@@ -883,10 +846,7 @@ public class EventService {
                     newCrewState.getShieldMasteryOne(),
                     jump
             );
-            event.setCrew(crew);
-            crewTemp = new Crew(crew);
-            applyEventToCrew(crewTemp, event);
-            crew = crewTemp;
+            event.setCrewPosition(crewPosition);
             events.add(event);
         }
 
@@ -897,10 +857,7 @@ public class EventService {
                     newCrewState.getShieldMasteryTwo(),
                     jump
             );
-            event.setCrew(crew);
-            crewTemp = new Crew(crew);
-            applyEventToCrew(crewTemp, event);
-            crew = crewTemp;
+            event.setCrewPosition(crewPosition);
             events.add(event);
         }
 
@@ -911,10 +868,7 @@ public class EventService {
                     newCrewState.getWeaponMasteryOne(),
                     jump
             );
-            event.setCrew(crew);
-            crewTemp = new Crew(crew);
-            applyEventToCrew(crewTemp, event);
-            crew = crewTemp;
+            event.setCrewPosition(crewPosition);
             events.add(event);
         }
 
@@ -925,10 +879,7 @@ public class EventService {
                     newCrewState.getWeaponMasteryTwo(),
                     jump
             );
-            event.setCrew(crew);
-            crewTemp = new Crew(crew);
-            applyEventToCrew(crewTemp, event);
-            crew = crewTemp;
+            event.setCrewPosition(crewPosition);
             events.add(event);
         }
 
@@ -939,10 +890,7 @@ public class EventService {
                     newCrewState.getRepairMasteryOne(),
                     jump
             );
-            event.setCrew(crew);
-            crewTemp = new Crew(crew);
-            applyEventToCrew(crewTemp, event);
-            crew = crewTemp;
+            event.setCrewPosition(crewPosition);
             events.add(event);
         }
 
@@ -953,10 +901,7 @@ public class EventService {
                     newCrewState.getRepairMasteryTwo(),
                     jump
             );
-            event.setCrew(crew);
-            crewTemp = new Crew(crew);
-            applyEventToCrew(crewTemp, event);
-            crew = crewTemp;
+            event.setCrewPosition(crewPosition);
             events.add(event);
         }
 
@@ -967,10 +912,7 @@ public class EventService {
                     newCrewState.getCombatMasteryOne(),
                     jump
             );
-            event.setCrew(crew);
-            crewTemp = new Crew(crew);
-            applyEventToCrew(crewTemp, event);
-            crew = crewTemp;
+            event.setCrewPosition(crewPosition);
             events.add(event);
         }
 
@@ -981,10 +923,7 @@ public class EventService {
                     newCrewState.getCombatMasteryTwo(),
                     jump
             );
-            event.setCrew(crew);
-            crewTemp = new Crew(crew);
-            applyEventToCrew(crewTemp, event);
-            crew = crewTemp;
+            event.setCrewPosition(crewPosition);
             events.add(event);
         }
 
