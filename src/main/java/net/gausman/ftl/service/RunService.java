@@ -165,9 +165,13 @@ public class RunService {
 
         List<SavedGameParser.EncounterState> encounterStates = currentRun.getCurrentJump().getEncounterStates();
 
-        if (encounterStates.isEmpty() || !encounterStates.getLast().toString().equals(box.getEncounterState().toString())){
+        if (!encounterStates.isEmpty() && box.getEncounterState().equals(encounterStates.getLast())){
+            encounterStates.getLast().setChoiceList(box.getEncounterState().getChoiceList());
+        } else {
             currentRun.getCurrentJump().getEncounterStates().add(box.getEncounterState());
         }
+
+
     }
 
     public NavigableMap<Integer, Event> getEventMapFlat() {

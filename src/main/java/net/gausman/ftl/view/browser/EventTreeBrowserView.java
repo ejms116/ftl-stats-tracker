@@ -1,6 +1,7 @@
 package net.gausman.ftl.view.browser;
 
 import net.blerf.ftl.parser.DataManager;
+import net.blerf.ftl.parser.SavedGameParser;
 import net.blerf.ftl.xml.event.Choice;
 import net.blerf.ftl.xml.event.*;
 import org.slf4j.Logger;
@@ -12,10 +13,8 @@ import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
 import java.awt.*;
-import java.util.ArrayList;
-import java.util.Comparator;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
 
 public class EventTreeBrowserView extends JFrame {
     private static final Logger log = LoggerFactory.getLogger(EventTreeBrowserView.class);
@@ -199,16 +198,89 @@ public class EventTreeBrowserView extends JFrame {
         setVisible(true);
     }
 
-    public void selectEventById(String eventId){
+    public void selectEventById(String eventId, List<SavedGameParser.EncounterState> encounterStates){
         for (int i = 0; i < model.getRowCount(); i++){
             EventBrowserListItem item = model.getRowItem(i);
             if (item.getId().equals(eventId)){
                 eventTable.setRowSelectionInterval(i, i);
                 eventTable.scrollRectToVisible(eventTable.getCellRect(i, 0, true));
-                return;
+                break;
             }
         }
-        log.info("Event not found: " + eventId);
+
+        Queue<Integer> choices = new ArrayDeque<>();
+        Queue<String> events = new ArrayDeque<>();
+
+        for (SavedGameParser.EncounterState state : encounterStates){
+            if (events.isEmpty() || !state.getText().equals(events.peek())){
+                events.add(state.getText());
+            }
+            choices.addAll(state.getChoiceList());
+        }
+
+        expandTreeRecursively((DefaultMutableTreeNode) tree.getModel().getRoot(), choices, events);
+
+//        printNodeRecursively((DefaultMutableTreeNode) tree.getModel().getRoot(), 0);
+
+    }
+
+    private void expandTreeRecursively(DefaultMutableTreeNode node, Queue<Integer> choices, Queue<String> events){
+        int choiceCount = 0;
+        if (node.getUserObject() instanceof FTLEvent ftlEvent){
+            if (ftlEvent.getText().getId().equals(events.peek())){
+                events.remove();
+            }
+        }
+
+        for (int i = 0; i < node.getChildCount(); i++) {
+            DefaultMutableTreeNode child = (DefaultMutableTreeNode) node.getChildAt(i);
+            if (child.getUserObject() instanceof Choice){
+                if (!choices.isEmpty() && choices.peek().equals(choiceCount)){
+                    choices.remove();
+                    TreePath path = new TreePath(child.getPath());
+                    tree.expandPath(path);
+                    tree.setSelectionPath(path);
+//                    tree.scrollPathToVisible(path);
+                    expandTreeRecursively(child, choices, events);
+                }
+                choiceCount++;
+            }
+            if (child.getUserObject() instanceof FTLEventList){
+                for (int j = 0; j < child.getChildCount(); j++){
+                    DefaultMutableTreeNode listChild = (DefaultMutableTreeNode) child.getChildAt(j);
+                    if (listChild.getUserObject() instanceof FTLEvent listEvent){
+                        if (listEvent.getText().getId().equals(events.peek())){
+                            events.remove();
+                            TreePath path = new TreePath(listChild.getPath());
+                            tree.expandPath(path);
+                            tree.setSelectionPath(path);
+                            expandTreeRecursively(listChild, choices, events);
+                        }
+                    } else {
+                        log.info("ERROR not FTLEvent inside FTLEventList");
+                    }
+                }
+                log.info("FTLEventList but no matching event found");
+            }
+        }
+    }
+
+    private void printNodeRecursively(DefaultMutableTreeNode node, int depth) {
+        // Indentation for better readability
+        String indent = "  ".repeat(depth);
+
+        Object userObject = node.getUserObject();
+        if (userObject instanceof AbstractBuildableTreeNode localNode) {
+            System.out.println(indent + "- " + localNode.getDisplayText(dm, context));
+        } else {
+            System.out.println(indent + "- " + userObject.toString());
+        }
+
+        // Recurse over children
+        for (int i = 0; i < node.getChildCount(); i++) {
+            DefaultMutableTreeNode child = (DefaultMutableTreeNode) node.getChildAt(i);
+            printNodeRecursively(child, depth + 1);
+        }
     }
 
     private void saveExpandedPaths(JTree tree, TreePath parent, List<TreePath> paths) {
@@ -344,6 +416,24 @@ public class EventTreeBrowserView extends JFrame {
 
         tree.setCellRenderer(new EventTreeCellRenderer(dm, context));
         JScrollPane newScrollPane = new JScrollPane(tree);
+
+
+        tree.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                TreePath path = tree.getPathForLocation(e.getX(), e.getY());
+                if (path != null) {
+                    DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
+                    Object userObject = node.getUserObject();
+
+                    if (userObject instanceof EventTreeNodeData data) {
+                        // Do something with the clicked node
+                        System.out.println("Clicked node ID: " + data.getId());
+                        // Optional: open a detail view, highlight text, load sub-events, etc.
+                    }
+                }
+            }
+        });
 
         // Remove old scroll pane if it exists
         if (treeScrollPane != null) {

@@ -39,6 +39,7 @@ import java.util.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+@Deprecated
 public class StatsManager {
     private static final Logger log = LoggerFactory.getLogger(StatsManager.class);
     private static final String currentRunFilename = "current_run.json";

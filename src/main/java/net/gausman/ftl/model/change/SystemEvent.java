@@ -1,8 +1,8 @@
-package net.gausman.ftl.model.record;
+package net.gausman.ftl.model.change;
 
 import net.blerf.ftl.parser.SavedGameParser;
 import net.gausman.ftl.model.Constants;
-import net.gausman.ftl.model.change.Event;
+import net.gausman.ftl.model.record.Jump;
 
 public class SystemEvent extends Event {
     private final SavedGameParser.SystemType type;
@@ -12,11 +12,22 @@ public class SystemEvent extends Event {
         super(SavedGameParser.StoreItemType.SYSTEM, eventType, amount, scrap, text, jump);
         this.type = type;
         this.playerUpgrade = playerUpgrade;
-        if (playerUpgrade){
-            setDisplayText(String.format("Player upgraded %s by %s level(s).", type, getAmount()));
+
+        String t = "";
+        if (getEventType().equals(Constants.EventType.START)){
+            t = "starting";
+        } else if (playerUpgrade){
+            t = "player upgraded";
         } else {
-            setDisplayText(String.format("System upgrade event: %s", type));
+            t = "upgrade event";
         }
+        setDisplayText(String.format(
+                "%s: %s %d %s",
+                type,
+                t,
+                getAmount(),
+                getAmount() == 1 ? "level" : "levels"
+        ));
     }
 
     public SavedGameParser.SystemType getType() {

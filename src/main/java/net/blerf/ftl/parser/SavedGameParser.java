@@ -16,16 +16,13 @@ import java.io.InputStreamReader;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import net.gausman.ftl.model.Constants;
+import net.gausman.ftl.model.change.*;
+import net.gausman.ftl.model.record.Jump;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -5809,7 +5806,9 @@ public class SavedGameParser extends Parser {
 		}
 	}
 
+
 	public enum StoreItemType {
+
 		WEAPON("Weapon"),
 		DRONE("Drone"),
 		AUGMENT("Augment"),
@@ -5955,6 +5954,18 @@ public class SavedGameParser extends Parser {
 		public EncounterState() {
 		}
 
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+			EncounterState that = (EncounterState) o;
+			return shipEventSeed == that.shipEventSeed && unknownAlpha == that.unknownAlpha && affectedCrewSeed == that.affectedCrewSeed && Objects.equals(surrenderEventId, that.surrenderEventId) && Objects.equals(escapeEventId, that.escapeEventId) && Objects.equals(destroyedEventId, that.destroyedEventId) && Objects.equals(deadCrewEventId, that.deadCrewEventId) && Objects.equals(gotAwayEventId, that.gotAwayEventId) && Objects.equals(lastEventId, that.lastEventId) && Objects.equals(text, that.text);
+		} // && Objects.equals(choiceList, that.choiceList)
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(shipEventSeed, surrenderEventId, escapeEventId, destroyedEventId, deadCrewEventId, gotAwayEventId, lastEventId, unknownAlpha, text, affectedCrewSeed, choiceList);
+		}
 
 		/**
 		 * Sets a seed to randomly generate the enemy ship (layout, etc).

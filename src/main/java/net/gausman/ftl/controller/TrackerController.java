@@ -135,7 +135,7 @@ public class TrackerController {
                     List<SavedGameParser.EncounterState> encounterStates = event.getJump().getEncounterStates();
                     if (encounterStates != null && !encounterStates.isEmpty()){
                         String encounterText = encounterStates.getFirst().getText();
-                        eventTreeBrowserView.selectEventById(GausmanUtil.extractId(encounterText));
+                        eventTreeBrowserView.selectEventById(GausmanUtil.extractId(encounterText), encounterStates);
                         eventTreeBrowserView.toFront();
                         eventTreeBrowserView.requestFocus();
                     }
@@ -187,7 +187,7 @@ public class TrackerController {
     private void setupFileWatcher(){
         task = new FileWatcher(chosenFile) {
             public void onChange( File file ) {
-                if (toggleTracking == true) {
+                if (toggleTracking) {
                     if (chosenFile.exists()){
                         log.info( "FILE "+ file.getName() +" HAS CHANGED" );
                         loadGameStateFile(chosenFile);

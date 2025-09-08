@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import net.blerf.ftl.parser.SavedGameParser;
 import net.gausman.ftl.model.Constants;
 import net.gausman.ftl.model.record.Jump;
-import net.gausman.ftl.util.GausmanUtil;
 
 import java.time.Instant;
 

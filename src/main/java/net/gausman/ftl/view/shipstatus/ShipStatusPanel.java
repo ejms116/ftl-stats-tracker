@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 public class ShipStatusPanel extends JPanel {
-    public static final int PREFERRED_WIDTH_1_DIGITS = 4;
+    public static final int PREFERRED_WIDTH_1_DIGITS = 2;
     public static final int PREFERRED_WIDTH_3_DIGITS = 10;
 
     private SimpleTableModel runInfoTableModel;
@@ -31,20 +31,18 @@ public class ShipStatusPanel extends JPanel {
 
         JPanel firstCol = new JPanel();
         firstCol.setLayout(new BoxLayout(firstCol, BoxLayout.Y_AXIS));
-
+        firstCol.setPreferredSize(new Dimension(250, 500));
         add(firstCol);
 
         JPanel secondCol = new JPanel();
         secondCol.setLayout(new BoxLayout(secondCol, BoxLayout.Y_AXIS));
+        secondCol.setPreferredSize(new Dimension(250, 500));
         add(secondCol);
 
         JPanel thirdCol = new JPanel();
         thirdCol.setLayout(new BoxLayout(thirdCol, BoxLayout.Y_AXIS));
+        secondCol.setPreferredSize(new Dimension(350, 500));
         add(thirdCol);
-
-        JPanel fourthCol = new JPanel();
-        fourthCol.setLayout(new BoxLayout(fourthCol, BoxLayout.Y_AXIS));
-        add(fourthCol);
 
         // Run Info
         runInfoTableModel = new SimpleTableModel();
@@ -84,10 +82,7 @@ public class ShipStatusPanel extends JPanel {
         crewTable.getColumnModel().getColumn(3).setPreferredWidth(PREFERRED_WIDTH_3_DIGITS);
         crewTable.getColumnModel().getColumn(4).setPreferredWidth(PREFERRED_WIDTH_3_DIGITS);
         JScrollPane jScrollPaneCrew = new JScrollPane(crewTable);
-        fourthCol.add(jScrollPaneCrew);
-
-
-
+        thirdCol.add(jScrollPaneCrew);
 
 
         crewTable.getSelectionModel().addListSelectionListener(e -> {

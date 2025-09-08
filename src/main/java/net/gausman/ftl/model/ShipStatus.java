@@ -1,6 +1,5 @@
 package net.gausman.ftl.model;
 
-import net.gausman.ftl.controller.StatsManager;
 import net.gausman.ftl.model.run.FTLRunEvent;
 import net.gausman.ftl.util.GausmanUtil;
 import net.gausman.ftl.view.SimpleListItem;
@@ -12,8 +11,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+@Deprecated
 public class ShipStatus {
-    private static final Logger log = LoggerFactory.getLogger(StatsManager.class);
+    private static final Logger log = LoggerFactory.getLogger(ShipStatus.class);
     private List<SystemListItem> systemList = new ArrayList<>();
     private List<SystemListItem> subSystemList = new ArrayList<>();
     private List<SimpleListItem> weaponsList = new ArrayList<>();

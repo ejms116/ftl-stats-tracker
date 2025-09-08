@@ -89,11 +89,12 @@ public class EventTablePanel extends JSplitPane {
             String newText = "";
             String lastText = "";
             for (SavedGameParser.EncounterState state : jump.getEncounterStates()){
-                newText = GausmanUtil.extractId(state.getText()) != null ? GausmanUtil.extractId(state.getText()) : "";
+//                newText = GausmanUtil.extractId(state.getText()) != null ? GausmanUtil.extractId(state.getText()) : state.getText();
+                newText = state.getText();
                 assert newText != null;
-                if (newText.isEmpty()){
-                    newText = lastText;
-                }
+//                if (newText.isEmpty()){
+//                    newText = lastText;
+//                }
                 for (Integer choice : state.getChoiceList()){
                     SimpleTableItem item = new SimpleTableItem(newText, choice.toString());
                     items.add(item);
@@ -121,8 +122,7 @@ public class EventTablePanel extends JSplitPane {
                 boolean showRow = true;
 
                 if (filterStates.get(EventFilter.HIDE_FUEL_USED_EVENTS)) {
-//                    if (type.equals(Constants.EventType.USE) && id.equals(Constants.Resource.FUEL.toString())) {
-                    if (type.equals(Constants.EventType.USE) && id.equals("FUEL")) {
+                    if (type.equals(Constants.EventType.USE) && id.equals(Constants.Resource.FUEL.toString())) {
                         showRow = false;
                     }
                 }

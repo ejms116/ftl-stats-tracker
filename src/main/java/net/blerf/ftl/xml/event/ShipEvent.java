@@ -159,7 +159,7 @@ public class ShipEvent extends AbstractBuildableTreeNode {
 	@Override
 	public String getDisplayText(DataManager dataManager, BuildContext context){
 		StringBuilder sb = new StringBuilder("<html><b>")
-				.append("Ship Event ")
+				.append("Ship ")
 				.append(id != null ? id : "")
 				.append("</b>")
 //				.append(" - Hostile: ")

@@ -1,20 +1,15 @@
 package net.blerf.ftl.parser;
 
-import java.io.Closeable;
-import java.io.File;
-import java.io.InputStream;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import net.blerf.ftl.model.shiplayout.ShipLayout;
 import net.blerf.ftl.xml.*;
 import net.blerf.ftl.xml.event.*;
-import net.blerf.ftl.xml.event.FTLEvent;
-import net.blerf.ftl.xml.event.FTLEventList;
-import net.blerf.ftl.xml.event.FTLEventNode;
+
+import java.io.Closeable;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.List;
+import java.util.Map;
 
 public abstract class DataManager implements Closeable {
 

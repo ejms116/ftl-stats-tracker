@@ -11,7 +11,7 @@ import java.util.TreeMap;
 
 public class EventTableModel extends AbstractTableModel {
     private NavigableMap<Integer, Event> events = new TreeMap<>();
-    private final String[] columnNames = {"Time", "Sec", "BId", "Jump", "Expl", "Type", "Category", "Object", "Amt", "Scrap",  "Value"};
+    private final String[] columnNames = {"Time", "Sec", "BId", "Jump", "Expl", "Type", "Category", "Text", "Amt", "Scrap",  "Value"};
     private Instant startTime;
 
 
