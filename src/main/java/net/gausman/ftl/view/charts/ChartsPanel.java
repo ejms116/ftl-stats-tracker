@@ -1,4 +1,7 @@
-package net.gausman.ftl.view;
+package net.gausman.ftl.view.charts;
+
+import net.gausman.ftl.view.charts.ScrapBarChartPanel;
+import net.gausman.ftl.view.charts.ScrapSpentChartPanel;
 
 import javax.swing.*;
 import java.awt.*;

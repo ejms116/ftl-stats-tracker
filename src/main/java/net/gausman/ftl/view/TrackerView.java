@@ -1,5 +1,6 @@
 package net.gausman.ftl.view;
 
+import net.gausman.ftl.view.charts.ChartsPanel;
 import net.gausman.ftl.view.shipstatus.ShipStatusPanel;
 import net.gausman.ftl.view.table.EventTablePanel;
 

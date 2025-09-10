@@ -1,4 +1,4 @@
-package net.gausman.ftl.view;
+package net.gausman.ftl.view.charts;
 
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;

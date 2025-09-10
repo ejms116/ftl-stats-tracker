@@ -5,15 +5,12 @@ import net.blerf.ftl.parser.SavedGameParser;
 import net.blerf.ftl.xml.ShipBlueprint;
 import net.blerf.ftl.xml.SystemBlueprint;
 import net.blerf.ftl.xml.event.AbstractBuildableTreeNode;
-import net.blerf.ftl.xml.event.BuildableTreeNode;
-import net.gausman.ftl.controller.StatsManager;
 import net.gausman.ftl.model.Constants;
 import net.gausman.ftl.model.run.FTLJump;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Element;
 
-import javax.swing.tree.DefaultMutableTreeNode;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.time.Duration;
@@ -21,11 +18,10 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 public class GausmanUtil {
-    private static final Logger log = LoggerFactory.getLogger(StatsManager.class);
+    private static final Logger log = LoggerFactory.getLogger(GausmanUtil.class);
 
     public static void logXmlWarningsRecoursive(AbstractBuildableTreeNode node, List<String> occurence){
         if (node.getUnknownElements() != null){
