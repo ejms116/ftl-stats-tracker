@@ -6,7 +6,6 @@ import net.blerf.ftl.xml.ShipBlueprint;
 import net.blerf.ftl.xml.SystemBlueprint;
 import net.blerf.ftl.xml.event.AbstractBuildableTreeNode;
 import net.gausman.ftl.model.Constants;
-import net.gausman.ftl.model.run.FTLJump;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Element;
@@ -243,22 +242,6 @@ public class GausmanUtil {
         return runFileName;
     }
 
-
-    public static void consolidateEventList(FTLJump jump){
-
-        // 1. filter all relevant items into new list
-        // 2. if new list contains 2 or more elements, we need to consolidate, otherwise not
-        // 3. Use the first event with the lowest timestamp
-        // 4. add usages of the other events to the first event
-        // 5. remove the other everts
-        log.info("Consolidate Events");
-
-//        for (FTLRunEvent event: jump.getEvents()){
-//            System.out.println(event);
-//        }
-//
-//        System.out.println("Jump");
-    }
 
     public static int extractLeadingNumber(String filename) {
         try {
