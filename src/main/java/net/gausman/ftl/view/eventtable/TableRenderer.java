@@ -1,4 +1,4 @@
-package net.gausman.ftl.view.table;
+package net.gausman.ftl.view.eventtable;
 
 import javax.swing.*;
 import javax.swing.table.TableCellRenderer;

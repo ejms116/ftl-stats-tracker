@@ -2,7 +2,6 @@ package net.gausman.ftl.view.shipstatus;
 
 import net.blerf.ftl.parser.SavedGameParser.SystemType;
 import net.gausman.ftl.model.*;
-import net.gausman.ftl.view.SystemListItem;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;

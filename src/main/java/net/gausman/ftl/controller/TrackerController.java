@@ -14,7 +14,7 @@ import net.gausman.ftl.util.GausmanUtil;
 import net.gausman.ftl.view.browser.EventBrowserView;
 import net.gausman.ftl.view.TrackerView;
 import net.gausman.ftl.view.browser.EventTreeBrowserView;
-import net.gausman.ftl.view.table.EventTablePanel;
+import net.gausman.ftl.view.eventtable.EventTablePanel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,7 +83,7 @@ public class TrackerController {
             // Get bounds of second screen
             Rectangle bounds = screens[0].getDefaultConfiguration().getBounds();
             // Position the window near the top-left of the second screen
-            view.setLocation(bounds.x + 50, bounds.y + 50);
+            view.setLocation(bounds.x + 10, bounds.y + 10);
         } else {
             // Center on primary screen
             view.setLocationRelativeTo(null);

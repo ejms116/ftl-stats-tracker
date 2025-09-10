@@ -1,4 +1,4 @@
-package net.gausman.ftl.view;
+package net.gausman.ftl.view.shipstatus;
 
 public class SystemListItem {
     private String name;

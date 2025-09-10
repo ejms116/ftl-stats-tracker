@@ -2,7 +2,8 @@ package net.gausman.ftl.view;
 
 import net.gausman.ftl.view.charts.ChartsPanel;
 import net.gausman.ftl.view.shipstatus.ShipStatusPanel;
-import net.gausman.ftl.view.table.EventTablePanel;
+import net.gausman.ftl.view.eventtable.EventTablePanel;
+import net.gausman.ftl.view.toolbar.ToolbarPanel;
 
 import javax.swing.*;
 import java.awt.*;

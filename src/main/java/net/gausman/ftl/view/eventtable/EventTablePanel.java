@@ -1,4 +1,4 @@
-package net.gausman.ftl.view.table;
+package net.gausman.ftl.view.eventtable;
 
 import net.blerf.ftl.parser.SavedGameParser;
 import net.gausman.ftl.model.Constants;
@@ -8,7 +8,6 @@ import net.gausman.ftl.model.table.EventTableModel;
 
 import net.gausman.ftl.model.table.EventFilter;
 import net.gausman.ftl.model.table.JumpTableModel;
-import net.gausman.ftl.util.GausmanUtil;
 
 import javax.swing.*;
 import javax.swing.table.TableRowSorter;

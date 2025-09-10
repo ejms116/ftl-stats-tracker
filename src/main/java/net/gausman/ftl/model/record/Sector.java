@@ -2,7 +2,6 @@ package net.gausman.ftl.model.record;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import net.blerf.ftl.parser.SavedGameParser;
-import net.gausman.ftl.model.run.FTLJump;
 
 import java.util.ArrayList;
 import java.util.List;

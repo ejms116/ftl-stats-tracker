@@ -1,4 +1,4 @@
-package net.gausman.ftl.view;
+package net.gausman.ftl.view.toolbar;
 
 import net.gausman.ftl.model.table.EventFilter;
 
