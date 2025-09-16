@@ -5,8 +5,10 @@ import net.gausman.ftl.model.Constants;
 import net.gausman.ftl.model.record.Jump;
 
 public class SystemEvent extends Event {
-    private final SavedGameParser.SystemType type;
+    private SavedGameParser.SystemType type;
     private boolean playerUpgrade;
+
+    public SystemEvent(){};
 
     public SystemEvent(Constants.EventType eventType, int amount, int scrap, String text, Jump jump, SavedGameParser.SystemType type, boolean playerUpgrade) {
         super(SavedGameParser.StoreItemType.SYSTEM, eventType, amount, scrap, text, jump);
@@ -14,8 +16,10 @@ public class SystemEvent extends Event {
         this.playerUpgrade = playerUpgrade;
 
         String t = "";
-        if (getEventType().equals(Constants.EventType.START)){
+        if (getEventType().equals(Constants.EventType.START)) {
             t = "starting";
+        } else if (getEventType().equals(Constants.EventType.BUY)){
+            t = "player bought";
         } else if (playerUpgrade){
             t = "player upgraded";
         } else {

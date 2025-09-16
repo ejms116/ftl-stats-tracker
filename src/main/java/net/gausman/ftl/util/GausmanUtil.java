@@ -9,7 +9,6 @@ import net.gausman.ftl.model.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Element;
-
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.time.Duration;
@@ -276,9 +275,9 @@ public class GausmanUtil {
     public static String convertMasteryToAttributename(Constants.Skill mastery, int level){
         return switch (mastery){
             case PILOT -> level == 1 ? "pilotMasteryOne" : "pilotMasteryTwo";
-            case SHIELD -> level == 1 ? "engineMasteryOne" : "engineMasteryTwo";
-            case WEAPON -> level == 1 ? "shieldMasteryOne" : "shieldMasteryTwo";
-            case ENGINE -> level == 1 ? "weaponMasteryOne" : "weaponMasteryTwo";
+            case ENGINE -> level == 1 ? "engineMasteryOne" : "engineMasteryTwo";
+            case SHIELD -> level == 1 ? "shieldMasteryOne" : "shieldMasteryTwo";
+            case WEAPON -> level == 1 ? "weaponMasteryOne" : "weaponMasteryTwo";
             case REPAIR -> level == 1 ? "repairMasteryOne" : "repairMasteryTwo";
             case COMBAT -> level == 1 ? "combatMasteryOne" : "combatMasteryTwo";
         };

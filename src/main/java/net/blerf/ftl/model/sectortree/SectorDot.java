@@ -1,12 +1,20 @@
 package net.blerf.ftl.model.sectortree;
 
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class SectorDot {
 	private String sectorType;
 	private String sectorId;
 	private String sectorTitle;
 	private boolean visited = false;
 
+	@JsonCreator
+	public SectorDot(@JsonProperty("title") String sectorTitle, @JsonProperty("type") String sectorType) {
+		this.sectorTitle = sectorTitle;
+		this.sectorType = sectorType;
+	}
 
 	public SectorDot( String sectorType, String sectorId, String sectorTitle ) {
 		this.sectorType = sectorType;

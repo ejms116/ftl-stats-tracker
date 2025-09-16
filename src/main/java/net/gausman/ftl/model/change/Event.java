@@ -1,13 +1,34 @@
 package net.gausman.ftl.model.change;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.*;
 import net.blerf.ftl.parser.SavedGameParser;
 import net.gausman.ftl.model.Constants;
 import net.gausman.ftl.model.record.Jump;
 
 import java.time.Instant;
 
+
+@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id", scope = Event.class)
+@JsonTypeInfo(
+        use = JsonTypeInfo.Id.NAME,
+        include = JsonTypeInfo.As.PROPERTY,
+        property = "type"
+)
+@JsonSubTypes({
+        @JsonSubTypes.Type(value = AugmentEvent.class, name = "AugmentEvent"),
+        @JsonSubTypes.Type(value = CrewEvent.class, name = "CrewEvent"),
+        @JsonSubTypes.Type(value = DroneEvent.class, name = "DroneEvent"),
+        @JsonSubTypes.Type(value = GeneralEvent.class, name = "GeneralEvent"),
+        @JsonSubTypes.Type(value = MasteryEvent.class, name = "MasteryEvent"),
+        @JsonSubTypes.Type(value = NameEvent.class, name = "NameEvent"),
+        @JsonSubTypes.Type(value = NewCrewEvent.class, name = "NewCrewEvent"),
+        @JsonSubTypes.Type(value = ReactorEvent.class, name = "ReactorEvent"),
+        @JsonSubTypes.Type(value = ResourceEvent.class, name = "ResourceEvent"),
+        @JsonSubTypes.Type(value = SkillEvent.class, name = "SkillEvent"),
+        @JsonSubTypes.Type(value = StatEvent.class, name = "StatEvent"),
+        @JsonSubTypes.Type(value = SystemEvent.class, name = "SystemEvent"),
+        @JsonSubTypes.Type(value = WeaponEvent.class, name = "WeaponEvent"),
+})
 public class Event {
     private int id;
     private final Instant ts;
@@ -17,7 +38,6 @@ public class Event {
     private int scrap;
     private String text;
     private String displayText;
-    @JsonBackReference
     private Jump jump;
 
     public Event(){
@@ -91,6 +111,9 @@ public class Event {
             case GENERAL -> {
                 GeneralEvent ge = (GeneralEvent) this;
                 if (ge.getGeneral().equals(Constants.General.SCRAP_COLLECTED)){
+                    result = scrap;
+                }
+                if (ge.getGeneral().equals(Constants.General.SCRAP_DIFF)){
                     result = scrap;
                 }
             }

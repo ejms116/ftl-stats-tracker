@@ -9,11 +9,11 @@ import java.util.Objects;
 public class Crew {
     private String name;
     // Todo Maybe list of previous names?
-    private final SavedGameParser.CrewType crewType;
-    private final Constants.EventType origin;
+    private SavedGameParser.CrewType crewType;
+    private Constants.EventType origin;
     private Constants.CrewAliveOrDead state;
 
-    private final boolean male;
+    private boolean male;
     private final List<Integer> spriteTintIndeces = new ArrayList<Integer>();
 
     private int repairs = 0;
@@ -30,6 +30,8 @@ public class Crew {
     private boolean weaponMasteryOne = false, weaponMasteryTwo = false;
     private boolean repairMasteryOne = false, repairMasteryTwo = false;
     private boolean combatMasteryOne = false, combatMasteryTwo = false;
+
+    public Crew(){};
 
     public Crew(String name, SavedGameParser.CrewType crewType, Constants.EventType origin, boolean male) {
         this.name = name;

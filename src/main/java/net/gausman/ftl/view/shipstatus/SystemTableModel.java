@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SystemTableModel extends AbstractTableModel {
-    private final String[] columnNames = {"Name", "Type", "Level"};
+    private final String[] columnNames = {"Name", "Level"};
     private List<ShipSystem> shipSystems = new ArrayList<>();
 
     public void setSystems(List<ShipSystem> shipSystems) {
@@ -31,8 +31,7 @@ public class SystemTableModel extends AbstractTableModel {
 
         return switch (columnIndex){
             case 0 -> shipSystem.getDisplayText();
-            case 1 -> shipSystem.getDisplayType();
-            case 2 -> shipSystem.getLevel();
+            case 1 -> shipSystem.getLevel();
             default -> null;
         };
     }

@@ -2,15 +2,21 @@ package net.gausman.ftl.view.shipstatus;
 
 import net.blerf.ftl.parser.SavedGameParser.SystemType;
 import net.gausman.ftl.model.*;
+import net.gausman.ftl.view.charts.HullChartPanel;
+import net.gausman.ftl.view.charts.ScrapUsedChartPanel;
+import net.gausman.ftl.view.charts.ScrapUsedPieChartPanel;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
+import javax.swing.table.TableCellRenderer;
+import javax.swing.table.TableColumn;
+import javax.swing.table.TableColumnModel;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class ShipStatusPanel extends JPanel {
+public class ShipStatusPanel extends JSplitPane {
     public static final int PREFERRED_WIDTH_1_DIGITS = 2;
     public static final int PREFERRED_WIDTH_3_DIGITS = 10;
 
@@ -20,68 +26,93 @@ public class ShipStatusPanel extends JPanel {
     private ItemTableModel itemTableModel;
     private CrewTableModel crewTableModel;
 
+    private SectorTableModel sectorTableModel;
+    private JTable sectorTable;
+    private JScrollPane jScrollPaneSector;
+
     private SystemTableModel systemTableModel;
 
+    private HullChartPanel hullChartPanel;
+    private ScrapUsedChartPanel scrapUsedChartPanel;
+
+    private final JSplitPane statusPanel;
+    private final JSplitPane sectorPanel;
 
     public ShipStatusPanel() {
-        setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
-        setAlignmentX(Component.LEFT_ALIGNMENT);
+        super(JSplitPane.VERTICAL_SPLIT);
+        statusPanel = new JSplitPane(HORIZONTAL_SPLIT);
+        sectorPanel = new JSplitPane(HORIZONTAL_SPLIT);
         setPreferredSize(new Dimension(900, 500));
 
         JPanel firstCol = new JPanel();
         firstCol.setLayout(new BoxLayout(firstCol, BoxLayout.Y_AXIS));
         firstCol.setPreferredSize(new Dimension(250, 500));
-        add(firstCol);
 
         JPanel secondCol = new JPanel();
         secondCol.setLayout(new BoxLayout(secondCol, BoxLayout.Y_AXIS));
-        secondCol.setPreferredSize(new Dimension(250, 500));
-        add(secondCol);
 
-        JPanel thirdCol = new JPanel();
-        thirdCol.setLayout(new BoxLayout(thirdCol, BoxLayout.Y_AXIS));
-        secondCol.setPreferredSize(new Dimension(350, 500));
-        add(thirdCol);
+        statusPanel.setLeftComponent(firstCol);
+        statusPanel.setRightComponent(secondCol);
+
+        sectorTableModel = new SectorTableModel();
+        sectorTable = new JTable(sectorTableModel);
+        jScrollPaneSector = new JScrollPane(sectorTable);
+        sectorPanel.setLeftComponent(jScrollPaneSector);
+        sectorPanel.setDividerLocation(200);
+
+        setTopComponent(statusPanel);
+        setBottomComponent(sectorPanel);
+        setResizeWeight(0.3);
+
+        // Sector Charts
+
+//        hullChartPanel = new HullChartPanel();
+        scrapUsedChartPanel = new ScrapUsedChartPanel();
+        JTabbedPane tabbedPaneSector = new JTabbedPane();
+//        tabbedPaneSector.addTab("Hull", hullChartPanel);
+//        tabbedPaneSector.addTab("Resources", new ScrapUsedPieChartPanel());
+        tabbedPaneSector.addTab("Scrap usage", scrapUsedChartPanel);
+
+        sectorPanel.setRightComponent(tabbedPaneSector);
+
 
         // Run Info
         runInfoTableModel = new SimpleTableModel();
         JTable runInfoTable = new JTable(runInfoTableModel);
         JScrollPane jScrollPaneRunInfo = new JScrollPane(runInfoTable);
-        firstCol.add(jScrollPaneRunInfo);
 
         resourcesTableModel = new SimpleTableModel();
         JTable resourcesTable = new JTable(resourcesTableModel);
         JScrollPane jScrollPaneResources = new JScrollPane(resourcesTable);
-        firstCol.add(jScrollPaneResources);
 
-        // Systems
-        systemTableModel = new SystemTableModel();
-        JTable systemsTable = new JTable(systemTableModel);
-        systemsTable.getColumnModel().getColumn(2).setPreferredWidth(PREFERRED_WIDTH_1_DIGITS);
-        JScrollPane jScrollPane = new JScrollPane(systemsTable);
-        secondCol.add(jScrollPane);
+        JTabbedPane tabbedPaneFirstCol = new JTabbedPane();
+        tabbedPaneFirstCol.addTab("Stats", jScrollPaneRunInfo);
+        tabbedPaneFirstCol.addTab("Resources", jScrollPaneResources);
+        firstCol.add(tabbedPaneFirstCol);
 
 
         // Items: Weapons/Drones/Augments
         itemTableModel = new ItemTableModel();
         JTable itemsTable = new JTable(itemTableModel);
-        itemsTable.getColumnModel().getColumn(0).setPreferredWidth(PREFERRED_WIDTH_3_DIGITS);
-        itemsTable.getColumnModel().getColumn(1).setPreferredWidth(PREFERRED_WIDTH_3_DIGITS);
-        itemsTable.getColumnModel().getColumn(2).setPreferredWidth(PREFERRED_WIDTH_3_DIGITS);
-        itemsTable.getColumnModel().getColumn(3).setPreferredWidth(PREFERRED_WIDTH_3_DIGITS);
         JScrollPane jScrollPaneItems = new JScrollPane(itemsTable);
-        thirdCol.add(jScrollPaneItems);
 
         // Crew
         crewTableModel = new CrewTableModel();
         JTable crewTable = new JTable(crewTableModel);
-//        crewTable.getColumnModel().getColumn(0).setPreferredWidth(PREFERRED_WIDTH_3_DIGITS);
-//        crewTable.getColumnModel().getColumn(1).setPreferredWidth(PREFERRED_WIDTH_3_DIGITS);
-//        crewTable.getColumnModel().getColumn(2).setPreferredWidth(PREFERRED_WIDTH_3_DIGITS);
-        crewTable.getColumnModel().getColumn(3).setPreferredWidth(PREFERRED_WIDTH_3_DIGITS);
-        crewTable.getColumnModel().getColumn(4).setPreferredWidth(PREFERRED_WIDTH_3_DIGITS);
         JScrollPane jScrollPaneCrew = new JScrollPane(crewTable);
-        thirdCol.add(jScrollPaneCrew);
+
+        // Systems
+        systemTableModel = new SystemTableModel();
+        JTable systemsTable = new JTable(systemTableModel);
+        systemsTable.getColumnModel().getColumn(1).setPreferredWidth(PREFERRED_WIDTH_1_DIGITS);
+        JScrollPane jScrollPaneSystems = new JScrollPane(systemsTable);
+
+        JTabbedPane tabbedPaneSecondCol = new JTabbedPane();
+        tabbedPaneSecondCol.addTab("Items", jScrollPaneItems);
+        tabbedPaneSecondCol.addTab("Crew", jScrollPaneCrew);
+        tabbedPaneSecondCol.addTab("Systems", jScrollPaneSystems);
+        secondCol.add(tabbedPaneSecondCol);
+
 
 
         crewTable.getSelectionModel().addListSelectionListener(e -> {
@@ -139,7 +170,12 @@ public class ShipStatusPanel extends JPanel {
         fullCrewList.addAll(model.getCrewList());
         fullCrewList.addAll(model.getDeadCrewList());
         crewTableModel.setCrewList(fullCrewList);
+        sectorTableModel.setSectorMetrics(model.getSectorMetrics());
 
+        scrapUsedChartPanel.updateDataset(model.getSectorMetrics());
+//        hullChartPanel.updateDataset(model.getSectorMetrics());
+
+//        resizeColumnWidths(sectorTable, jScrollPaneSector);
     }
 
     private JPanel createPanelBoxTable(String title, JTable table){
@@ -239,5 +275,45 @@ public class ShipStatusPanel extends JPanel {
 
         return flowPanel;
     }
+
+    public void resizeColumnWidths(JTable table, JScrollPane scrollPane) {
+        final TableColumnModel columnModel = table.getColumnModel();
+        int totalWidth = 0;
+
+        for (int column = 0; column < table.getColumnCount(); column++) {
+            int width = 50; // minimum width
+
+            // calculate max width for column
+            for (int row = 0; row < table.getRowCount(); row++) {
+                TableCellRenderer renderer = table.getCellRenderer(row, column);
+                Component comp = table.prepareRenderer(renderer, row, column);
+                width = Math.max(width, comp.getPreferredSize().width + 1);
+            }
+
+            // consider header
+            TableCellRenderer headerRenderer = table.getTableHeader().getDefaultRenderer();
+            Component headerComp = headerRenderer.getTableCellRendererComponent(
+                    table, table.getColumnName(column), false, false, 0, column);
+            width = Math.max(width, headerComp.getPreferredSize().width + 1);
+
+            columnModel.getColumn(column).setPreferredWidth(width);
+            totalWidth += width;
+        }
+
+        // set table properties
+        table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+
+        // now set scroll pane preferred & minimum sizes based on total column width + intercell spacing + insets
+        int spacing = (table.getColumnCount() - 1) * table.getIntercellSpacing().width;
+        int insets = table.getInsets().left + table.getInsets().right;
+        int scrollWidth = totalWidth + spacing + insets;
+
+        Dimension preferred = new Dimension(scrollWidth, scrollPane.getPreferredSize().height);
+        scrollPane.setPreferredSize(preferred);
+        scrollPane.setMinimumSize(preferred);
+    }
+
+
+
 
 }

@@ -5,8 +5,10 @@ import net.gausman.ftl.model.Constants;
 import net.gausman.ftl.model.record.Jump;
 
 public class NameEvent extends CrewEvent {
-    private final String oldName;
-    private final String newName;
+    private String oldName;
+    private String newName;
+
+    public NameEvent(){}
 
     public NameEvent(String newName, String oldName, Jump jump){
         super(SavedGameParser.StoreItemType.CREW, Constants.EventType.NAME, 0, 0, "name", jump);

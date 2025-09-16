@@ -25,6 +25,7 @@ public class ShipStatusModel {
     private final List<Item> itemList;
     private final List<Crew> crewList;
     private final List<Crew> deadCrewList;
+    private final SectorMetrics sectorMetrics;
 
     // New ShipStatus
     public ShipStatusModel(){
@@ -55,6 +56,7 @@ public class ShipStatusModel {
         itemList = new ArrayList<>();
         crewList = new ArrayList<>();
         deadCrewList = new ArrayList<>();
+        sectorMetrics = new SectorMetrics();
 
     }
 
@@ -72,7 +74,14 @@ public class ShipStatusModel {
         crewList = new ArrayList<>(status.crewList.stream().map(Crew::new).toList());
         deadCrewList = new ArrayList<>(status.deadCrewList.stream().map(Crew::new).toList());
 
+        sectorMetrics = new SectorMetrics(status.getSectorMetrics());
     }
+
+//    private void addScrapGained(int key, Constants.ScrapOrigin origin, int amount){
+//        Map<Constants.ScrapOrigin, Integer> innerMap = scrapGained.computeIfAbsent(key,
+//                k -> createDefaultScrapGainedMap());
+//        innerMap.put(origin, innerMap.get(origin) + amount);
+//    }
 
     public void apply(Event event, boolean apply){
         int mult = apply ? 1 : -1;
@@ -96,6 +105,7 @@ public class ShipStatusModel {
                     case SCRAP_COLLECTED -> {
                         if (!event.getEventType().equals(Constants.EventType.START)){
                             generalInfoInteger.compute(ge.getGeneral(), (k,v) -> v + mult * event.getScrap());
+                            sectorMetrics.update(event.getJump().getSector(), Constants.ScrapOrigin.NORMAL, mult*event.getScrap());
                         }
                     }
                 }
@@ -104,6 +114,13 @@ public class ShipStatusModel {
             case SYSTEM -> {
                 SystemType type = SystemType.findById(event.getText());
                 systems.compute(type, (k,v) -> v + mult * event.getAmount());
+                if (!event.getEventType().equals(Constants.EventType.START)){
+                    sectorMetrics.update(
+                            event.getJump().getSector(),
+                            event.getEventType().equals(Constants.EventType.BUY) ? Constants.ScrapUsedCategory.SYSTEM_BUY : Constants.ScrapUsedCategory.SYSTEM_UPGRADE,
+                            mult*event.getScrap());
+                }
+
             }
 
             case RESOURCE -> {
@@ -118,6 +135,27 @@ public class ShipStatusModel {
                 }else {
                     log.info("Resource not found");
                 }
+                if (event.getEventType().equals(Constants.EventType.BUY)){
+                    Constants.ScrapUsedCategory cat = switch (resource) {
+                        case FUEL    -> Constants.ScrapUsedCategory.FUEL;
+                        case MISSILE -> Constants.ScrapUsedCategory.MISSILES;
+                        case DRONE   -> Constants.ScrapUsedCategory.DRONE_PARTS;
+                        case HULL ->  Constants.ScrapUsedCategory.REPAIR;
+                        default      -> null;
+                    };
+
+                    if (cat == null) {
+                        break;
+                    }
+
+                    sectorMetrics.update(
+                            event.getJump().getSector(),
+                            cat,
+                            mult*event.getScrap()
+                    );
+
+                }
+
             }
 
             case REACTOR -> {
@@ -126,6 +164,11 @@ public class ShipStatusModel {
                     case START, UPGRADE -> reactor.compute(r, (k,v) -> v + mult * event.getAmount());
                     default -> log.info("Reactor Event with Type not implemented: " + event.getEventType());
                 }
+                sectorMetrics.update(
+                        event.getJump().getSector(),
+                        Constants.ScrapUsedCategory.REACTOR,
+                        mult*event.getScrap()
+                );
             }
 
             case WEAPON, DRONE, AUGMENT -> {
@@ -139,6 +182,27 @@ public class ShipStatusModel {
                                 log.info("Item could not be removed from list.");
                             }
                         }
+                        if (event.getEventType().equals(Constants.EventType.REWARD)){
+                            sectorMetrics.update(event.getJump().getSector(), Constants.ScrapOrigin.FREE, mult*event.getScrap()/2);
+                        }
+                        if (!event.getEventType().equals(Constants.EventType.BUY)){
+                            break;
+                        }
+                        Constants.ScrapUsedCategory cat = switch (event.getItemType()) {
+                            case WEAPON    -> Constants.ScrapUsedCategory.WEAPONS;
+                            case DRONE-> Constants.ScrapUsedCategory.DRONES;
+                            case AUGMENT  -> Constants.ScrapUsedCategory.AUGMENTS;
+                            default      -> null;
+                        };
+
+                        if (cat == null){
+                            break;
+                        }
+                        sectorMetrics.update(
+                                event.getJump().getSector(),
+                                cat,
+                                mult*event.getScrap()
+                        );
                     }
                     case SELL, DISCARD -> {
                         boolean stateChanged;
@@ -184,6 +248,16 @@ public class ShipStatusModel {
                         } else {
                             crewList.remove(nce.getCrew());
                         }
+
+                        if (!event.getEventType().equals(Constants.EventType.BUY)){
+                            break;
+                        }
+
+                        sectorMetrics.update(
+                                event.getJump().getSector(),
+                                Constants.ScrapUsedCategory.CREW,
+                                mult*event.getScrap()
+                        );
                     }
 
                     case DISCARD -> {
@@ -266,7 +340,6 @@ public class ShipStatusModel {
 
                         String masteryString = convertMasteryToAttributename(masteryEvent.getMastery(), masteryEvent.getLevel());
                         Crew crewToChange = crewList.get(masteryEvent.getCrewPosition());
-                        int attributeValueBefore = (int) getValueInCrewByAttributename(crewToChange, masteryString);
 
                         if (apply){
                             setValueInCrewByAttributename(crewToChange, masteryString, masteryEvent.getNewValue());
@@ -347,6 +420,16 @@ public class ShipStatusModel {
         return false;
     }
 
+    private Map<Constants.ScrapOrigin, Integer> createDefaultScrapGainedMap(){
+        Map<Constants.ScrapOrigin, Integer> map = new EnumMap<>(Constants.ScrapOrigin.class);
+
+        for (Constants.ScrapOrigin origin : Constants.ScrapOrigin.values()){
+            map.put(origin, 0);
+        }
+
+        return map;
+    }
+
     public Map<Constants.General, String> getGeneralInfoString() {
         return generalInfoString;
     }
@@ -377,5 +460,9 @@ public class ShipStatusModel {
 
     public List<Crew> getDeadCrewList() {
         return deadCrewList;
+    }
+
+    public SectorMetrics getSectorMetrics() {
+        return sectorMetrics;
     }
 }

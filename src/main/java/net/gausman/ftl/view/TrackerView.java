@@ -13,6 +13,7 @@ public class TrackerView extends JFrame {
     private JSplitPane leftPanel;
     private EventTablePanel eventTablePanel;
     private ShipStatusPanel shipStatusPanel;
+    private ChartsPanel chartsPanel;
 //    private EventFilterPanel eventFilterPanel;
 
     // TODO add statusbar in the bottom
@@ -25,12 +26,12 @@ public class TrackerView extends JFrame {
         setLayout(new BorderLayout());
 
         shipStatusPanel = new ShipStatusPanel();
-
+        chartsPanel = new ChartsPanel();
 //        leftPanel = new JPanel(new BorderLayout());
 //        leftPanel.add(shipStatusPanel, BorderLayout.NORTH);
 //        leftPanel.add(new ChartsPanel(), BorderLayout.CENTER);
 
-        leftPanel = new JSplitPane(JSplitPane.VERTICAL_SPLIT, shipStatusPanel, new ChartsPanel());
+        leftPanel = new JSplitPane(JSplitPane.VERTICAL_SPLIT, shipStatusPanel, chartsPanel);
         leftPanel.setResizeWeight(0.5);
         leftPanel.setDividerLocation(0.5);
 
@@ -69,5 +70,9 @@ public class TrackerView extends JFrame {
 
     public ShipStatusPanel getShipStatusPanel() {
         return shipStatusPanel;
+    }
+
+    public ChartsPanel getChartsPanel() {
+        return chartsPanel;
     }
 }

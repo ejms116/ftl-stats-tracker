@@ -5822,6 +5822,19 @@ public class SavedGameParser extends Parser {
 		private String title;
 		StoreItemType(String title) { this.title = title; }
 		public String toString() { return title; }
+
+		private static final Map<String, StoreItemType> LOOKUP = new HashMap<>();
+
+		static {
+			for (StoreItemType type : values()) {
+				LOOKUP.put(type.title, type);
+			}
+		}
+
+		public static StoreItemType fromText(String title) {
+			return LOOKUP.get(title); // returns null if not found
+		}
+
 	}
 
 	public static class StoreShelf {

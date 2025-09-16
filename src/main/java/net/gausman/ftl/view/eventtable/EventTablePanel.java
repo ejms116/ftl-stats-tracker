@@ -12,11 +12,16 @@ import net.gausman.ftl.model.table.JumpTableModel;
 import javax.swing.*;
 import javax.swing.table.TableRowSorter;
 import java.awt.*;
+import java.awt.event.ActionListener;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 
 public class EventTablePanel extends JSplitPane {
+    private final JButton openEventInBrowserButton = new JButton("Open in Event Browser");
+    private final EnumSet<SavedGameParser.StoreItemType> selectedItemType = EnumSet.allOf(SavedGameParser.StoreItemType.class);
+    private final EnumSet<Constants.EventType> selectedEventType = EnumSet.allOf(Constants.EventType.class);
 
     public static final int PREFERRED_WIDTH_3_DIGITS = 10;
 
@@ -53,7 +58,118 @@ public class EventTablePanel extends JSplitPane {
         table = new GroupRowColorJTable(model);
         table.getTableHeader().setReorderingAllowed(false);
         JScrollPane scrollPane = new JScrollPane(table);
-        setBottomComponent(scrollPane);
+
+        sorter = new TableRowSorter<>(model);
+        table.setRowSorter(sorter);
+
+        JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+
+
+
+        // Filter EventType Category
+        JButton categoryFilterButton = new JButton("Type ▼");
+        JPopupMenu categoryFilterMenu = new JPopupMenu();
+
+        // --- Select All / Deselect All ---
+        JMenuItem selectAllEventType = new JMenuItem("Select All");
+        selectAllEventType.addActionListener(e -> {
+            for (Component comp : categoryFilterMenu.getComponents()) {
+                if (comp instanceof JCheckBoxMenuItem item) {
+                    item.setSelected(true);
+                    selectedEventType.add(Constants.EventType.fromText(item.getText()));
+                }
+            }
+            updateTableFilter();
+        });
+        categoryFilterMenu.add(selectAllEventType);
+
+        JMenuItem deselectAllEventType = new JMenuItem("Deselect All");
+        deselectAllEventType.addActionListener(e -> {
+            for (Component comp : categoryFilterMenu.getComponents()) {
+                if (comp instanceof JCheckBoxMenuItem item) {
+                    item.setSelected(false);
+                }
+            }
+            selectedEventType.clear();
+            updateTableFilter();
+        });
+        categoryFilterMenu.add(deselectAllEventType);
+
+        // --- Separator ---
+        categoryFilterMenu.add(new JSeparator());
+
+        for (Constants.EventType value : Constants.EventType.values()) {
+            JCheckBoxMenuItem item = new JCheckBoxMenuItem(value.toString(), true);
+            item.addActionListener(e -> {
+                        if (item.isSelected()) {
+                            selectedEventType.add(value);
+                        } else {
+                            selectedEventType.remove(value);
+                        }
+                updateTableFilter();
+            });
+            categoryFilterMenu.add(item);
+        }
+        categoryFilterButton.addActionListener(e ->
+                categoryFilterMenu.show(categoryFilterButton, 0, categoryFilterButton.getHeight()));
+        filterPanel.add(categoryFilterButton);
+
+        // Filter Type
+        JButton typeFilterButton = new JButton("Category ▼");
+        JPopupMenu typeFilterMenu = new JPopupMenu();
+
+        // --- Select All / Deselect All ---
+        JMenuItem selectAllStoreItemType = new JMenuItem("Select All");
+        selectAllStoreItemType.addActionListener(e -> {
+            for (Component comp : typeFilterMenu.getComponents()) {
+                if (comp instanceof JCheckBoxMenuItem item) {
+                    item.setSelected(true);
+                    selectedItemType.add(SavedGameParser.StoreItemType.fromText(item.getText()));
+                }
+            }
+            updateTableFilter();
+        });
+        typeFilterMenu.add(selectAllStoreItemType);
+
+        JMenuItem deselectAllStoreItemType = new JMenuItem("Deselect All");
+        deselectAllStoreItemType.addActionListener(e -> {
+            for (Component comp : typeFilterMenu.getComponents()) {
+                if (comp instanceof JCheckBoxMenuItem item) {
+                    item.setSelected(false);
+                }
+            }
+            selectedItemType.clear();
+            updateTableFilter();
+        });
+        typeFilterMenu.add(deselectAllStoreItemType);
+
+        // --- Separator ---
+        typeFilterMenu.add(new JSeparator());
+
+        for (SavedGameParser.StoreItemType value : SavedGameParser.StoreItemType.values()) {
+            JCheckBoxMenuItem item = new JCheckBoxMenuItem(value.toString(), true);
+            item.addActionListener(e -> {
+                if (item.isSelected()) {
+                    selectedItemType.add(value);
+                } else {
+                    selectedItemType.remove(value);
+                }
+                updateTableFilter();
+            });
+            typeFilterMenu.add(item);
+        }
+        typeFilterButton.addActionListener(e ->
+                typeFilterMenu.show(typeFilterButton, 0, typeFilterButton.getHeight()));
+        filterPanel.add(typeFilterButton);
+
+        // Action buttons
+        filterPanel.add(openEventInBrowserButton);
+
+        JPanel bottomPanel = new JPanel(new BorderLayout());
+        bottomPanel.add(filterPanel, BorderLayout.NORTH);
+        bottomPanel.add(scrollPane, BorderLayout.CENTER);
+
+        setBottomComponent(bottomPanel);
 
 
         table.getColumnModel().getColumn(0).setPreferredWidth(30);
@@ -68,8 +184,7 @@ public class EventTablePanel extends JSplitPane {
         table.getColumnModel().getColumn(9).setPreferredWidth(PREFERRED_WIDTH_3_DIGITS);
         table.getColumnModel().getColumn(10).setPreferredWidth(PREFERRED_WIDTH_3_DIGITS);
 
-        sorter = new TableRowSorter<>(model);
-        table.setRowSorter(sorter);
+
 
 
         // Disable clicking on header rows and sorting columns like that
@@ -109,6 +224,29 @@ public class EventTablePanel extends JSplitPane {
         }
     }
 
+    private void updateTableFilter() {
+        RowFilter<EventTableModel, Integer> rf = new RowFilter<>() {
+            @Override
+            public boolean include(Entry<? extends EventTableModel, ? extends Integer> entry) {
+                EventTableModel model = entry.getModel();
+
+
+                Constants.EventType eventType = (Constants.EventType) entry.getValue(5); // EventType/Category
+                SavedGameParser.StoreItemType storeItemType = (SavedGameParser.StoreItemType) entry.getValue(6); // StoreItemType
+
+                String id = (String) entry.getValue(7);
+
+                boolean matchStoreItemType = selectedItemType.isEmpty() || selectedItemType.contains(storeItemType);
+                boolean matchEventType = selectedEventType.isEmpty() || selectedEventType.contains(eventType);
+
+                return matchStoreItemType && matchEventType;
+            }
+        };
+
+        sorter.setRowFilter(rf);
+    }
+
+
     // This method will update the row filter based on the filter states.
     public void updateRowFilter(Map<EventFilter, Boolean> filterStates) {
         RowFilter<EventTableModel, Integer> filter = new RowFilter<>() {
@@ -138,6 +276,10 @@ public class EventTablePanel extends JSplitPane {
 
         sorter.setRowFilter(filter);
 
+    }
+
+    public void setOpenEventInBrowserButton(ActionListener listener){
+        openEventInBrowserButton.addActionListener(listener);
     }
 
     public JTable getTable(){

@@ -15,6 +15,8 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class EventService {
     private static final Logger log = LoggerFactory.getLogger(EventService.class);
@@ -25,6 +27,10 @@ public class EventService {
     private DataManager dm = DataManager.get();
 
     private List<SavedGameParser.EncounterState> encounterStateList = new ArrayList<>();
+
+    public void initEventService(){
+        encounterStateList.clear();
+    }
 
     public EventBox getFuelUsedEventBox(Jump jump){
         List<Event> events = new ArrayList<>();
@@ -228,7 +234,7 @@ public class EventService {
                                     case WEAPON -> boughtItemEvent = new WeaponEvent(Constants.EventType.BUY, 1, localCost, newStore.getShelfList().get(i).getItems().get(j).getItemId(), jump);
                                     case DRONE -> boughtItemEvent = new DroneEvent(Constants.EventType.BUY, 1, localCost, newStore.getShelfList().get(i).getItems().get(j).getItemId(), jump);
                                     case AUGMENT -> boughtItemEvent = new AugmentEvent(Constants.EventType.BUY, 1, localCost, newStore.getShelfList().get(i).getItems().get(j).getItemId(), jump);
-                                    case SYSTEM -> boughtItemEvent = new SystemEvent(Constants.EventType.BUY, 1, localCost, newStore.getShelfList().get(i).getItems().get(j).getItemId(), jump, SavedGameParser.SystemType.findById(newStore.getShelfList().get(i).getItems().get(j).getItemId()), false);
+                                    case SYSTEM -> boughtItemEvent = new SystemEvent(Constants.EventType.BUY, 1, localCost, newStore.getShelfList().get(i).getItems().get(j).getItemId(), jump, SavedGameParser.SystemType.findById(newStore.getShelfList().get(i).getItems().get(j).getItemId()), true);
 
                                     default -> throw new IllegalArgumentException("Unsupported ItemType: " + newStore.getShelfList().get(i).getItemType());
                                 }
@@ -417,28 +423,23 @@ public class EventService {
         for (String weapon: removedWeapons){
             if (typeNow == Constants.EventType.SELL){
                 sellCost = GausmanUtil.getCostStoreItemId(SavedGameParser.StoreItemType.WEAPON, weapon);
-            } else {
-                sellCost = 0;
+                tempSellEvents.add(new WeaponEvent(typeNow, 1, sellCost, weapon, jump));
             }
-            tempSellEvents.add(new WeaponEvent(typeNow, 1, sellCost, weapon, jump));
         }
 
         for (String drone: removedDrones){
             if (typeNow == Constants.EventType.SELL){
                 sellCost = GausmanUtil.getCostStoreItemId(SavedGameParser.StoreItemType.DRONE, drone);
-            } else {
-                sellCost = 0;
+                tempSellEvents.add(new DroneEvent(typeNow, 1, sellCost, drone, jump));
             }
-            tempSellEvents.add(new DroneEvent(typeNow, 1, sellCost, drone, jump));
+
         }
 
         for (String augment: removedAugments){
             if (typeNow == Constants.EventType.SELL){
                 sellCost = GausmanUtil.getCostStoreItemId(SavedGameParser.StoreItemType.AUGMENT, augment);
-            } else {
-                sellCost = 0;
+                tempSellEvents.add(new AugmentEvent(typeNow, 1, sellCost, augment, jump));
             }
-            tempSellEvents.add(new AugmentEvent(typeNow, 1, sellCost, augment, jump));
         }
 
         if (addToLastJump){
@@ -502,6 +503,7 @@ public class EventService {
             }
         }
 
+        // TODO free upgrade system events
         // Here is some logic trying to find System Upgrades from event
         // The SYSTEM_UPGRADE state_var is increased by 1 for every unique system the player upgraded
         List<SavedGameParser.SystemType> possibleSystemUpgradeEvent = new ArrayList<>();
@@ -532,10 +534,11 @@ public class EventService {
         }
 
 
-        // TODO free upgrade system events
+
+
 
         // Crew
-        events.addAll(getCrewEvents(lastGameState.getPlayerShip().getCrewList(), currentGameState.getPlayerShip().getCrewList(), boughtCrew, jump));
+        events.addAll(getCrewEvents(lastGameState, currentGameState, boughtCrew, jump));
 
 
         // TESTING
@@ -547,17 +550,66 @@ public class EventService {
 //        FTLEventList ftlEventList = dm.getEventListById("SAVE_CIVILIAN_LIST");
 //        FTLEvent ftlEvent = dm.getEventById("PIRATE_STATION_CROPS");
 
+
+        // Scrap Diff
+        int scrapChangeExpected = 0;
+        for (Event event : events){
+            scrapChangeExpected += event.getScrapChange();
+        }
+        int scrapChangeDiff = currentGameState.getPlayerShip().getScrapAmt() - lastGameState.getPlayerShip().getScrapAmt() - scrapChangeExpected;
+
+        if (scrapChangeDiff != 0){
+            events.add(new GeneralEvent(Constants.EventType.GENERAL,0, scrapChangeDiff, "unrecognized scrap difference (probably some event)", jump, Constants.General.SCRAP_DIFF));
+        }
+
+        // Fuel Diff
+
+        // Missiles Diff
+
+        // Drones Diff
+
+        // Hull diff
+
         box.setEncounterState(currentGameState.getEncounter());
 
         return box;
 
     }
 
-    private List<Event> getCrewEvents(List<SavedGameParser.CrewState> lastCrewState, List<SavedGameParser.CrewState> newCrewState, List<String> boughtCrew, Jump jump){
+    //            List<SavedGameParser.CrewState> lastCrewStatePlayer,
+    //            List<SavedGameParser.CrewState> newCrewStatePlayer,
+    //            List<SavedGameParser.CrewState> lastCrewStateEnemy,
+    //            List<SavedGameParser.CrewState> newCrewStateEnemy,
+    private List<Event> getCrewEvents(SavedGameParser.SavedGameState lastGameState, SavedGameParser.SavedGameState currentGameState, List<String> boughtCrew, Jump jump){
         List<Event> events = new ArrayList<>();
 
-        lastCrewState.removeIf(cs -> !cs.isPlayerControlled());
-        newCrewState.removeIf(cs -> !cs.isPlayerControlled());
+        List<SavedGameParser.CrewState> lastCrewStatePlayer =
+                Optional.ofNullable(lastGameState.getPlayerShip())
+                        .map(SavedGameParser.ShipState::getCrewList)
+                        .orElse(Collections.emptyList());
+
+        List<SavedGameParser.CrewState> newCrewStatePlayer =
+                Optional.ofNullable(currentGameState.getPlayerShip())
+                        .map(SavedGameParser.ShipState::getCrewList)
+                        .orElse(Collections.emptyList());
+
+        List<SavedGameParser.CrewState> lastCrewStateEnemy =
+                Optional.ofNullable(lastGameState.getNearbyShip())
+                        .map(SavedGameParser.ShipState::getCrewList)
+                        .orElse(Collections.emptyList());
+
+        List<SavedGameParser.CrewState> newCrewStateEnemy =
+                Optional.ofNullable(currentGameState.getNearbyShip())
+                        .map(SavedGameParser.ShipState::getCrewList)
+                        .orElse(Collections.emptyList());
+
+        List<SavedGameParser.CrewState> lastCrewState = Stream.concat(lastCrewStatePlayer.stream(), lastCrewStateEnemy.stream())
+                .filter(SavedGameParser.CrewState::isPlayerControlled)
+                .toList();
+
+        List<SavedGameParser.CrewState> newCrewState = Stream.concat(newCrewStatePlayer.stream(), newCrewStateEnemy.stream())
+                .filter(SavedGameParser.CrewState::isPlayerControlled)
+                .toList();
 
         Map<Integer, List<Integer>> possibleMatchesOldToNew = new HashMap<>();
         Map<Integer, Integer> mapOldToNew = new HashMap<>();
@@ -567,7 +619,8 @@ public class EventService {
         for (int i = 0; i < lastCrewState.size(); i++){
             SavedGameParser.CrewState lastState = lastCrewState.get(i);
             possibleMatchesOldToNew.put(i, new ArrayList<>());
-            for (int j = 0; j < Math.min(i + 1, newCrewState.size()); j++){
+//            for (int j = 0; j < Math.min(i + 1, newCrewState.size()); j++){
+            for (int j = 0; j < newCrewState.size(); j++){
                 SavedGameParser.CrewState newState = newCrewState.get(j);
                 if (lastState.isMale() == newState.isMale()
                         && lastState.getRace().equals(newState.getRace())
@@ -587,20 +640,63 @@ public class EventService {
         }
 
         // Assign the best match for every old crew
-        possibleMatchesOldToNew.entrySet().stream()
-                .sorted(Comparator.comparingInt(entry -> entry.getValue().size())) // Todo maybe we need to sort after every assignment
-                .forEach(entry -> {
-                    Integer key = entry.getKey();
-                    List<Integer> possibleValues = entry.getValue();
-                    possibleValues.removeAll(newCrewMatched);
-                    if (!possibleValues.isEmpty()) {
-                        Integer chosen = possibleValues.getFirst(); // Todo Maybe prefer crew with the same name if possible
-                        newCrewMatched.add(chosen);
-                        mapOldToNew.put(key, chosen);
+//        possibleMatchesOldToNew.entrySet().stream()
+//                .sorted(Comparator.comparingInt(entry -> entry.getValue().size())) // Todo maybe we need to sort after every assignment
+//                .forEach(entry -> {
+//                    Integer key = entry.getKey();
+//                    List<Integer> possibleValues = entry.getValue();
+//                    possibleValues.removeAll(newCrewMatched);
+//                    if (!possibleValues.isEmpty()) {
+//                        Integer chosen = possibleValues.getFirst(); // Todo Maybe prefer crew with the same name if possible
+//                        newCrewMatched.add(chosen);
+//                        mapOldToNew.put(key, chosen);
+//                    } else {
+//                        mapOldToNew.put(key, null);
+//                    }
+//                });
+
+        // While we still have unprocessed entries
+        while (!possibleMatchesOldToNew.isEmpty()) {
+            // Sort dynamically by number of possible matches
+            List<Map.Entry<Integer, List<Integer>>> sortedEntries =
+                    possibleMatchesOldToNew.entrySet().stream()
+                            .sorted(Comparator.comparingInt(entry -> entry.getValue().size()))
+                            .toList();
+
+            for (Map.Entry<Integer, List<Integer>> entry : sortedEntries) {
+                Integer oldId = entry.getKey();
+                List<Integer> possibleValues = new ArrayList<>(entry.getValue());
+
+                // Remove already matched crew
+                possibleValues.removeAll(newCrewMatched);
+
+                Integer chosen = null;
+                if (!possibleValues.isEmpty()) {
+                    if (possibleValues.size() == 1) {
+                        // ✅ Only one option → take it
+                        chosen = possibleValues.getFirst();
                     } else {
-                        mapOldToNew.put(key, null);
+                        // ✅ Prefer same-name match if available
+                        String oldName = lastCrewState.get(oldId).getName();
+                        chosen = possibleValues.stream()
+                                .filter(newId -> newCrewState.get(newId).getName().equals(oldName))
+                                .findFirst()
+                                .orElse(possibleValues.getFirst()); // fallback: just take the first
                     }
-                });
+
+                    newCrewMatched.add(chosen);
+                    mapOldToNew.put(oldId, chosen);
+                } else {
+                    mapOldToNew.put(oldId, null);
+                }
+
+                // Once processed, remove from the map
+                possibleMatchesOldToNew.remove(oldId);
+                // 🔁 Break out to re-sort after this assignment
+                break;
+            }
+        }
+
 
         // Create events for every Crew-match
         // If the old crew does not match with one in the new list the crew is dead/discarded
@@ -697,6 +793,7 @@ public class EventService {
                     jump
             );
             event.setCrewPosition(crewPosition);
+            event.setDisplayText(String.format("%s - %s: %s", newCrewState.getName(), Constants.Stats.PILOTED_EVASIONS, newCrewState.getPilotedEvasions()));
             events.add(event);
         }
 
@@ -745,7 +842,7 @@ public class EventService {
                     engineSkillChange,
                     jump
             );
-            event.setDisplayText(String.format("%s - %s Skill: %s", newCrewState.getName(), Constants.Skill.ENGINE, newCrewState.getPilotSkill()));
+            event.setDisplayText(String.format("%s - %s Skill: %s", newCrewState.getName(), Constants.Skill.ENGINE, newCrewState.getEngineSkill()));
             event.setCrewPosition(crewPosition);
             events.add(event);
         }
@@ -807,6 +904,7 @@ public class EventService {
                     newCrewState.getPilotMasteryOne(),
                     jump
             );
+            event.setDisplayText(String.format("%s - %s Mastery Level %s", newCrewState.getName(), Constants.Skill.PILOT, 1));
             event.setCrewPosition(crewPosition);
             events.add(event);
         }
@@ -818,6 +916,7 @@ public class EventService {
                     newCrewState.getPilotMasteryTwo(),
                     jump
             );
+            event.setDisplayText(String.format("%s - %s Mastery Level %s", newCrewState.getName(), Constants.Skill.PILOT, 2));
             event.setCrewPosition(crewPosition);
             events.add(event);
         }
@@ -829,6 +928,7 @@ public class EventService {
                     newCrewState.getEngineMasteryOne(),
                     jump
             );
+            event.setDisplayText(String.format("%s - %s Mastery Level %s", newCrewState.getName(), Constants.Skill.ENGINE, 1));
             event.setCrewPosition(crewPosition);
             events.add(event);
         }
@@ -840,6 +940,7 @@ public class EventService {
                     newCrewState.getEngineMasteryTwo(),
                     jump
             );
+            event.setDisplayText(String.format("%s - %s Mastery Level %s", newCrewState.getName(), Constants.Skill.ENGINE, 2));
             event.setCrewPosition(crewPosition);
             events.add(event);
         }
@@ -851,6 +952,7 @@ public class EventService {
                     newCrewState.getShieldMasteryOne(),
                     jump
             );
+            event.setDisplayText(String.format("%s - %s Mastery Level %s", newCrewState.getName(), Constants.Skill.SHIELD, 1));
             event.setCrewPosition(crewPosition);
             events.add(event);
         }
@@ -862,6 +964,7 @@ public class EventService {
                     newCrewState.getShieldMasteryTwo(),
                     jump
             );
+            event.setDisplayText(String.format("%s - %s Mastery Level %s", newCrewState.getName(), Constants.Skill.SHIELD, 2));
             event.setCrewPosition(crewPosition);
             events.add(event);
         }
@@ -873,6 +976,7 @@ public class EventService {
                     newCrewState.getWeaponMasteryOne(),
                     jump
             );
+            event.setDisplayText(String.format("%s - %s Mastery Level %s", newCrewState.getName(), Constants.Skill.WEAPON, 1));
             event.setCrewPosition(crewPosition);
             events.add(event);
         }
@@ -884,6 +988,7 @@ public class EventService {
                     newCrewState.getWeaponMasteryTwo(),
                     jump
             );
+            event.setDisplayText(String.format("%s - %s Mastery Level %s", newCrewState.getName(), Constants.Skill.WEAPON, 2));
             event.setCrewPosition(crewPosition);
             events.add(event);
         }
@@ -895,6 +1000,7 @@ public class EventService {
                     newCrewState.getRepairMasteryOne(),
                     jump
             );
+            event.setDisplayText(String.format("%s - %s Mastery Level %s", newCrewState.getName(), Constants.Skill.REPAIR, 1));
             event.setCrewPosition(crewPosition);
             events.add(event);
         }
@@ -906,6 +1012,7 @@ public class EventService {
                     newCrewState.getRepairMasteryTwo(),
                     jump
             );
+            event.setDisplayText(String.format("%s - %s Mastery Level %s", newCrewState.getName(), Constants.Skill.REPAIR, 2));
             event.setCrewPosition(crewPosition);
             events.add(event);
         }
@@ -917,6 +1024,7 @@ public class EventService {
                     newCrewState.getCombatMasteryOne(),
                     jump
             );
+            event.setDisplayText(String.format("%s - %s Mastery Level %s", newCrewState.getName(), Constants.Skill.COMBAT, 1));
             event.setCrewPosition(crewPosition);
             events.add(event);
         }
@@ -928,6 +1036,7 @@ public class EventService {
                     newCrewState.getCombatMasteryTwo(),
                     jump
             );
+            event.setDisplayText(String.format("%s - %s Mastery Level %s", newCrewState.getName(), Constants.Skill.COMBAT, 2));
             event.setCrewPosition(crewPosition);
             events.add(event);
         }

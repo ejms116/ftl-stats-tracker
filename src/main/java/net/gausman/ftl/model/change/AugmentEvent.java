@@ -6,6 +6,8 @@ import net.gausman.ftl.model.record.Jump;
 import net.gausman.ftl.util.GausmanUtil;
 
 public class AugmentEvent extends Event{
+    public AugmentEvent() {}
+
     public AugmentEvent(Constants.EventType eventType, int amount, int scrap, String text, Jump jump){
         super(SavedGameParser.StoreItemType.AUGMENT, eventType, amount, scrap, text, jump);
     }

@@ -1,6 +1,9 @@
 package net.gausman.ftl.model.record;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+import net.blerf.ftl.model.sectortree.SectorDot;
 import net.blerf.ftl.parser.SavedGameParser;
 
 import java.util.ArrayList;
@@ -8,20 +11,26 @@ import java.util.List;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
+@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id", scope = Sector.class)
 public class Sector {
     private static int nextId = 1;
 
-    private final int id;
-    private final int sectorLayoutSeed;
-    private Jump lastJump = null;
+    private int id;
+    private int sectorLayoutSeed;
     private List<SavedGameParser.BeaconState> beaconList = new ArrayList<>();
     private final NavigableMap<Integer,Jump> jumps = new TreeMap<>();
-    @JsonBackReference
+    private SectorDot sectorDot;
     private Run run;
+
+    public Sector(){
+        nextId++;
+    }
 
     public Sector(SavedGameParser.SavedGameState gameState, Run run){
 //        this.id = gameState.getSectorNumber() + 1;
-        this.id = nextId;
+//        this.id = nextId;
+        this.id = gameState.getSectorNumber() + 1;
+        this.sectorDot = run.getSectorDotForId(this.id, gameState.getSectorVisitation());
         this.sectorLayoutSeed = gameState.getSectorLayoutSeed();
         Jump jump1 = new Jump(gameState, this);
         this.jumps.put(jump1.getId(), jump1);
@@ -47,7 +56,6 @@ public class Sector {
     }
 
     public void addJump(Jump jump){
-        lastJump = jumps.lastEntry().getValue();
         jumps.put(jump.getId(), jump);
     }
 
@@ -55,8 +63,9 @@ public class Sector {
         return jumps;
     }
 
+    @JsonIgnore
     public Jump getLastJump() {
-        return lastJump;
+        return jumps.lastEntry().getValue();
     }
 
     public static void resetNextId(){
@@ -65,5 +74,9 @@ public class Sector {
 
     public Run getRun(){
         return run;
+    }
+
+    public SectorDot getSectorDot() {
+        return sectorDot;
     }
 }
