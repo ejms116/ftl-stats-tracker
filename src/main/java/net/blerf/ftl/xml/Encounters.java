@@ -8,8 +8,10 @@ import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlElement;
 import jakarta.xml.bind.annotation.XmlRootElement;
 
-import net.blerf.ftl.xml.FTLEvent;
-import net.blerf.ftl.xml.FTLEventList;
+import net.blerf.ftl.xml.event.FTLEvent;
+import net.blerf.ftl.xml.event.FTLEventList;
+import net.blerf.ftl.xml.event.ShipEvent;
+import net.blerf.ftl.xml.event.TextList;
 
 
 @XmlRootElement( name = "events" )
@@ -24,6 +26,9 @@ public class Encounters {
 
 	@XmlElement( name = "ship", required = false )
 	private List<ShipEvent> shipEvents = new ArrayList<ShipEvent>();
+
+	@XmlElement( name = "textList", required = false)
+	private List<TextList> textLists = new ArrayList<>();
 
 
 	public void setEvents( List<FTLEvent> events ) {
@@ -48,6 +53,14 @@ public class Encounters {
 
 	public List<ShipEvent> getShipEvents() {
 		return shipEvents;
+	}
+
+	public List<TextList> getTextLists() {
+		return textLists;
+	}
+
+	public void setTextLists(List<TextList> textLists) {
+		this.textLists = textLists;
 	}
 
 	/**

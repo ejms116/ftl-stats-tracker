@@ -1,6 +1,6 @@
 package net.gausman.ftl.model.table;
 
-import net.gausman.ftl.model.record.Event;
+import net.gausman.ftl.model.change.Event;
 import net.gausman.ftl.util.GausmanUtil;
 
 import javax.swing.table.AbstractTableModel;
@@ -11,13 +11,13 @@ import java.util.TreeMap;
 
 public class EventTableModel extends AbstractTableModel {
     private NavigableMap<Integer, Event> events = new TreeMap<>();
-    private final String[] columnNames = {"Time", "Sec", "BId", "Jump", "Expl", "Type", "Category", "Object", "Amt", "Cost",  "Event"};
+    private final String[] columnNames = {"Time", "Sec", "BId", "Jump", "Expl", "Type", "Category", "Text", "Amt", "Scrap",  "Value"};
     private Instant startTime;
 
 
     public void setEvents(NavigableMap<Integer, Event> newEvents) {
         this.events = newEvents.descendingMap();
-        fireTableDataChanged(); // 🚨 notifies JTable to refresh
+        fireTableDataChanged();
     }
 
     public void setStartTime(Instant startTime) {
@@ -32,6 +32,13 @@ public class EventTableModel extends AbstractTableModel {
     @Override
     public int getColumnCount() {
         return columnNames.length;
+    }
+
+    public Event getRowEvent(int rowIndex){
+        int displayIndex = events.size() - 1 - rowIndex;
+
+        Event e = events.get(rowIndex);
+        return events.get(displayIndex);
     }
 
     @Override
@@ -50,10 +57,10 @@ public class EventTableModel extends AbstractTableModel {
             case 4 -> event.getJump().getTotalBeaconsExplored();
             case 5 -> event.getEventType();
             case 6 -> event.getItemType();
-            case 7 -> GausmanUtil.getTextToId(event.getItemType(), event.getText());
+            case 7 -> event.getDisplayText();
             case 8 -> event.getAmount();
-            case 9 -> event.getCost();
-            case 10 -> event.getId();
+            case 9 -> event.getScrap();
+            case 10 -> event.getScrapChange();
 
             default -> null;
         };

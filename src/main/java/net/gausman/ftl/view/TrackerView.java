@@ -1,17 +1,20 @@
 package net.gausman.ftl.view;
 
+import net.gausman.ftl.view.charts.ChartsPanel;
 import net.gausman.ftl.view.shipstatus.ShipStatusPanel;
-import net.gausman.ftl.view.table.EventTablePanel;
+import net.gausman.ftl.view.eventtable.EventTablePanel;
+import net.gausman.ftl.view.toolbar.ToolbarPanel;
 
 import javax.swing.*;
 import java.awt.*;
 
 public class TrackerView extends JFrame {
-    private ToolbarPanel toolbarPanel;
-    private JPanel leftPanel;
-    private JPanel eventListPanel;
-    private EventFilterPanel eventFilterPanel;
-    private ShipStatusPanel shipStatusPanel;
+    private final ToolbarPanel toolbarPanel;
+    private EventTablePanel eventTablePanel;
+    private final ShipStatusPanel shipStatusPanel;
+    private final ChartsPanel chartsPanel;
+
+    private final JSplitPane main;
 
     public TrackerView() {
         setTitle("FTL Stats Tracker");
@@ -20,41 +23,46 @@ public class TrackerView extends JFrame {
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
 
-        shipStatusPanel = new ShipStatusPanel();
+        main = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
 
-        leftPanel = new JPanel(new BorderLayout());
-        leftPanel.add(shipStatusPanel, BorderLayout.NORTH);
-        leftPanel.add(new ChartsPanel(), BorderLayout.CENTER);
+
+        shipStatusPanel = new ShipStatusPanel();
+        chartsPanel = new ChartsPanel();
+
+        JSplitPane leftPanel = new JSplitPane(JSplitPane.VERTICAL_SPLIT, shipStatusPanel, chartsPanel);
+        leftPanel.setResizeWeight(0.5);
+        leftPanel.setDividerLocation(0.5);
 
         toolbarPanel = new ToolbarPanel();
-        eventListPanel = new JPanel(new BorderLayout());
-        eventListPanel.setPreferredSize(new Dimension(900, 1000));
 
-        eventFilterPanel = new EventFilterPanel();
-//        eventFilterPanel.setLayout(new BorderLayout());
-        eventFilterPanel.setLayout(new BoxLayout(eventFilterPanel, BoxLayout.Y_AXIS));
+        main.setLeftComponent(leftPanel);
+        main.setResizeWeight(0.5);
 
         add(toolbarPanel, BorderLayout.NORTH);
-        add(leftPanel, BorderLayout.WEST);
-        add(eventListPanel, BorderLayout.CENTER);
-        add(eventFilterPanel, BorderLayout.EAST);
+        add(main, BorderLayout.CENTER);
 
-        // Optional: menus, toolbars, status bar, etc.
     }
 
     public void setEventTablePanel(EventTablePanel eventTablePanel){
-        eventListPanel.add(eventTablePanel);
+        this.eventTablePanel = eventTablePanel;
+        this.eventTablePanel.setPreferredSize(new Dimension(900, 1000));
+        main.setRightComponent(eventTablePanel);
+    }
+
+    public EventTablePanel getEventTablePanel() {
+        return eventTablePanel;
     }
 
     public ToolbarPanel getToolbarPanel(){
         return toolbarPanel;
     }
 
-    public EventFilterPanel getEventFilterPanel(){
-        return eventFilterPanel;
-    }
 
     public ShipStatusPanel getShipStatusPanel() {
         return shipStatusPanel;
+    }
+
+    public ChartsPanel getChartsPanel() {
+        return chartsPanel;
     }
 }

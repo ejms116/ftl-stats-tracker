@@ -1,68 +1,101 @@
 package net.gausman.ftl.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import net.blerf.ftl.parser.SavedGameParser;
-import net.gausman.ftl.controller.TrackerController;
-import net.gausman.ftl.model.FTLEventBox;
+import net.blerf.ftl.parser.random.FTL_1_6_Random;
+import net.blerf.ftl.parser.sectortree.RandomSectorTreeGenerator;
 import net.gausman.ftl.model.RunUpdateResponse;
 import net.gausman.ftl.model.ShipStatusModel;
-import net.gausman.ftl.model.record.*;
-import net.gausman.ftl.model.record.Event;
-import net.gausman.ftl.model.run.FTLJump;
-import net.gausman.ftl.model.run.FTLRunEvent;
-import net.gausman.ftl.view.EventListItem;
+import net.gausman.ftl.model.change.Event;
+import net.gausman.ftl.model.factory.EventFactory;
+import net.gausman.ftl.model.record.EventBox;
+import net.gausman.ftl.model.record.Jump;
+import net.gausman.ftl.model.record.Run;
+import net.gausman.ftl.model.record.Sector;
+import net.gausman.ftl.util.GausmanUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.awt.*;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 
 public class RunService {
+    public enum SaveFileCopySetting { DISABLED, ONCE_PER_JUMP, ON_EVERY_CHANGE }
+    private static int saveNumber = 0;
+    public static final String CURRENT_RUN_FILENAME = "current_run.json";
     private static final Logger log = LoggerFactory.getLogger(RunService.class);
+    private final EventService eventService = new EventService();
 
-    private EventService eventService = new EventService();
+    private SaveFileCopySetting saveFileCopySetting;
+
+    private final Path runsDir;
+    private final Path savesDir;
 
     private Run currentRun = null;
+    private String currentRunFolderName;
     private NavigableMap<Integer, Event> eventMapFlat = new TreeMap<>();
 
-    private NavigableMap<Integer, ShipStatusModel> statusCache = new TreeMap<>();
+    private final NavigableMap<Integer, ShipStatusModel> statusCache = new TreeMap<>();
 
     private SavedGameParser.SavedGameState lastGameState = null;
+    private RandomSectorTreeGenerator generator = new RandomSectorTreeGenerator(new FTL_1_6_Random());
+    private ObjectMapper mapper = new ObjectMapper();
 
-    ObjectMapper mapper = new ObjectMapper();
+    public RunService(Path runsDir, Path savesDir, SaveFileCopySetting saveFileCopySetting){
+        mapper.registerModule(new JavaTimeModule());
+        this.runsDir = runsDir;
+        this.savesDir = savesDir;
+        this.saveFileCopySetting = saveFileCopySetting;
+        readRunFromJSON();
+        buildEventMapFlat();
+    }
 
-    public RunUpdateResponse update(SavedGameParser.SavedGameState currentGameState){
+    private void buildEventMapFlat(){
+        if (currentRun == null){
+            return;
+        }
+        for (Sector sector : currentRun.getSectors().values()){
+            for (Jump jump : sector.getJumps().values()){
+                for (Event event : jump.getEvents().values()){
+                    EventFactory.assignEventId(event);
+                    eventMapFlat.put(event.getId(), event);
+                }
+            }
+        }
+    }
+
+    public RunUpdateResponse update(SavedGameParser.SavedGameState currentGameState, File file){
         boolean newRun = false;
+        boolean newSector = false;
+        boolean newJump = false;
 
-//        if (lastGameState != null && currentGameState != null){
-//            try {
-//                String oldSave = mapper.writeValueAsString(lastGameState);
-//                String newSave = mapper.writeValueAsString(currentGameState);
-//                if (oldSave.equals(newSave)){
-//                    log.info("SAME");
-//                } else {
-//                    log.info("!!!!!!!NEW!!!!!!!!");
-//                    copySaveFile(currentGameState);
-//                }
-//            } catch (Exception e){
-//
-//            }
-//
-//        }
 
         // New Run, creates Sector+Jump automatically
         if (currentRun == null || currentRun.getSectorTreeSeed() != currentGameState.getSectorTreeSeed() ||
-                (lastGameState != null && lastGameState.getTotalBeaconsExplored() > currentGameState.getTotalBeaconsExplored())){
+                (lastGameState != null && lastGameState.getTotalBeaconsExplored() > currentGameState.getTotalBeaconsExplored()) ||
+                currentRun.getLastJump().getTotalBeaconsExplored() > currentGameState.getTotalBeaconsExplored()
+        ){
+            // move old stats json file to runs folder
+            saveNumber = 0;
+            if (currentRun != null){
+                String currentRunName = String.format("%s-%s.json", GausmanUtil.formatInstant(currentRun.getStartTime()), currentRun.getPlayerShipName());
+                Path filePathJson = runsDir.resolve(currentRunName);
+                saveRunToJson(filePathJson.toFile());
+            }
+
+            // setup/clear everything for a new run
             lastGameState = null;
-            currentRun = new Run(currentGameState);
-
-            // Todo move stats-json file
-            // Todo create new folder for save-files
-
-            // generate starting Events
+            currentRun = new Run(currentGameState, generator);
 
             newRun = true;
             eventMapFlat = new TreeMap<>();
+            statusCache.clear();
+            eventService.initEventService();
 
             EventBox box = eventService.getEventsStartRun(currentGameState, currentRun.getCurrentJump());
             addEventsFromEventBox(box);
@@ -71,6 +104,7 @@ public class RunService {
 
         // New Sector, automatically creates Jump
         if (currentRun.getCurrentSector().getId() != currentGameState.getSectorNumber() + 1){
+            newSector = true;
             currentRun.addSector(new Sector(currentGameState, currentRun));
         }
 
@@ -80,6 +114,7 @@ public class RunService {
 
         // New Jump
         if (currentRun.getCurrentJump().getCurrentBeaconId() != currentGameState.getCurrentBeaconId()){
+            newJump = true;
             // When backtracking the game does not necessarily save the game
             // so we need to compare the beacons explored and for create "empty jumps" (just a fuel-used event)
             // the amount is the difference between the new and last beacons explored stats minus 1 (for the new jump)
@@ -89,34 +124,40 @@ public class RunService {
                 for (int i = 0; i < beaconsExploredDiff-1; i++){
                     beaconsExploredTemp++;
 
-//                    jumpNumber++;
-//                    currentJump = new FTLJump(beaconsExploredTemp, -1, jumpNumber);
-//                    currentRun.addJump(currentJump);
                     // We set the beaconId to -1, because we don't know where the player actually was
                     currentRun.getCurrentSector().addJump(new Jump(beaconsExploredTemp, -1, currentRun.getCurrentSector()));
 
                     addEventsFromEventBox(eventService.getFuelUsedEventBox(currentRun.getCurrentJump()));
                 }
             }
-
             currentRun.getCurrentSector().addJump(new Jump(currentGameState, currentRun.getCurrentSector()));
-            // Todo copy save files
-
-
         }
 
+        // create new folder for saves, if saves not disabled
+        if (newRun && (!saveFileCopySetting.equals(SaveFileCopySetting.DISABLED))){
 
+            currentRunFolderName = String.format("%s-%s", GausmanUtil.formatInstant(currentRun.getStartTime()), currentRun.getPlayerShipName());
+            Path folderPath = savesDir.resolve(currentRunFolderName);
+            try {
+                Files.createDirectories(folderPath);
+                log.info("Created folder: " + folderPath);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        // copy save file based on setting
+        if ((saveFileCopySetting.equals(SaveFileCopySetting.ON_EVERY_CHANGE) ||
+                (saveFileCopySetting.equals(SaveFileCopySetting.ONCE_PER_JUMP) && (newRun || newSector || newJump)))){
+            copySaveFile(file);
+        }
 
         // Adding Events
         EventBox box = eventService.getEventsFromGameStateComparison(lastGameState, currentGameState, currentRun.getCurrentJump());
         addEventsFromEventBox(box); // assigns the EventIds
 
-
-
-
-        // Todo possible merge events
-
         // save to json file
+        saveRunToJson(new File(CURRENT_RUN_FILENAME));
 
         lastGameState = currentGameState;
 
@@ -124,13 +165,49 @@ public class RunService {
         log.info( "Total beacons explored: " + currentGameState.getTotalBeaconsExplored());
         log.info( "Currently at beacon Id: " + currentGameState.getCurrentBeaconId());
         log.info( "Jump number: " + currentRun.getCurrentJump().getId());
-//        log.info( "Event number: " + currentRun.getCurrentJump().getEvents().lastEntry().getValue().getId());
         int sectorNumberDebug = currentGameState.getSectorNumber() + 1;
         log.info( "Currently in sector : " +  sectorNumberDebug);
         log.info( "----------------------------------------------------------------");
 
         return new RunUpdateResponse(newRun);
 
+    }
+
+    private void copySaveFile(File file){
+        try {
+            String filenameToCopy;
+            if (saveFileCopySetting.equals(SaveFileCopySetting.ONCE_PER_JUMP)){
+                filenameToCopy = String.format("%d.sav", currentRun.getCurrentJump().getId());
+            } else {
+                filenameToCopy = String.format("%d.sav", saveNumber);
+            }
+            Path target = savesDir.resolve(currentRunFolderName).resolve(filenameToCopy);
+            Files.copy(file.toPath(), target, StandardCopyOption.REPLACE_EXISTING);
+            log.info("Copied " + file + " → " + target);
+            saveNumber++;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void saveRunToJson(File file){
+        try {
+            mapper.writeValue(file, currentRun);
+        } catch (IOException e){
+            log.error("Error writing json file");
+        }
+    }
+
+    private void readRunFromJSON(){
+        File file = new File(CURRENT_RUN_FILENAME);
+        if (!file.exists()){
+            return;
+        }
+        try {
+            currentRun = mapper.readValue(file, Run.class);
+        } catch (IOException e){
+            log.error("Current run could not be read");
+        }
     }
 
 
@@ -153,6 +230,19 @@ public class RunService {
             eventMapFlat.put(e.getId(), e);
         }
 
+        if (box.getEncounterState() == null){
+            return;
+        }
+
+        List<SavedGameParser.EncounterState> encounterStates = currentRun.getCurrentJump().getEncounterStates();
+
+        if (!encounterStates.isEmpty() && box.getEncounterState().equals(encounterStates.getLast())){
+            encounterStates.getLast().setChoiceList(box.getEncounterState().getChoiceList());
+        } else {
+            currentRun.getCurrentJump().getEncounterStates().add(box.getEncounterState());
+        }
+
+
     }
 
     public NavigableMap<Integer, Event> getEventMapFlat() {
@@ -163,18 +253,10 @@ public class RunService {
         return currentRun;
     }
 
-    //    public List<Event> getAllEventsFlat(){
-//        List<Event> events = new ArrayList<>();
-//
-//        for (Map.Entry<Integer, Sector> sector : currentRun.getSectors().entrySet()){
-//            for (Map.Entry<Integer, Jump> jump : sector.getValue().getJumps().entrySet()){
-//                for (Map.Entry<Integer, Event> event : jump.getValue().getEvents().entrySet() ){
-//                    events.add(event.getValue());
-//                }
-//            }
-//        }
-//        return events;
-//    }
+    public ShipStatusModel getNewestStatus(){
+        int index = eventMapFlat.size() - 1;
+        return getStatusAtId(index);
+    }
 
     public ShipStatusModel getStatusAtId(int targetId){
         var entry = getClosestEntry(targetId);

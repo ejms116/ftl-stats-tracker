@@ -108,9 +108,9 @@ import net.blerf.ftl.xml.BackgroundImageList;
 import net.blerf.ftl.xml.CrewBlueprint;
 import net.blerf.ftl.xml.DroneBlueprint;
 import net.blerf.ftl.xml.Encounters;
-import net.blerf.ftl.xml.FTLEvent;
-import net.blerf.ftl.xml.FTLEventList;
-import net.blerf.ftl.xml.ShipEvent;
+import net.blerf.ftl.xml.event.FTLEvent;
+import net.blerf.ftl.xml.event.FTLEventList;
+import net.blerf.ftl.xml.event.ShipEvent;
 import net.blerf.ftl.xml.SystemBlueprint;
 import net.blerf.ftl.xml.WeaponBlueprint;
 

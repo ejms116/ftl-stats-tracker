@@ -1,35 +1,15 @@
 package net.blerf.ftl.parser;
 
+import net.blerf.ftl.model.shiplayout.ShipLayout;
+import net.blerf.ftl.xml.*;
+import net.blerf.ftl.xml.event.*;
+
 import java.io.Closeable;
 import java.io.File;
-import java.io.InputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
-
-import net.blerf.ftl.model.shiplayout.ShipLayout;
-import net.blerf.ftl.xml.Achievement;
-import net.blerf.ftl.xml.Anim;
-import net.blerf.ftl.xml.AnimSheet;
-import net.blerf.ftl.xml.AugBlueprint;
-import net.blerf.ftl.xml.BackgroundImageList;
-import net.blerf.ftl.xml.Blueprints;
-import net.blerf.ftl.xml.CrewBlueprint;
-import net.blerf.ftl.xml.CrewNameList;
-import net.blerf.ftl.xml.DroneBlueprint;
-import net.blerf.ftl.xml.Encounters;
-import net.blerf.ftl.xml.FTLEvent;
-import net.blerf.ftl.xml.FTLEventList;
-import net.blerf.ftl.xml.SectorDescription;
-import net.blerf.ftl.xml.SectorType;
-import net.blerf.ftl.xml.ShipBlueprint;
-import net.blerf.ftl.xml.ShipEvent;
-import net.blerf.ftl.xml.ShipEvents;
-import net.blerf.ftl.xml.ShipChassis;
-import net.blerf.ftl.xml.SystemBlueprint;
-import net.blerf.ftl.xml.WeaponBlueprint;
 
 public abstract class DataManager implements Closeable {
 
@@ -268,7 +248,15 @@ public abstract class DataManager implements Closeable {
 		throw new UnsupportedOperationException();
 	}
 
-	public FTLEvent getEventById( String id, boolean dlcEnabled ) {
+	public Map<String, FTLEventNode> getEventNodeIdMap(){
+		throw new UnsupportedOperationException();
+	}
+
+	public FTLEventNode getEventNodeById(String id){
+		throw new UnsupportedOperationException();
+	}
+
+	public FTLEvent getEventById(String id, boolean dlcEnabled ) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -279,7 +267,7 @@ public abstract class DataManager implements Closeable {
 		return getEventById( id, dlcEnabledByDefault );
 	}
 
-	public FTLEventList getEventListById( String id, boolean dlcEnabled ) {
+	public FTLEventList getEventListById(String id, boolean dlcEnabled ) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -380,6 +368,26 @@ public abstract class DataManager implements Closeable {
 	}
 
 	public AnimSheet getAnimSheet( String id, boolean dlcEnabled ) {
+		throw new UnsupportedOperationException();
+	}
+
+	public Map<String, ShipEvent> getDlcShipEventIdMap() {
+		throw new UnsupportedOperationException();
+	}
+
+	public Map<String, FTLEvent> getDlcEventOldIdMap() {
+		throw new UnsupportedOperationException();
+	}
+
+	public Map<String, FTLEventList> getDlcEventListIdMap() {
+		throw new UnsupportedOperationException();
+	}
+
+	public Map<String, TextList> getDlcTextListIdMap() {
+		throw new UnsupportedOperationException();
+	}
+
+	public String getTextForId(String id){
 		throw new UnsupportedOperationException();
 	}
 }

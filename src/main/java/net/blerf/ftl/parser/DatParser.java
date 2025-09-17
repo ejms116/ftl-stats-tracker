@@ -35,7 +35,7 @@ import net.blerf.ftl.xml.NamedTexts;
 import net.blerf.ftl.xml.SectorData;
 import net.blerf.ftl.xml.ShipBlueprint;
 import net.blerf.ftl.xml.ShipChassis;
-import net.blerf.ftl.xml.ShipEvent;
+import net.blerf.ftl.xml.event.ShipEvent;
 import net.blerf.ftl.xml.ShipEvents;
 import net.blerf.ftl.xml.TextLookupUnmarshalListener;
 

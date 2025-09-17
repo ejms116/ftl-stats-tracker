@@ -1,37 +1,41 @@
 package net.gausman.ftl.controller;
 
+import net.blerf.ftl.core.EditorConfig;
+import net.blerf.ftl.parser.DataManager;
 import net.blerf.ftl.parser.MysteryBytes;
 import net.blerf.ftl.parser.SavedGameParser;
+import net.gausman.ftl.FTLStatsTracker;
 import net.gausman.ftl.model.RunUpdateResponse;
 import net.gausman.ftl.model.ShipStatusModel;
-import net.gausman.ftl.model.record.Event;
-import net.gausman.ftl.model.table.EventFilter;
+import net.gausman.ftl.model.change.Event;
 import net.gausman.ftl.model.table.EventTableModel;
 import net.gausman.ftl.service.RunService;
 import net.gausman.ftl.util.FileWatcher;
 import net.gausman.ftl.util.GausmanUtil;
-import net.gausman.ftl.view.table.EventTablePanel;
 import net.gausman.ftl.view.TrackerView;
+import net.gausman.ftl.view.browser.EventTreeBrowserView;
+import net.gausman.ftl.view.eventtable.EventTablePanel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import java.awt.*;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
-import java.util.*;
+import java.util.List;
 import java.util.Timer;
+import java.util.*;
+
+import static net.gausman.ftl.service.RunService.CURRENT_RUN_FILENAME;
 
 public class TrackerController {
     private static final Logger log = LoggerFactory.getLogger(TrackerController.class);
-
-    public final String savePath = "C:\\Users\\erikj\\Documents\\My Games\\FasterThanLight\\continue.sav";
-    public final File chosenFile = new File(savePath);
+    public final File continueSaveFile;
 
     private FileWatcher task;
     private Timer timer;
@@ -40,15 +44,10 @@ public class TrackerController {
 
 
     private RunService runService;
-
-    private Map<EventFilter, Boolean> eventFilterMap = new EnumMap<>(EventFilter.class);
     private boolean toggleTracking = false;
 
-
-
-//    private StatsModel model;
     private TrackerView view;
-
+    private EventTreeBrowserView eventTreeBrowserView;
 
     private List<Event> events;
     private EventTableModel eventTableModel;
@@ -56,21 +55,43 @@ public class TrackerController {
 
     private static int saveFileId = 0;
 
-    public TrackerController() {
-        runService = new RunService();
-//        model = new StatsModel();
+    private DataManager dm = DataManager.get();
+
+    public TrackerController(File saveFile, Path runsDir, Path savesDir, RunService.SaveFileCopySetting saveFileCopySetting) {
+        continueSaveFile = saveFile;
         view = new TrackerView();
+        runService = new RunService(runsDir, savesDir, saveFileCopySetting);
+
 
         eventTableModel = new EventTableModel();
 
         eventTablePanel = new EventTablePanel(eventTableModel);
         view.setEventTablePanel(eventTablePanel);
 
+
+
         view.setVisible(true);
 
         setupListeners();
         setupFileWatcher();
 
+        initUI();
+
+    }
+
+    private void openProgramOnSecondMonitorForTesting(){
+        GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+        GraphicsDevice[] screens = ge.getScreenDevices();
+
+        if (screens.length > 1) {
+            // Get bounds of second screen
+            Rectangle bounds = screens[0].getDefaultConfiguration().getBounds();
+            // Position the window near the top-left of the second screen
+            view.setLocation(bounds.x + 10, bounds.y + 10);
+        } else {
+            // Center on primary screen
+            view.setLocationRelativeTo(null);
+        }
     }
 
     private void setupListeners(){
@@ -79,7 +100,7 @@ public class TrackerController {
             log.info("Stats/File tracking: " + toggleTracking);
             view.getToolbarPanel().setTrackingToggleState(toggleTracking);
             if (toggleTracking){
-                task.onChange(chosenFile);
+                task.onChange(continueSaveFile);
             }
         });
 
@@ -87,56 +108,81 @@ public class TrackerController {
             testSaveFileReading();
         });
 
-        for (EventFilter filter : EventFilter.values()){
-            eventFilterMap.put(filter, true);
-        }
+        view.getToolbarPanel().setEventTreeBrowserButtonListener(e -> {
+            showEventTreeBrowserView();
+        });
 
-        for (Map.Entry<EventFilter, JCheckBox> entry : view.getEventFilterPanel().getFilterJCheckBoxMap().entrySet()){
-            EventFilter filter = entry.getKey();
-            JCheckBox box = entry.getValue();
-            box.addActionListener(e -> {
-                eventFilterMap.put(filter, box.isSelected());
-                eventTablePanel.updateRowFilter(eventFilterMap);
-            });
-        }
+        view.getEventTablePanel().setOpenEventInBrowserButton(e -> {
+            showEventTreeBrowserView();
+            int selected = eventTablePanel.getTable().getSelectedRow();
+            if (selected != -1){
+                Event event = eventTableModel.getRowEvent(selected);
+                if (event != null){
+                    List<SavedGameParser.EncounterState> encounterStates = event.getJump().getEncounterStates();
+                    if (encounterStates != null && !encounterStates.isEmpty()){
+                        String encounterText = encounterStates.getFirst().getText();
+                        eventTreeBrowserView.selectEventById(GausmanUtil.extractId(encounterText), encounterStates);
+                        eventTreeBrowserView.toFront();
+                        eventTreeBrowserView.requestFocus();
+                    }
 
-        eventTablePanel.updateRowFilter(eventFilterMap);
+                }
+            }
+        });
+
 
         JTable table = eventTablePanel.getTable();
         table.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()){
                 int selected = table.getSelectedRow();
                 if (selected != -1){
-                    int eventId = (int) table.getValueAt(selected, 10);
-                    ShipStatusModel model = runService.getStatusAtId(eventId);
-                    view.getShipStatusPanel().update(model);
+                    int modelRow = table.convertRowIndexToModel(selected);
+                    int eventId = eventTableModel.getRowEvent(modelRow).getId();
+                    updateUI(eventId);
                 }
             }
         });
 
-//        eventTablePanel.getTable().addMouseListener(new MouseAdapter() {
-//            @Override
-//            public void mouseClicked(MouseEvent e) {
-//                int row = eventTablePanel.getTable().rowAtPoint(e.getPoint());
-//
-//                Integer eventId = (Integer) eventTablePanel.getTable().getValueAt(row, 10);
-//                System.out.println("click");
-//
-//            }
-//        });
+    }
+
+    private void initUI(){
+        if (runService.getCurrentRun() == null){
+            return;
+        }
+        ShipStatusModel model = runService.getNewestStatus();
+        eventTableModel.setStartTime(runService.getCurrentRun().getStartTime());
+        eventTableModel.setEvents(runService.getEventMapFlat());
+        view.getShipStatusPanel().update(model);
+        view.getChartsPanel().updateDatasets(model.getSectorMetrics());
 
     }
 
+    private void updateUI(int eventId){
+        ShipStatusModel model = runService.getStatusAtId(eventId);
+        view.getShipStatusPanel().update(model);
+//        view.getEventTablePanel().updateJumpInfoPanel(eventTableModel.getRowEvent(selected).getJump()); ????
+        view.getChartsPanel().updateDatasets(model.getSectorMetrics());
+    }
+
+    private void showEventTreeBrowserView() {
+        if (eventTreeBrowserView == null || !eventTreeBrowserView.isDisplayable()){
+            eventTreeBrowserView = new EventTreeBrowserView(dm.getEventNodeIdMap(), dm.getDlcTextListIdMap(), dm.getShipEvents());
+            eventTreeBrowserView.setVisible(true);
+        } else {
+            eventTreeBrowserView.toFront();
+            eventTreeBrowserView.requestFocus();
+        }
+    }
+
     private void setupFileWatcher(){
-        task = new FileWatcher(chosenFile) {
+        task = new FileWatcher(continueSaveFile) {
             public void onChange( File file ) {
-                if (toggleTracking == true) {
-                    if (chosenFile.exists()){
+                if (toggleTracking) {
+                    if (continueSaveFile.exists()){
                         log.info( "FILE "+ file.getName() +" HAS CHANGED" );
-                        loadGameStateFile(chosenFile);
+                         loadGameStateFile(continueSaveFile);
                     } else {
                         log.info( "FILE "+ file.getName() +" NOT FOUND" ); // TODO prompt when starting a new run
-                        moveCurrentJSON();
                     }
 
                 }
@@ -173,12 +219,17 @@ public class TrackerController {
 
             SavedGameParser parser = new SavedGameParser();
             SavedGameParser.SavedGameState gs = parser.readSavedGame(in);
-            RunUpdateResponse runUpdateResponse = runService.update(gs);
+            RunUpdateResponse runUpdateResponse = runService.update(gs, file);
             if (runUpdateResponse.newRun()){
                 eventTableModel.setStartTime(runService.getCurrentRun().getStartTime());
                 eventTableModel.setEvents(runService.getEventMapFlat());
             }
             eventTableModel.fireTableDataChanged(); // optimize
+            SwingUtilities.invokeLater(() -> {
+                if (eventTablePanel.getTable().getRowCount() > 0) {
+                    eventTablePanel.getTable().changeSelection(0, 0, false, false);
+                }
+            });
             log.info("Game state read successfully.");
 
             if (!gs.getMysteryList().isEmpty()) {
@@ -197,7 +248,7 @@ public class TrackerController {
 //					"Save file was not found")
 //				);
         } catch ( Exception f ) {
-            log.error( String.format("Error reading saved game (\"%s\").", chosenFile.getName()), f );
+            log.error( String.format("Error reading saved game (\"%s\").", continueSaveFile.getName()), f );
 //            showErrorDialog( String.format(
 //                    "Error reading saved game (\"%s\"):\n%s: %s\n" +
 //                            "This error is probably caused by a game-over or the restarting of a game.\n" +
@@ -229,19 +280,9 @@ public class TrackerController {
             log.error("Error copying save file");
         }
 
-//        Path localSavePath = Paths.get(savePath);
-//        Path targetSavePath = Paths.get(currentRun.generateFileNameForSave(jumpNumber, currentJump.getSectorNumber()));
-//        try {
-//            Files.copy(localSavePath, targetSavePath);
-//        } catch (IOException e) {
-//            throw new RuntimeException(e);
-//        }
     }
 
 
-    private void moveCurrentJSON(){
-        log.info("Stats file moved to runs folder");
-    }
 
     private void testSaveFileReading(){
         File folder = new File("saves\\test");
@@ -264,15 +305,12 @@ public class TrackerController {
             long lastModified = file.lastModified();
             Date date = new Date(lastModified);
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-//            System.out.println(file.getName() + " - Last modified: " + sdf.format(date));
             log.info(file.getName() + " - Last modified: " + sdf.format(date));
-            // Here logic
             loadGameStateFile(file);
-
         }
 
-//        eventTableModel.setEvents(runService.getEventMapFlat());
-
+        runService.saveRunToJson(new File(CURRENT_RUN_FILENAME));
+        log.info("Testing done");
     }
 
 

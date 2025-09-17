@@ -20,6 +20,7 @@ public class EditorConfig {
 	public static final String APP_UPDATE_TIMESTAMP = "app_update_timestamp";
 	public static final String APP_UPDATE_ETAG = "app_update_etag";
 	public static final String APP_UPDATE_AVAILABLE = "app_update_available";
+	public static final String SAVE_FILE_COPY_SETTING = "save_file_copy_setting";
 
 	private Properties config;
 	private File configFile;

@@ -1,22 +1,30 @@
 package net.gausman.ftl.model.record;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import net.blerf.ftl.parser.SavedGameParser;
+import net.gausman.ftl.model.change.Event;
 import net.gausman.ftl.model.factory.EventFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
+@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id", scope = Jump.class)
 public class Jump {
     private static int nextId = 0;
 
-    private final int id;
-    private final int totalBeaconsExplored;
-    private final int currentBeaconId;
-
-    private final NavigableMap<Integer,Event> events = new TreeMap<>();
-
+    private int id;
+    private int totalBeaconsExplored;
+    private int currentBeaconId;
+    private final NavigableMap<Integer, Event> events = new TreeMap<>();
+    private List<SavedGameParser.EncounterState> encounterStates = new ArrayList<>();
     private Sector sector;
+
+    public Jump(){
+        nextId++;
+    }
 
     public Jump(int totalBeaconsExplored, int currentBeaconId, Sector sector) {
         this.totalBeaconsExplored = totalBeaconsExplored;
@@ -34,6 +42,11 @@ public class Jump {
         nextId++;
     }
 
+
+
+    public List<SavedGameParser.EncounterState> getEncounterStates() {
+        return encounterStates;
+    }
 
     public int getTotalBeaconsExplored() {
         return totalBeaconsExplored;
