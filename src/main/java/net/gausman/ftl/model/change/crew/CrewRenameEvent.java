@@ -1,16 +1,16 @@
-package net.gausman.ftl.model.change;
+package net.gausman.ftl.model.change.crew;
 
 import net.blerf.ftl.parser.SavedGameParser;
 import net.gausman.ftl.model.Constants;
 import net.gausman.ftl.model.record.Jump;
 
-public class NameEvent extends CrewEvent {
+public class CrewRenameEvent extends CrewEvent {
     private String oldName;
     private String newName;
 
-    public NameEvent(){}
+    public CrewRenameEvent(){}
 
-    public NameEvent(String newName, String oldName, Jump jump){
+    public CrewRenameEvent(String newName, String oldName, Jump jump){
         super(SavedGameParser.StoreItemType.CREW, Constants.EventType.NAME, 0, 0, "name", jump);
         this.oldName = oldName;
         this.newName = newName;

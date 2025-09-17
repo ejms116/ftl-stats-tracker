@@ -3,6 +3,10 @@ package net.gausman.ftl.model.change;
 import com.fasterxml.jackson.annotation.*;
 import net.blerf.ftl.parser.SavedGameParser;
 import net.gausman.ftl.model.Constants;
+import net.gausman.ftl.model.change.crew.*;
+import net.gausman.ftl.model.change.item.AugmentEvent;
+import net.gausman.ftl.model.change.item.DroneEvent;
+import net.gausman.ftl.model.change.item.WeaponEvent;
 import net.gausman.ftl.model.record.Jump;
 
 import java.time.Instant;
@@ -20,7 +24,7 @@ import java.time.Instant;
         @JsonSubTypes.Type(value = DroneEvent.class, name = "DroneEvent"),
         @JsonSubTypes.Type(value = GeneralEvent.class, name = "GeneralEvent"),
         @JsonSubTypes.Type(value = MasteryEvent.class, name = "MasteryEvent"),
-        @JsonSubTypes.Type(value = NameEvent.class, name = "NameEvent"),
+        @JsonSubTypes.Type(value = CrewRenameEvent.class, name = "NameEvent"),
         @JsonSubTypes.Type(value = NewCrewEvent.class, name = "NewCrewEvent"),
         @JsonSubTypes.Type(value = ReactorEvent.class, name = "ReactorEvent"),
         @JsonSubTypes.Type(value = ResourceEvent.class, name = "ResourceEvent"),

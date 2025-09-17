@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import net.blerf.ftl.parser.SavedGameParser;
 import net.blerf.ftl.parser.random.FTL_1_6_Random;
-import net.blerf.ftl.parser.random.NativeRandom;
 import net.blerf.ftl.parser.sectortree.RandomSectorTreeGenerator;
 import net.gausman.ftl.model.RunUpdateResponse;
 import net.gausman.ftl.model.ShipStatusModel;
@@ -26,9 +25,13 @@ import java.nio.file.StandardCopyOption;
 import java.util.*;
 
 public class RunService {
+    public enum SaveFileCopySetting { DISABLED, ONCE_PER_JUMP, ON_EVERY_CHANGE }
+    private static int saveNumber = 0;
     public static final String CURRENT_RUN_FILENAME = "current_run.json";
     private static final Logger log = LoggerFactory.getLogger(RunService.class);
     private final EventService eventService = new EventService();
+
+    private SaveFileCopySetting saveFileCopySetting;
 
     private final Path runsDir;
     private final Path savesDir;
@@ -43,10 +46,11 @@ public class RunService {
     private RandomSectorTreeGenerator generator = new RandomSectorTreeGenerator(new FTL_1_6_Random());
     private ObjectMapper mapper = new ObjectMapper();
 
-    public RunService(Path runsDir, Path savesDir){
+    public RunService(Path runsDir, Path savesDir, SaveFileCopySetting saveFileCopySetting){
         mapper.registerModule(new JavaTimeModule());
         this.runsDir = runsDir;
         this.savesDir = savesDir;
+        this.saveFileCopySetting = saveFileCopySetting;
         readRunFromJSON();
         buildEventMapFlat();
     }
@@ -67,6 +71,9 @@ public class RunService {
 
     public RunUpdateResponse update(SavedGameParser.SavedGameState currentGameState, File file){
         boolean newRun = false;
+        boolean newSector = false;
+        boolean newJump = false;
+
 
         // New Run, creates Sector+Jump automatically
         if (currentRun == null || currentRun.getSectorTreeSeed() != currentGameState.getSectorTreeSeed() ||
@@ -74,28 +81,16 @@ public class RunService {
                 currentRun.getLastJump().getTotalBeaconsExplored() > currentGameState.getTotalBeaconsExplored()
         ){
             // move old stats json file to runs folder
+            saveNumber = 0;
             if (currentRun != null){
                 String currentRunName = String.format("%s-%s.json", GausmanUtil.formatInstant(currentRun.getStartTime()), currentRun.getPlayerShipName());
                 Path filePathJson = runsDir.resolve(currentRunName);
                 saveRunToJson(filePathJson.toFile());
             }
 
+            // setup/clear everything for a new run
             lastGameState = null;
             currentRun = new Run(currentGameState, generator);
-
-            // create new sub folder for the runs' save files and copy the first file
-            currentRunFolderName = String.format("%s-%s", GausmanUtil.formatInstant(currentRun.getStartTime()), currentRun.getPlayerShipName());
-            Path folderPath = savesDir.resolve(currentRunFolderName);
-            try {
-                Files.createDirectories(folderPath);
-                log.info("Created folder: " + folderPath);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            copySaveFile(file);
-
-
-            // setup/clear everything for a new run
 
             newRun = true;
             eventMapFlat = new TreeMap<>();
@@ -109,8 +104,8 @@ public class RunService {
 
         // New Sector, automatically creates Jump
         if (currentRun.getCurrentSector().getId() != currentGameState.getSectorNumber() + 1){
+            newSector = true;
             currentRun.addSector(new Sector(currentGameState, currentRun));
-            copySaveFile(file);
         }
 
         // We always update the beaconlist Todo: can we optimize this?
@@ -119,6 +114,7 @@ public class RunService {
 
         // New Jump
         if (currentRun.getCurrentJump().getCurrentBeaconId() != currentGameState.getCurrentBeaconId()){
+            newJump = true;
             // When backtracking the game does not necessarily save the game
             // so we need to compare the beacons explored and for create "empty jumps" (just a fuel-used event)
             // the amount is the difference between the new and last beacons explored stats minus 1 (for the new jump)
@@ -128,22 +124,33 @@ public class RunService {
                 for (int i = 0; i < beaconsExploredDiff-1; i++){
                     beaconsExploredTemp++;
 
-//                    jumpNumber++;
-//                    currentJump = new FTLJump(beaconsExploredTemp, -1, jumpNumber);
-//                    currentRun.addJump(currentJump);
                     // We set the beaconId to -1, because we don't know where the player actually was
                     currentRun.getCurrentSector().addJump(new Jump(beaconsExploredTemp, -1, currentRun.getCurrentSector()));
 
                     addEventsFromEventBox(eventService.getFuelUsedEventBox(currentRun.getCurrentJump()));
                 }
             }
-
             currentRun.getCurrentSector().addJump(new Jump(currentGameState, currentRun.getCurrentSector()));
-
-            // Copy save file
-            copySaveFile(file);
         }
 
+        // create new folder for saves, if saves not disabled
+        if (newRun && (!saveFileCopySetting.equals(SaveFileCopySetting.DISABLED))){
+
+            currentRunFolderName = String.format("%s-%s", GausmanUtil.formatInstant(currentRun.getStartTime()), currentRun.getPlayerShipName());
+            Path folderPath = savesDir.resolve(currentRunFolderName);
+            try {
+                Files.createDirectories(folderPath);
+                log.info("Created folder: " + folderPath);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        // copy save file based on setting
+        if ((saveFileCopySetting.equals(SaveFileCopySetting.ON_EVERY_CHANGE) ||
+                (saveFileCopySetting.equals(SaveFileCopySetting.ONCE_PER_JUMP) && (newRun || newSector || newJump)))){
+            copySaveFile(file);
+        }
 
         // Adding Events
         EventBox box = eventService.getEventsFromGameStateComparison(lastGameState, currentGameState, currentRun.getCurrentJump());
@@ -158,7 +165,6 @@ public class RunService {
         log.info( "Total beacons explored: " + currentGameState.getTotalBeaconsExplored());
         log.info( "Currently at beacon Id: " + currentGameState.getCurrentBeaconId());
         log.info( "Jump number: " + currentRun.getCurrentJump().getId());
-//        log.info( "Event number: " + currentRun.getCurrentJump().getEvents().lastEntry().getValue().getId());
         int sectorNumberDebug = currentGameState.getSectorNumber() + 1;
         log.info( "Currently in sector : " +  sectorNumberDebug);
         log.info( "----------------------------------------------------------------");
@@ -169,10 +175,16 @@ public class RunService {
 
     private void copySaveFile(File file){
         try {
-            String filenameToCopy = String.format("%d.sav", currentRun.getCurrentJump().getId());
+            String filenameToCopy;
+            if (saveFileCopySetting.equals(SaveFileCopySetting.ONCE_PER_JUMP)){
+                filenameToCopy = String.format("%d.sav", currentRun.getCurrentJump().getId());
+            } else {
+                filenameToCopy = String.format("%d.sav", saveNumber);
+            }
             Path target = savesDir.resolve(currentRunFolderName).resolve(filenameToCopy);
             Files.copy(file.toPath(), target, StandardCopyOption.REPLACE_EXISTING);
             log.info("Copied " + file + " → " + target);
+            saveNumber++;
         } catch (Exception e) {
             e.printStackTrace();
         }

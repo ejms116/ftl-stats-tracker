@@ -6,6 +6,7 @@ import net.blerf.ftl.core.EditorConfig;
 import net.blerf.ftl.parser.DataManager;
 import net.blerf.ftl.parser.DefaultDataManager;
 import net.gausman.ftl.controller.TrackerController;
+import net.gausman.ftl.service.RunService;
 import net.vhati.modmanager.core.FTLUtilities;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -114,6 +115,19 @@ public class FTLStatsTracker {
 //
 //            throw new FTLStatsTrackerApplication.ExitException();
 //        }
+
+        // Savefile copy setting
+        String setting = appConfig.getProperty(EditorConfig.SAVE_FILE_COPY_SETTING, "ONCE_PER_JUMP");
+        RunService.SaveFileCopySetting saveFileCopySetting;
+        try {
+            saveFileCopySetting = RunService.SaveFileCopySetting.valueOf(setting);
+        } catch (IllegalArgumentException | NullPointerException e) {
+            // fallback (e.g., default value)
+            saveFileCopySetting = RunService.SaveFileCopySetting.ONCE_PER_JUMP;
+        }
+
+
+
         Path runsDir = null;
         Path savesDir = null;
         try {
@@ -163,9 +177,10 @@ public class FTLStatsTracker {
 
         Path finalRunsDir = runsDir;
         Path finalSavesDir = savesDir;
+        RunService.SaveFileCopySetting finalSaveFileCopySetting = saveFileCopySetting;
         javax.swing.SwingUtilities.invokeLater(() -> {
             FlatLaf.setup(new FlatDarkLaf());
-            new TrackerController(saveFile, finalRunsDir, finalSavesDir);
+            new TrackerController(saveFile, finalRunsDir, finalSavesDir, finalSaveFileCopySetting);
         });
     }
 

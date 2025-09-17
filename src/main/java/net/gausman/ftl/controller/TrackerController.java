@@ -57,10 +57,10 @@ public class TrackerController {
 
     private DataManager dm = DataManager.get();
 
-    public TrackerController(File saveFile, Path runsDir, Path savesDir) {
+    public TrackerController(File saveFile, Path runsDir, Path savesDir, RunService.SaveFileCopySetting saveFileCopySetting) {
         continueSaveFile = saveFile;
         view = new TrackerView();
-        runService = new RunService(runsDir, savesDir);
+        runService = new RunService(runsDir, savesDir, saveFileCopySetting);
 
 
         eventTableModel = new EventTableModel();
@@ -305,18 +305,12 @@ public class TrackerController {
             long lastModified = file.lastModified();
             Date date = new Date(lastModified);
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-//            System.out.println(file.getName() + " - Last modified: " + sdf.format(date));
             log.info(file.getName() + " - Last modified: " + sdf.format(date));
-            // Here logic
             loadGameStateFile(file);
-
         }
 
         runService.saveRunToJson(new File(CURRENT_RUN_FILENAME));
         log.info("Testing done");
-
-//        eventTableModel.setEvents(runService.getEventMapFlat());
-
     }
 
 

@@ -1,11 +1,12 @@
-package net.gausman.ftl.model.change;
+package net.gausman.ftl.model.change.item;
 
 import net.blerf.ftl.parser.SavedGameParser;
 import net.gausman.ftl.model.Constants;
+import net.gausman.ftl.model.change.Event;
 import net.gausman.ftl.model.record.Jump;
 import net.gausman.ftl.util.GausmanUtil;
 
-public class WeaponEvent extends Event{
+public class WeaponEvent extends Event {
 
     public WeaponEvent(){};
 

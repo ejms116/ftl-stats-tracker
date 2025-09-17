@@ -5,7 +5,7 @@ import net.gausman.ftl.model.Constants;
 import net.gausman.ftl.model.record.Jump;
 import net.gausman.ftl.util.GausmanUtil;
 
-public class ReactorEvent extends Event{
+public class ReactorEvent extends Event {
 
     public ReactorEvent(){};
 

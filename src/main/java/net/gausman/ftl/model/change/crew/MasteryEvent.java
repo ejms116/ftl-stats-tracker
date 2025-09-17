@@ -1,4 +1,4 @@
-package net.gausman.ftl.model.change;
+package net.gausman.ftl.model.change.crew;
 
 import net.blerf.ftl.parser.SavedGameParser;
 import net.gausman.ftl.model.Constants;

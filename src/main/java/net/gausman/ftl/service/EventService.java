@@ -8,6 +8,12 @@ import net.blerf.ftl.xml.*;
 import net.gausman.ftl.model.Constants;
 import net.gausman.ftl.model.Crew;
 import net.gausman.ftl.model.change.*;
+import net.gausman.ftl.model.change.crew.*;
+import net.gausman.ftl.model.change.item.AugmentEvent;
+import net.gausman.ftl.model.change.item.DroneEvent;
+import net.gausman.ftl.model.change.item.WeaponEvent;
+import net.gausman.ftl.model.change.ReactorEvent;
+import net.gausman.ftl.model.change.ResourceEvent;
 import net.gausman.ftl.model.record.*;
 import net.gausman.ftl.util.GausmanUtil;
 import org.slf4j.Logger;
@@ -15,7 +21,6 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
 import java.util.*;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class EventService {
@@ -751,7 +756,7 @@ public class EventService {
 
         // Name Change
         if (!newCrewState.getName().equals(lastCrewState.getName())){
-            NameEvent event = new NameEvent(
+            CrewRenameEvent event = new CrewRenameEvent(
                     newCrewState.getName(),
                     lastCrewState.getName(),
                     jump

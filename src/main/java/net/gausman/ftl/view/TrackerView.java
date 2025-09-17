@@ -9,14 +9,12 @@ import javax.swing.*;
 import java.awt.*;
 
 public class TrackerView extends JFrame {
-    private ToolbarPanel toolbarPanel;
-    private JSplitPane leftPanel;
+    private final ToolbarPanel toolbarPanel;
     private EventTablePanel eventTablePanel;
-    private ShipStatusPanel shipStatusPanel;
-    private ChartsPanel chartsPanel;
-//    private EventFilterPanel eventFilterPanel;
+    private final ShipStatusPanel shipStatusPanel;
+    private final ChartsPanel chartsPanel;
 
-    // TODO add statusbar in the bottom
+    private final JSplitPane main;
 
     public TrackerView() {
         setTitle("FTL Stats Tracker");
@@ -25,34 +23,30 @@ public class TrackerView extends JFrame {
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
 
+        main = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
+
+
         shipStatusPanel = new ShipStatusPanel();
         chartsPanel = new ChartsPanel();
-//        leftPanel = new JPanel(new BorderLayout());
-//        leftPanel.add(shipStatusPanel, BorderLayout.NORTH);
-//        leftPanel.add(new ChartsPanel(), BorderLayout.CENTER);
 
-        leftPanel = new JSplitPane(JSplitPane.VERTICAL_SPLIT, shipStatusPanel, chartsPanel);
+        JSplitPane leftPanel = new JSplitPane(JSplitPane.VERTICAL_SPLIT, shipStatusPanel, chartsPanel);
         leftPanel.setResizeWeight(0.5);
         leftPanel.setDividerLocation(0.5);
 
-//        leftPanel.setEnabled(false);
-//        leftPanel.setDividerSize(5);
-
         toolbarPanel = new ToolbarPanel();
 
+        main.setLeftComponent(leftPanel);
+        main.setResizeWeight(0.5);
 
         add(toolbarPanel, BorderLayout.NORTH);
-        add(leftPanel, BorderLayout.WEST);
-//        add(eventListPanel, BorderLayout.CENTER);
-//        add(eventFilterPanel, BorderLayout.SOUTH);
+        add(main, BorderLayout.CENTER);
 
-        // Optional: menus, toolbars, status bar, etc.
     }
 
     public void setEventTablePanel(EventTablePanel eventTablePanel){
         this.eventTablePanel = eventTablePanel;
         this.eventTablePanel.setPreferredSize(new Dimension(900, 1000));
-        add(eventTablePanel, BorderLayout.CENTER);
+        main.setRightComponent(eventTablePanel);
     }
 
     public EventTablePanel getEventTablePanel() {
@@ -62,10 +56,6 @@ public class TrackerView extends JFrame {
     public ToolbarPanel getToolbarPanel(){
         return toolbarPanel;
     }
-
-//    public EventFilterPanel getEventFilterPanel(){
-//        return eventFilterPanel;
-//    }
 
 
     public ShipStatusPanel getShipStatusPanel() {

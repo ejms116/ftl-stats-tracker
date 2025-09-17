@@ -3,6 +3,7 @@ package net.gausman.ftl.model;
 import net.blerf.ftl.parser.SavedGameParser;
 import net.blerf.ftl.parser.SavedGameParser.SystemType;
 import net.gausman.ftl.model.change.*;
+import net.gausman.ftl.model.change.crew.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -285,15 +286,15 @@ public class ShipStatusModel {
                     }
 
                     case NAME -> {
-                        if (!(event instanceof NameEvent nameEvent)){
+                        if (!(event instanceof CrewRenameEvent crewRenameEvent)){
                             log.info("NAME Event issue");
                             return;
                         }
-                        Crew crewToChange = crewList.get(nameEvent.getCrewPosition());
+                        Crew crewToChange = crewList.get(crewRenameEvent.getCrewPosition());
                         if (apply){
-                            crewToChange.setName(nameEvent.getNewName());
+                            crewToChange.setName(crewRenameEvent.getNewName());
                         } else {
-                            crewToChange.setName(nameEvent.getOldName());
+                            crewToChange.setName(crewRenameEvent.getOldName());
                         }
                     }
 
