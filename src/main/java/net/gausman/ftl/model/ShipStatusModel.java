@@ -305,6 +305,10 @@ public class ShipStatusModel {
                         }
 
                         String statString = convertStatToAttributename(statEvent.getStat());
+                        if (statEvent.getCrewPosition() == null || statEvent.getCrewPosition() >= crewList.size()){
+                            log.error("Crew index to change out of list");
+                            break;
+                        }
                         Crew crewToChange = crewList.get(statEvent.getCrewPosition());
                         int attributeValueBefore = (int) getValueInCrewByAttributename(crewToChange, statString);
 

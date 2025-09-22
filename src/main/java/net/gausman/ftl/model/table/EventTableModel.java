@@ -34,6 +34,11 @@ public class EventTableModel extends AbstractTableModel {
         return columnNames.length;
     }
 
+    public Event getEventById(int eventId){
+        return events.get(eventId);
+    }
+
+
     public Event getRowEvent(int rowIndex){
         int displayIndex = events.size() - 1 - rowIndex;
 

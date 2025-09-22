@@ -17,6 +17,8 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class GausmanUtil {
     private static final Logger log = LoggerFactory.getLogger(GausmanUtil.class);
@@ -250,6 +252,25 @@ public class GausmanUtil {
             return Integer.MAX_VALUE; // put files without numbers at the end
         }
     }
+
+    public static int extractNumberAfterHyphen(String filename) {
+        try {
+            // try to match a number after a hyphen (e.g. "2 - 10.sav")
+            Pattern afterHyphen = Pattern.compile("-\\s*(\\d+)");
+            Matcher m = afterHyphen.matcher(filename);
+            if (m.find()) return Integer.parseInt(m.group(1));
+
+            // fallback: take the last number in the filename
+            Pattern anyNumber = Pattern.compile("\\d+");
+            m = anyNumber.matcher(filename);
+            int last = -1;
+            while (m.find()) last = Integer.parseInt(m.group());
+            return last == -1 ? Integer.MAX_VALUE : last;
+        } catch (Exception e) {
+            return Integer.MAX_VALUE;
+        }
+    }
+
 
     public static String convertStatToAttributename(Constants.Stats stat){
         return switch (stat){

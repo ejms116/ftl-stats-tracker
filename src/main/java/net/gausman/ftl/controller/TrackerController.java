@@ -160,7 +160,7 @@ public class TrackerController {
     private void updateUI(int eventId){
         ShipStatusModel model = runService.getStatusAtId(eventId);
         view.getShipStatusPanel().update(model);
-//        view.getEventTablePanel().updateJumpInfoPanel(eventTableModel.getRowEvent(selected).getJump()); ????
+        view.getEventTablePanel().updateJumpInfoPanel(eventTableModel.getEventById(eventId).getJump());
         view.getChartsPanel().updateDatasets(model.getSectorMetrics());
     }
 
@@ -299,7 +299,8 @@ public class TrackerController {
             return;
         }
 
-        Arrays.sort(files, Comparator.comparingInt(file -> GausmanUtil.extractLeadingNumber(file.getName())));
+//        Arrays.sort(files, Comparator.comparingInt(file -> GausmanUtil.extractLeadingNumber(file.getName())));
+        Arrays.sort(files, Comparator.comparingInt(file -> GausmanUtil.extractNumberAfterHyphen(file.getName())));
 
         for (File file : files) {
             long lastModified = file.lastModified();

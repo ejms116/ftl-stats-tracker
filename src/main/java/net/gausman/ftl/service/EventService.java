@@ -33,6 +33,8 @@ public class EventService {
 
     private List<SavedGameParser.EncounterState> encounterStateList = new ArrayList<>();
 
+    private Map<Integer, Integer> mapStateToInternal = new HashMap<>();
+
     public void initEventService(){
         encounterStateList.clear();
     }
@@ -251,6 +253,10 @@ public class EventService {
                         }
                     }
                 }
+            }
+
+            if (lastGameState.getBeaconList().get(lastGameState.getCurrentBeaconId()).getStore() == null){
+                log.error("shop error");
             }
 
             fuelBought = lastGameState.getBeaconList().get(lastGameState.getCurrentBeaconId()).getStore().getFuel() -
@@ -538,10 +544,6 @@ public class EventService {
             log.error("2 or more System-Upgrade Events on the same beacon are impossible");
         }
 
-
-
-
-
         // Crew
         events.addAll(getCrewEvents(lastGameState, currentGameState, boughtCrew, jump));
 
@@ -581,10 +583,6 @@ public class EventService {
 
     }
 
-    //            List<SavedGameParser.CrewState> lastCrewStatePlayer,
-    //            List<SavedGameParser.CrewState> newCrewStatePlayer,
-    //            List<SavedGameParser.CrewState> lastCrewStateEnemy,
-    //            List<SavedGameParser.CrewState> newCrewStateEnemy,
     private List<Event> getCrewEvents(SavedGameParser.SavedGameState lastGameState, SavedGameParser.SavedGameState currentGameState, List<String> boughtCrew, Jump jump){
         List<Event> events = new ArrayList<>();
 
@@ -624,7 +622,6 @@ public class EventService {
         for (int i = 0; i < lastCrewState.size(); i++){
             SavedGameParser.CrewState lastState = lastCrewState.get(i);
             possibleMatchesOldToNew.put(i, new ArrayList<>());
-//            for (int j = 0; j < Math.min(i + 1, newCrewState.size()); j++){
             for (int j = 0; j < newCrewState.size(); j++){
                 SavedGameParser.CrewState newState = newCrewState.get(j);
                 if (lastState.isMale() == newState.isMale()
@@ -678,35 +675,52 @@ public class EventService {
                 Integer chosen = null;
                 if (!possibleValues.isEmpty()) {
                     if (possibleValues.size() == 1) {
-                        // ✅ Only one option → take it
                         chosen = possibleValues.getFirst();
                     } else {
-                        // ✅ Prefer same-name match if available
                         String oldName = lastCrewState.get(oldId).getName();
                         chosen = possibleValues.stream()
                                 .filter(newId -> newCrewState.get(newId).getName().equals(oldName))
                                 .findFirst()
-                                .orElse(possibleValues.getFirst()); // fallback: just take the first
+                                .orElse(possibleValues.getFirst());
                     }
-
                     newCrewMatched.add(chosen);
                     mapOldToNew.put(oldId, chosen);
                 } else {
                     mapOldToNew.put(oldId, null);
                 }
-
-                // Once processed, remove from the map
                 possibleMatchesOldToNew.remove(oldId);
-                // 🔁 Break out to re-sort after this assignment
                 break;
             }
         }
 
+        if (mapStateToInternal.isEmpty()){
+            mapStateToInternal.putAll(mapOldToNew);
+        }
+
+        // Problem here
+        // when discarding crew the crew positions need to be updated
+        // at the moment this happens at the bottom in the projectValues method
+        // so here the crew positions are wrong
+        // maybe we can add these events after updating the crew positions
+        // or we need pre calculate what the values will be
 
         // Create events for every Crew-match
         // If the old crew does not match with one in the new list the crew is dead/discarded
+        int removedCrewCount = 0;
+        Integer adjustedCrewPosition = null;
+
         for (Map.Entry<Integer, Integer> entry : mapOldToNew.entrySet()) {
-            events.addAll(compareCrewState(lastCrewState.get(entry.getKey()), entry.getValue() != null ? newCrewState.get(entry.getValue()) : null, jump, entry.getKey()));
+            adjustedCrewPosition = getKeyByValue(mapStateToInternal, entry.getKey());
+            if (adjustedCrewPosition != null){
+                adjustedCrewPosition -= removedCrewCount;
+            }
+
+
+            events.addAll(compareCrewState(lastCrewState.get(entry.getKey()), entry.getValue() != null ? newCrewState.get(entry.getValue()) : null, jump, adjustedCrewPosition));
+
+            if (entry.getValue() == null){
+                removedCrewCount++;
+            }
         }
 
         // Last we have to check if all new crew were matched with an old crew
@@ -726,14 +740,94 @@ public class EventService {
                     GausmanUtil.getCrewTypeName(cs.getRace().getId()) + " - " + cs.getName(),
                     jump
             );
-            event.setCrewPosition(i);
+            event.setCrewPosition(lastCrewState.size());
             event.setCrew(new Crew(cs, eventType));
-            events.add(event);
+            events.addFirst(event);
+            mapOldToNew.put(lastCrewState.size(), i);
+        }
 
+        if (!validateMap(mapStateToInternal, newCrewState)){
+            log.error("Map validation failed");
+        }
+
+        mapStateToInternal = projectValues(mapStateToInternal, mapOldToNew);
+
+        if (!validateMap(mapStateToInternal, newCrewState) || mapStateToInternal.size() != newCrewState.size()){
+            log.error("Map validation failed after recalculation");
         }
 
         return events;
     }
+
+    private boolean validateMap(Map<Integer, Integer> map, List<SavedGameParser.CrewState> crewStates){
+        List<Integer> ids = new ArrayList<>();
+        for (Map.Entry<Integer, Integer> entry : map.entrySet()){
+            if (ids.contains(entry.getValue())){
+                return false;
+            }
+            ids.add(entry.getValue());
+        }
+
+        for (int i = 0; i < map.size(); i++){
+            if (!map.containsKey(i)){
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private Integer getKeyByValue(Map<Integer, Integer> map, Integer value) {
+        for (Map.Entry<Integer, Integer> entry : map.entrySet()) {
+            if (Objects.equals(entry.getValue(), value)) {
+                return entry.getKey();
+            }
+        }
+        return null;
+    }
+
+    public Map<Integer, Integer> projectValues(Map<Integer, Integer> map1, Map<Integer, Integer> map2) {
+        Map<Integer, Integer> result = new HashMap<>();
+        if (map1 == null) return result;
+
+        for (Map.Entry<Integer, Integer> e1 : map1.entrySet()) {
+            Integer key = e1.getKey();
+            Integer lookupKey = e1.getValue();
+
+            if (map2 != null && map2.containsKey(lookupKey)) {
+                Integer newValue = map2.get(lookupKey);
+                result.put(key, newValue);
+            } else {
+                result.put(key, e1.getValue());
+            }
+        }
+
+
+        for (Map.Entry<Integer, Integer> e2 : map2.entrySet()){
+            if (!result.containsKey(e2.getKey()) && !result.containsValue(e2.getValue()) && e2.getValue() != null){
+                result.put(e2.getKey(), e2.getValue());
+            }
+        }
+
+        result = compactMap(result);
+
+        return result;
+    }
+
+    private Map<Integer, Integer> compactMap(Map<Integer, Integer> input) {
+        Map<Integer, Integer> result = new LinkedHashMap<>(); // keeps order
+
+        int newKey = 0;
+        for (int oldKey = 0; oldKey <= input.size() - 1; oldKey++) {
+            Integer value = input.get(oldKey);
+            if (value != null) {
+                result.put(newKey++, value);
+            }
+        }
+        return result;
+    }
+
+
 
     private List<Event> compareCrewState(SavedGameParser.CrewState lastCrewState, SavedGameParser.CrewState newCrewState, Jump jump, Integer crewPosition){
         List<Event> events = new ArrayList<>();

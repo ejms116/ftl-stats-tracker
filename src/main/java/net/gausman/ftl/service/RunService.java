@@ -179,7 +179,7 @@ public class RunService {
             if (saveFileCopySetting.equals(SaveFileCopySetting.ONCE_PER_JUMP)){
                 filenameToCopy = String.format("%d.sav", currentRun.getCurrentJump().getId());
             } else {
-                filenameToCopy = String.format("%d.sav", saveNumber);
+                filenameToCopy = String.format("%d - %d.sav", currentRun.getCurrentJump().getId(), saveNumber);
             }
             Path target = savesDir.resolve(currentRunFolderName).resolve(filenameToCopy);
             Files.copy(file.toPath(), target, StandardCopyOption.REPLACE_EXISTING);

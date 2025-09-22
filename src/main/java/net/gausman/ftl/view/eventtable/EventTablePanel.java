@@ -36,8 +36,6 @@ public class EventTablePanel extends JSplitPane {
     public EventTablePanel(EventTableModel model) {
         super(JSplitPane.VERTICAL_SPLIT);
         setResizeWeight(0.15);
-        setEnabled(false);
-        setDividerSize(5);
 
         // top Panel
         JPanel jumpInfoPanel = new JPanel(new BorderLayout());

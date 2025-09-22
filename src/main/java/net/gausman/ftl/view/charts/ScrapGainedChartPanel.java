@@ -90,7 +90,7 @@ public class ScrapGainedChartPanel extends JPanel {
 
         // --- Wrap chart ---
         ChartPanel chartPanel = new ChartPanel(chart);
-        chartPanel.setPreferredSize(new Dimension(400, 200));
+//        chartPanel.setPreferredSize(new Dimension(400, 200));
         chartPanel.setMouseWheelEnabled(false);
 
         add(chartPanel, BorderLayout.CENTER);
