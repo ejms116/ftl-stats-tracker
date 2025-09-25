@@ -8,6 +8,7 @@ import net.gausman.ftl.model.table.EventTableModel;
 
 import net.gausman.ftl.model.table.EventFilter;
 import net.gausman.ftl.model.table.JumpTableModel;
+import net.gausman.ftl.view.renderer.TagsRenderer;
 
 import javax.swing.*;
 import javax.swing.table.TableRowSorter;
@@ -170,17 +171,20 @@ public class EventTablePanel extends JSplitPane {
         setBottomComponent(bottomPanel);
 
 
-        table.getColumnModel().getColumn(0).setPreferredWidth(30);
-        table.getColumnModel().getColumn(1).setPreferredWidth(PREFERRED_WIDTH_3_DIGITS);
-        table.getColumnModel().getColumn(2).setPreferredWidth(PREFERRED_WIDTH_3_DIGITS);
+        table.getColumnModel().getColumn(0).setPreferredWidth(10);
+        table.getColumnModel().getColumn(1).setPreferredWidth(3);
+        table.getColumnModel().getColumn(2).setPreferredWidth(3);
         table.getColumnModel().getColumn(3).setPreferredWidth(PREFERRED_WIDTH_3_DIGITS);
-        table.getColumnModel().getColumn(4).setPreferredWidth(PREFERRED_WIDTH_3_DIGITS);
+        table.getColumnModel().getColumn(4).setPreferredWidth(400);
 
-        table.getColumnModel().getColumn(7).setPreferredWidth(400);
-
-        table.getColumnModel().getColumn(8).setPreferredWidth(PREFERRED_WIDTH_3_DIGITS);
-        table.getColumnModel().getColumn(9).setPreferredWidth(PREFERRED_WIDTH_3_DIGITS);
-        table.getColumnModel().getColumn(10).setPreferredWidth(PREFERRED_WIDTH_3_DIGITS);
+        table.getColumnModel().getColumn(5).setCellRenderer(new TagsRenderer());
+//        table.getColumnModel().getColumn(4).setPreferredWidth(PREFERRED_WIDTH_3_DIGITS);
+//
+//        table.getColumnModel().getColumn(7).setPreferredWidth(400);
+//
+//        table.getColumnModel().getColumn(8).setPreferredWidth(PREFERRED_WIDTH_3_DIGITS);
+//        table.getColumnModel().getColumn(9).setPreferredWidth(PREFERRED_WIDTH_3_DIGITS);
+//        table.getColumnModel().getColumn(10).setPreferredWidth(PREFERRED_WIDTH_3_DIGITS);
 
 
 

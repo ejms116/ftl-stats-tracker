@@ -68,7 +68,7 @@ public class TrackerController {
         eventTablePanel = new EventTablePanel(eventTableModel);
         view.setEventTablePanel(eventTablePanel);
 
-
+        openProgramOnSecondMonitorForTesting();
 
         view.setVisible(true);
 
@@ -285,7 +285,7 @@ public class TrackerController {
 
 
     private void testSaveFileReading(){
-        File folder = new File("saves\\test");
+        File folder = new File("saves\\test-holo-engi-a");
 
         if (!folder.isDirectory()) {
             System.out.println("Not a directory.");

@@ -10,8 +10,8 @@ public class CrewRenameEvent extends CrewEvent {
 
     public CrewRenameEvent(){}
 
-    public CrewRenameEvent(String newName, String oldName, Jump jump){
-        super(SavedGameParser.StoreItemType.CREW, Constants.EventType.NAME, 0, 0, "name", jump);
+    public CrewRenameEvent(String text, Jump jump, String newName, String oldName){
+        super(text, jump);
         this.oldName = oldName;
         this.newName = newName;
         this.setDisplayText(String.format("%s renamed to %s", oldName, newName));

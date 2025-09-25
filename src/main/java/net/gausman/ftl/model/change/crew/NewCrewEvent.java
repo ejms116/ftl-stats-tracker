@@ -1,8 +1,6 @@
 package net.gausman.ftl.model.change.crew;
 
 
-import net.blerf.ftl.parser.SavedGameParser;
-import net.gausman.ftl.model.Constants;
 import net.gausman.ftl.model.Crew;
 import net.gausman.ftl.model.record.Jump;
 
@@ -11,8 +9,8 @@ public class NewCrewEvent extends CrewEvent {
 
     public NewCrewEvent(){};
 
-    public NewCrewEvent(SavedGameParser.StoreItemType itemType, Constants.EventType eventType, int amount, int scrap, String text, Jump jump) {
-        super(itemType, eventType, amount, scrap, text, jump);
+    public NewCrewEvent(String text, Jump jump) {
+        super(text, jump);
     }
 
     public Crew getCrew() {

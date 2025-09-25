@@ -7,7 +7,7 @@ import java.util.*;
 
 public class SaveFileReplayer {
     public static void main(String[] args) throws Exception {
-        Path testFolder = Paths.get("saves\\test-holo-mantis-a");
+        Path testFolder = Paths.get("saves\\test-holo-engi-a");
         Path targetFile = Paths.get("C:\\Users\\erikj\\Documents\\My Games\\FasterThanLight\\continue.sav");
 
         // Collect test files (sorted by name)

@@ -6,6 +6,30 @@ import java.util.Map;
 
 public class Constants {
     //public enum EventCategory{SYSTEM, AUGMENT, WEAPON, DRONE, CREW, RESOURCE};
+
+    public enum EventTag {
+        BUY(Color.GREEN),          // positive action
+        SELL(Color.RED),           // negative/action out
+        UPGRADE(Color.BLUE),       // improvement
+        START(Color.CYAN),         // beginning/start
+        REWARD(Color.YELLOW),      // reward/gain
+        DISCARD(Color.GRAY),       // remove/dispose
+        EVENT(Color.MAGENTA),      // neutral/general event
+        DAMAGE(Color.ORANGE),      // damage/warning
+        REPAIR(new Color(139, 69, 19)), // brownish for repair/fix
+        USE(Color.PINK);           // usage/action
+
+        private final Color color;
+
+        EventTag(Color color) {
+            this.color = color;
+        }
+
+        public Color getColor() {
+            return color;
+        }
+    }
+
     public enum EventType{
         UPGRADE("Upgrade"),
         BUY("Buy"),
@@ -43,7 +67,7 @@ public class Constants {
         public static EventType fromText(String displayName) {
             return LOOKUP.get(displayName); // returns null if not found
         }
-    };
+    }
 
     public enum Stats{
         REPAIRS("Repairs"),

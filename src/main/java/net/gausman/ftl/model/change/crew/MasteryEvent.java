@@ -1,6 +1,5 @@
 package net.gausman.ftl.model.change.crew;
 
-import net.blerf.ftl.parser.SavedGameParser;
 import net.gausman.ftl.model.Constants;
 import net.gausman.ftl.model.record.Jump;
 
@@ -11,8 +10,8 @@ public class MasteryEvent extends CrewEvent {
 
     public MasteryEvent(){}
 
-    public MasteryEvent(Constants.Skill mastery, int level, boolean newValue, Jump jump){
-        super(SavedGameParser.StoreItemType.CREW, Constants.EventType.MASTERY, 0, 0,"mastery", jump);
+    public MasteryEvent(String text, Jump jump, Constants.Skill mastery, int level, boolean newValue){
+        super(text, jump);
         this.mastery = mastery;
         this.level = level;
         this.newValue = newValue;

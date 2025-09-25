@@ -6,15 +6,21 @@ import net.gausman.ftl.model.record.Jump;
 
 public class SkillEvent extends CrewEvent {
     private Constants.Skill skill;
+    private int amount;
 
     public SkillEvent(){};
 
-    public SkillEvent(Constants.Skill skill, int amount, Jump jump){
-        super(SavedGameParser.StoreItemType.CREW, Constants.EventType.SKILL, amount, 0,"skill", jump);
+    public SkillEvent(String text, Jump jump, Constants.Skill skill, int amount){
+        super(text, jump);
         this.skill = skill;
+        this.amount = amount;
     }
 
     public Constants.Skill getSkill() {
         return skill;
+    }
+
+    public int getAmount() {
+        return amount;
     }
 }

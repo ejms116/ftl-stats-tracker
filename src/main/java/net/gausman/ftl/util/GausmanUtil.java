@@ -1,6 +1,7 @@
 package net.gausman.ftl.util;
 
 import net.blerf.ftl.parser.DataManager;
+import net.blerf.ftl.parser.DefaultDataManager;
 import net.blerf.ftl.parser.SavedGameParser;
 import net.blerf.ftl.xml.ShipBlueprint;
 import net.blerf.ftl.xml.SystemBlueprint;

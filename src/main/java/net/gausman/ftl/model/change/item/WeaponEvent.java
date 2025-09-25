@@ -6,16 +6,16 @@ import net.gausman.ftl.model.change.Event;
 import net.gausman.ftl.model.record.Jump;
 import net.gausman.ftl.util.GausmanUtil;
 
-public class WeaponEvent extends Event {
+public class WeaponEvent extends ItemEvent {
 
     public WeaponEvent(){};
 
-    public WeaponEvent(Constants.EventType eventType, int amount, int scrap, String text, Jump jump){
-        super(SavedGameParser.StoreItemType.WEAPON, eventType, amount, scrap, text, jump);
+    public WeaponEvent(String text, Jump jump, String itemId) {
+        super(text, jump, itemId);
     }
 
     @Override
     public String getDisplayText(){
-        return GausmanUtil.getTextToId(getItemType(), getText());
+        return GausmanUtil.getTextToId(SavedGameParser.StoreItemType.WEAPON, getItemId());
     }
 }
