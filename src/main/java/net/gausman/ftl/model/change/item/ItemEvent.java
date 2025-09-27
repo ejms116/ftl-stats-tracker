@@ -1,5 +1,6 @@
 package net.gausman.ftl.model.change.item;
 
+import net.gausman.ftl.model.Constants;
 import net.gausman.ftl.model.change.Event;
 import net.gausman.ftl.model.record.Jump;
 
@@ -8,8 +9,8 @@ public class ItemEvent extends Event {
 
     public ItemEvent(){}
 
-    public ItemEvent(String text, Jump jump, String itemId) {
-        super(text, jump);
+    public ItemEvent(Constants.EventDetailType eventDetailType, Jump jump, String itemId) {
+        super(eventDetailType, jump);
         this.itemId = itemId;
     }
 

@@ -149,11 +149,10 @@ public class ShipStatusPanel extends JSplitPane {
         }
 
         List<ShipSystem> shipSystems = new ArrayList<>();
-        for (Map.Entry<Constants.Reactor, Integer> entry : model.getReactor().entrySet()){
-            ShipSystem s = new ShipSystem(entry.getKey().toString(), "Reactor", "Other", false);
-            s.setLevel(entry.getValue());
-            shipSystems.add(s);
-        }
+        ShipSystem reactor = new ShipSystem("Reactor", "Reactor", "Other", false);
+        reactor.setLevel(model.getReactor());
+        shipSystems.add(reactor);
+
 
         for (Map.Entry<SystemType, Integer> entry : model.getSystems().entrySet()){
             if (entry.getValue() < 1){

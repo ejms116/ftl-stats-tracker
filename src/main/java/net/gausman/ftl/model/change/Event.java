@@ -5,16 +5,17 @@ import net.blerf.ftl.parser.SavedGameParser;
 import net.gausman.ftl.model.Constants;
 import net.gausman.ftl.model.ShipStatusModel;
 import net.gausman.ftl.model.change.crew.*;
+import net.gausman.ftl.model.change.effects.IntegerStatEffect;
+import net.gausman.ftl.model.change.effects.StringStatEffect;
 import net.gausman.ftl.model.change.item.AugmentEvent;
 import net.gausman.ftl.model.change.item.DroneEvent;
 import net.gausman.ftl.model.change.item.WeaponEvent;
+import net.gausman.ftl.model.change.system.ReactorEvent;
+import net.gausman.ftl.model.change.system.SystemEvent;
 import net.gausman.ftl.model.record.Jump;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id", scope = Event.class)
@@ -27,13 +28,12 @@ import java.util.Map;
         @JsonSubTypes.Type(value = AugmentEvent.class, name = "AugmentEvent"),
         @JsonSubTypes.Type(value = CrewEvent.class, name = "CrewEvent"),
         @JsonSubTypes.Type(value = DroneEvent.class, name = "DroneEvent"),
-        @JsonSubTypes.Type(value = GeneralEvent.class, name = "GeneralEvent"),
         @JsonSubTypes.Type(value = MasteryEvent.class, name = "MasteryEvent"),
         @JsonSubTypes.Type(value = CrewRenameEvent.class, name = "NameEvent"),
-        @JsonSubTypes.Type(value = NewCrewEvent.class, name = "NewCrewEvent"),
+        @JsonSubTypes.Type(value = CrewNewEvent.class, name = "NewCrewEvent"),
         @JsonSubTypes.Type(value = ReactorEvent.class, name = "ReactorEvent"),
-        @JsonSubTypes.Type(value = SkillEvent.class, name = "SkillEvent"),
-        @JsonSubTypes.Type(value = StatEvent.class, name = "StatEvent"),
+        @JsonSubTypes.Type(value = CrewSkillEvent.class, name = "SkillEvent"),
+        @JsonSubTypes.Type(value = CrewStatEvent.class, name = "StatEvent"),
         @JsonSubTypes.Type(value = SystemEvent.class, name = "SystemEvent"),
         @JsonSubTypes.Type(value = WeaponEvent.class, name = "WeaponEvent"),
 })
@@ -42,13 +42,13 @@ public class Event {
     private final Instant ts;
     private SavedGameParser.StoreItemType itemType; // Category
     private Constants.EventType eventType; // Type
+    private Constants.EventDetailType eventDetailType;
 //    private int amount;
     private int scrap;
     private String text;
     private String displayText;
     private Jump jump;
-    private EnumSet<Constants.Resource, Integer> resourceEffects = EnumSet.noneOf(Constants.Resource.class);
-    private List<ValueEffect> valueEffects = new ArrayList<>();
+    private EnumMap<Constants.Resource, Integer> resourceEffects = new EnumMap<>(Constants.Resource.class);
     private List<StringStatEffect> stringStatEffects = new ArrayList<>();
     private List<IntegerStatEffect> integerStatEffects = new ArrayList<>();
     private EnumSet<Constants.EventTag> tags = EnumSet.noneOf(Constants.EventTag.class);
@@ -59,20 +59,26 @@ public class Event {
     }
 
 //    public Event(SavedGameParser.StoreItemType itemType, Constants.EventType eventType, int amount, int scrap, String text, Jump jump){
-    public Event(String text, Jump jump){
+    public Event(Jump jump){
         this.ts = Instant.now();
-//        this.itemType = itemType;
-//        this.eventType = eventType;
-//        this.amount = amount;
-//        this.scrap = scrap;
-//        this.text = text;
         this.jump = jump;
         this.displayText = text;
-        this.valueEffects = new ArrayList<>();
         this.stringStatEffects = new ArrayList<>();
         this.integerStatEffects = new ArrayList<>();
-        this.resourceEffects = EnumSet.noneOf(Constants.Resource.class);
+        this.resourceEffects = new EnumMap<>(Constants.Resource.class);
         this.tags = EnumSet.noneOf(Constants.EventTag.class);
+        this.eventDetailType = Constants.EventDetailType.DEFAULT;
+    }
+
+    public Event(Constants.EventDetailType eventDetailType, Jump jump){
+        this.ts = Instant.now();
+        this.jump = jump;
+        this.displayText = text;
+        this.stringStatEffects = new ArrayList<>();
+        this.integerStatEffects = new ArrayList<>();
+        this.resourceEffects = new EnumMap<>(Constants.Resource.class);
+        this.tags = EnumSet.noneOf(Constants.EventTag.class);
+        this.eventDetailType = eventDetailType;
     }
 
     public String getDisplayTextWithEffects(){
@@ -109,6 +115,9 @@ public class Event {
         return eventType;
     }
 
+    public Constants.EventDetailType getEventFilterType() {
+        return eventDetailType;
+    }
 
     public int getScrap() {
         return scrap;
@@ -116,7 +125,7 @@ public class Event {
 
     @JsonIgnore
     public int getScrapChange(){
-        return 42;
+        return 0;
 //        int result = 0;
 //        switch (eventType){
 //            case REWARD -> result = 0;
@@ -161,12 +170,12 @@ public class Event {
         return jump;
     }
 
-    public List<ValueEffect> getValueEffects() {
-        return valueEffects;
+    public EnumMap<Constants.Resource, Integer> getResourceEffects() {
+        return resourceEffects;
     }
 
-    public void addValueEffect(ValueEffect effect){
-        this.valueEffects.add(effect);
+    public void setResourceEffect(Constants.Resource resource, Integer value) {
+        this.resourceEffects.put(resource, value);
     }
 
     public List<StringStatEffect> getStringStatEffects() {
@@ -199,11 +208,14 @@ public class Event {
         applyIntegerStatEffects(model.getGeneralInfoInteger(), mult);
         applyStringStatEffects(model.getGeneralInfoString());
 
+        // if tag contains BUY
+
+
     }
 
     private void applyValueEffects(Map<Constants.Resource, Integer> resources, int mult){
-        for (ValueEffect effect : this.getValueEffects()){
-            resources.put(effect.getResource(), resources.getOrDefault(effect.getResource(), 0) + effect.getValue()*mult);
+        for (Map.Entry<Constants.Resource, Integer> effect : this.resourceEffects.entrySet()){
+            resources.put(effect.getKey(), resources.getOrDefault(effect.getKey(), 0) + effect.getValue()*mult);
         }
     }
 

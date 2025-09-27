@@ -101,6 +101,16 @@ public class GausmanUtil {
 
     }
 
+    public static Constants.ScrapUsedCategory convertResourceToScrapUsedCategory(Constants.Resource resource){
+        return switch (resource){
+            case HULL -> Constants.ScrapUsedCategory.REPAIR;
+            case FUEL -> Constants.ScrapUsedCategory.FUEL;
+            case MISSILE -> Constants.ScrapUsedCategory.MISSILES;
+            case DRONE -> Constants.ScrapUsedCategory.DRONE_PARTS;
+            case SCRAP -> null;
+        };
+    }
+
     public static String convertBlueprintName(String blueprint){
         DataManager dm = DataManager.get();
         ShipBlueprint ship = dm.getShip(blueprint);

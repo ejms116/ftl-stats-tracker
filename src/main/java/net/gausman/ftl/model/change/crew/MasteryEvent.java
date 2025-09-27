@@ -10,8 +10,8 @@ public class MasteryEvent extends CrewEvent {
 
     public MasteryEvent(){}
 
-    public MasteryEvent(String text, Jump jump, Constants.Skill mastery, int level, boolean newValue){
-        super(text, jump);
+    public MasteryEvent(Jump jump, Constants.Skill mastery, int level, boolean newValue){
+        super (Constants.EventDetailType.CREW_MASTERY, jump);
         this.mastery = mastery;
         this.level = level;
         this.newValue = newValue;

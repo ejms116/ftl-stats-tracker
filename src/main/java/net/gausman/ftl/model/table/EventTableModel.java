@@ -12,7 +12,7 @@ import java.util.TreeMap;
 
 public class EventTableModel extends AbstractTableModel {
     private NavigableMap<Integer, Event> events = new TreeMap<>();
-    private final String[] columnNames = {"Time", "Sec", "Jump", "Type", "Text", "Tags"};
+    private final String[] columnNames = {"Time", "S", "J", "Type", "Resources", "Tags", "Text"};
     private Instant startTime;
 
 
@@ -60,9 +60,10 @@ public class EventTableModel extends AbstractTableModel {
             case 0 -> GausmanUtil.formatDuration(Duration.between(startTime, event.getTs()));
             case 1 -> event.getJump().getSector().getId();
             case 2 -> event.getJump().getId();
-            case 3 -> event.getClass().getSimpleName();
-            case 4 -> event.getDisplayTextWithEffects();
+            case 3 -> event.getEventFilterType();
+            case 4 -> event.getResourceEffects();
             case 5 -> event.getTags();
+            case 6 -> event.getDisplayText();
 
             default -> null;
         };

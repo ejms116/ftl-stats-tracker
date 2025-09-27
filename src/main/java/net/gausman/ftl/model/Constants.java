@@ -1,6 +1,8 @@
 package net.gausman.ftl.model;
 
+import javax.swing.*;
 import java.awt.*;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -10,11 +12,11 @@ public class Constants {
     public enum EventTag {
         BUY(Color.GREEN),          // positive action
         SELL(Color.RED),           // negative/action out
-        UPGRADE(Color.BLUE),       // improvement
         START(Color.CYAN),         // beginning/start
         REWARD(Color.YELLOW),      // reward/gain
         DISCARD(Color.GRAY),       // remove/dispose
         EVENT(Color.MAGENTA),      // neutral/general event
+        STORE(Color.LIGHT_GRAY),
         DAMAGE(Color.ORANGE),      // damage/warning
         REPAIR(new Color(139, 69, 19)), // brownish for repair/fix
         USE(Color.PINK);           // usage/action
@@ -27,6 +29,103 @@ public class Constants {
 
         public Color getColor() {
             return color;
+        }
+    }
+
+    public enum EventCategory {
+            OTHER("Other"),
+            EVENT("Event"), // todo if possible we want to get rid of this
+            USE("Use"),
+            GENERAL("General"),
+            ITEM("Items"),
+            SYSTEM("System"), // includes Reactor
+            CREW("Crew"),
+        ;
+
+        private final String displayName;
+
+        EventCategory(String displayName) {
+            this.displayName = displayName;
+        }
+
+        public String toString(){
+            return displayName;
+        }
+
+        private static final Map<String, EventCategory> LOOKUP = new HashMap<>();
+
+        static {
+            for (EventCategory type : values()) {
+                LOOKUP.put(type.displayName, type);
+            }
+        }
+
+        public static EventCategory fromText(String displayName) {
+            return LOOKUP.get(displayName); // returns null if not found
+        }
+    }
+
+    public enum EventDetailType {
+        REPAIR("Repair", EventCategory.OTHER),
+        RESOURCE("Resources", EventCategory.OTHER),
+        DAMAGE("Damage", EventCategory.OTHER),
+        SHIP_SETUP("Ship setup", EventCategory.OTHER),
+        SCRAP_DIFF_ERROR("Scrap Diff Error", EventCategory.OTHER),
+
+        DEFAULT("Default", EventCategory.EVENT), // todo if possible we want to get rid of this
+
+        USE_FUEL("Fuel used", EventCategory.USE),
+        USE_MISSILE("Missiles used", EventCategory.USE),
+        USE_DRONE("Drones used", EventCategory.USE),
+
+        SCRAP_COLLECTED("Scrap collected", EventCategory.GENERAL),
+        BEACONS_EXPLORED("Beacons explored", EventCategory.GENERAL),
+        SHIPS_DESTROYED("Ships destroyed", EventCategory.GENERAL),
+        CREW_HIRED("Crew hired", EventCategory.GENERAL),
+
+        WEAPON("Weapon", EventCategory.ITEM),
+        DRONE("Drone", EventCategory.ITEM),
+        AUGMENT("Augment", EventCategory.ITEM),
+
+        SYSTEM("System", EventCategory.SYSTEM),
+        SUBSYSTEM("Subsystem", EventCategory.SYSTEM),
+        REACTOR("Reactor", EventCategory.SYSTEM),
+
+        CREW_RENAME("Crew rename", EventCategory.CREW),
+        CREW_NEW("New Crew", EventCategory.CREW),
+        CREW_LOST("Lost Crew", EventCategory.CREW),
+        CREW_MASTERY("Crew Mastery", EventCategory.CREW),
+        CREW_SKILL("Crew Skill", EventCategory.CREW),
+        CREW_STAT("Crew Stat", EventCategory.CREW),
+
+        ;
+
+        private final String displayName;
+        private final EventCategory eventCategory;
+
+        EventDetailType(String displayName, EventCategory category) {
+            this.displayName = displayName;
+            this.eventCategory = category;
+        }
+
+        public String toString(){
+            return displayName;
+        }
+
+        public EventCategory getEventCategory() {
+            return eventCategory;
+        }
+
+        private static final Map<String, EventDetailType> LOOKUP = new HashMap<>();
+
+        static {
+            for (EventDetailType type : values()) {
+                LOOKUP.put(type.displayName, type);
+            }
+        }
+
+        public static EventDetailType fromText(String displayName) {
+            return LOOKUP.get(displayName); // returns null if not found
         }
     }
 
@@ -88,24 +187,35 @@ public class Constants {
 
     }
 
-    public enum Resource{
-//        REPAIR("Repair"),
-        HULL("Hull"),
-        FUEL("Fuel"),
-        MISSILE("Missile"),
-        DRONE("Drone"),
-        SCRAP("Scrap");
+
+    public enum Resource {
+        HULL("Hull", "/icons/icon_hull.png"),
+        FUEL("Fuel", "/icons/icon_fuel.png"),
+        MISSILE("Missile", "/icons/icon_missiles.png"),
+        DRONE("Drone", "/icons/icon_drones.png"),
+        SCRAP("Scrap", "/icons/icon_scrap.png");
 
         private final String displayName;
+        private final ImageIcon icon;
 
-        Resource(String displayName) {
+        Resource(String displayName, String iconPath) {
             this.displayName = displayName;
+            URL url = Resource.class.getResource(iconPath);
+            this.icon = (url != null) ? new ImageIcon(url) : null;
         }
 
-        public String toString(){
+        public String getDisplayName() {
             return displayName;
         }
 
+        public ImageIcon getIcon() {
+            return icon;
+        }
+
+        @Override
+        public String toString() {
+            return displayName;
+        }
     }
 
     public enum General{

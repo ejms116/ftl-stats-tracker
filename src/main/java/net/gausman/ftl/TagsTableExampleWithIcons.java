@@ -1,6 +1,7 @@
 package net.gausman.ftl;
 
 import net.gausman.ftl.model.Constants;
+import net.gausman.ftl.view.renderer.IconTextRenderer;
 import net.gausman.ftl.view.renderer.TagsRenderer;
 
 import javax.swing.*;
@@ -43,37 +44,7 @@ public class TagsTableExampleWithIcons {
 
 
 
-    // Renderer for text + icon column
-    static class IconTextRenderer extends JLabel implements TableCellRenderer {
-        private final Map<String, Icon> icons = new HashMap<>();
 
-        public IconTextRenderer() {
-            setOpaque(true);
-
-            // Load your icons once (replace with real PNGs)
-            icons.put("Fresh", new ImageIcon("fresh.png"));
-            icons.put("Warning", new ImageIcon("warning.png"));
-            icons.put("Expired", new ImageIcon("expired.png"));
-        }
-
-        @Override
-        public Component getTableCellRendererComponent(JTable table, Object value,
-                                                       boolean isSelected, boolean hasFocus,
-                                                       int row, int column) {
-            String text = (value == null) ? "" : value.toString();
-            setText(" " + text); // add space so text isn't glued to icon
-            setIcon(icons.get(text));
-
-            if (isSelected) {
-                setBackground(table.getSelectionBackground());
-                setForeground(table.getSelectionForeground());
-            } else {
-                setBackground(Color.WHITE);
-                setForeground(Color.BLACK);
-            }
-            return this;
-        }
-    }
 
     private static void createAndShowGUI() {
         JFrame frame = new JFrame("Tags + Icons Example");

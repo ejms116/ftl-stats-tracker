@@ -3,14 +3,11 @@ package net.gausman.ftl.model;
 import net.blerf.ftl.parser.SavedGameParser;
 import net.blerf.ftl.parser.SavedGameParser.SystemType;
 import net.gausman.ftl.model.change.*;
-import net.gausman.ftl.model.change.crew.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
 import java.util.*;
-
-import static net.gausman.ftl.util.GausmanUtil.*;
 
 public class ShipStatusModel {
     private static final Logger log = LoggerFactory.getLogger(ShipStatusModel.class);
@@ -20,7 +17,8 @@ public class ShipStatusModel {
 
     private final Map<SystemType, Integer> systems = new EnumMap<>(SystemType.class);
 
-    private final Map<Constants.Reactor, Integer> reactor = new EnumMap<>(Constants.Reactor.class);
+//    private final Map<Constants.Reactor, Integer> reactor = new EnumMap<>(Constants.Reactor.class);
+    private int reactor = 0;
     private final Map<Constants.Resource, Integer> resources = new EnumMap<>(Constants.Resource.class);
 
     private final List<Item> itemList;
@@ -50,9 +48,6 @@ public class ShipStatusModel {
             systems.put(type, 0);
         }
 
-        for (Constants.Reactor r : Constants.Reactor.values()){
-            reactor.put(r, 0);
-        }
 
         itemList = new ArrayList<>();
         crewList = new ArrayList<>();
@@ -68,8 +63,7 @@ public class ShipStatusModel {
 
         resources.putAll(status.resources);
         systems.putAll(status.systems);
-        reactor.putAll(status.reactor);
-
+        reactor = status.reactor;
 
         itemList = new ArrayList<>(status.itemList.stream().map(Item::new).toList());
         crewList = new ArrayList<>(status.crewList.stream().map(Crew::new).toList());
@@ -84,11 +78,6 @@ public class ShipStatusModel {
 //        innerMap.put(origin, innerMap.get(origin) + amount);
 //    }
 
-    private void applyValueEffects(Event event){
-        for (ValueEffect effect : event.getValueEffects()){
-            resources.put(effect.getResource(), resources.getOrDefault(effect.getResource(), 0) + effect.getValue());
-        }
-    }
 
     public void apply(Event event, boolean apply) {
         event.applyEventToShipStatusModel(this, apply);
@@ -105,38 +94,8 @@ public class ShipStatusModel {
 //        applyValueEffects(event);
 //
 //        switch (event.getItemType()){
-//            case GENERAL -> {
-//                GeneralEvent ge = (GeneralEvent) event;
-//
-//                switch (ge.getGeneral()){
-//                    case SHIP_NAME, SHIP_BLUEPRINT, DIFFICULTY -> {
-//                        if (apply){
-//                            generalInfoString.put(ge.getGeneral(), ge.getText());
-//                        }
-//                    }
-//                    case BEACONS_EXPLORED, SHIPS_DESTROYED, CREW_HIRED -> {
-//                        generalInfoInteger.compute(ge.getGeneral(), (k,v) -> v + mult * event.getAmount());
-//                    }
-//                    case SCRAP_COLLECTED -> {
-//                        if (!event.getEventType().equals(Constants.EventType.START)){
-//                            generalInfoInteger.compute(ge.getGeneral(), (k,v) -> v + mult * event.getScrap());
-//                            sectorMetrics.update(event.getJump().getSector(), Constants.ScrapOrigin.NORMAL, mult*event.getScrap());
-//                        }
-//                    }
-//                }
-//            }
-//
-//            case SYSTEM -> {
-//                SystemType type = SystemType.findById(event.getText());
-//                systems.compute(type, (k,v) -> v + mult * event.getAmount());
-//                if (!event.getEventType().equals(Constants.EventType.START)){
-//                    sectorMetrics.update(
-//                            event.getJump().getSector(),
-//                            event.getEventType().equals(Constants.EventType.BUY) ? Constants.ScrapUsedCategory.SYSTEM_BUY : Constants.ScrapUsedCategory.SYSTEM_UPGRADE,
-//                            mult*event.getScrap());
-//                }
-//
-//            }
+
+
 //
 //            case RESOURCE -> {
 //                Constants.Resource resource = Constants.Resource.valueOf(event.getText());
@@ -172,20 +131,7 @@ public class ShipStatusModel {
 //                }
 //
 //            }
-//
-//            case REACTOR -> {
-//                Constants.Reactor r = Constants.Reactor.valueOf(event.getText());
-//                switch (event.getEventType()){
-//                    case START, UPGRADE -> reactor.compute(r, (k,v) -> v + mult * event.getAmount());
-//                    default -> log.info("Reactor Event with Type not implemented: " + event.getEventType());
-//                }
-//                sectorMetrics.update(
-//                        event.getJump().getSector(),
-//                        Constants.ScrapUsedCategory.REACTOR,
-//                        mult*event.getScrap()
-//                );
-//            }
-//
+
 //            case WEAPON, DRONE, AUGMENT -> {
 //                switch (event.getEventType()){
 //                    case BUY, START, REWARD -> {
@@ -465,8 +411,12 @@ public class ShipStatusModel {
         return systems;
     }
 
-    public Map<Constants.Reactor, Integer> getReactor() {
+    public int getReactor() {
         return reactor;
+    }
+
+    public void changeReactor(int delta){
+        reactor += delta;
     }
 
     public List<Item> getItemList() {

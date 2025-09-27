@@ -19,7 +19,7 @@ public class GroupRowColorJTable extends JTable {
         if (getRowCount() < 2) return;
 
         // Get the actual model column index for "Type" (assumed to be column 1 here)
-        int typeCol = convertColumnIndexToView(3);
+        int typeCol = convertColumnIndexToView(2);
         TableModel model = getModel();
 
         for (int row = 0; row < getRowCount() - 1; row++) {

@@ -2,7 +2,6 @@ package net.gausman.ftl.model.change.item;
 
 import net.blerf.ftl.parser.SavedGameParser;
 import net.gausman.ftl.model.Constants;
-import net.gausman.ftl.model.change.Event;
 import net.gausman.ftl.model.record.Jump;
 import net.gausman.ftl.util.GausmanUtil;
 
@@ -10,8 +9,8 @@ public class WeaponEvent extends ItemEvent {
 
     public WeaponEvent(){};
 
-    public WeaponEvent(String text, Jump jump, String itemId) {
-        super(text, jump, itemId);
+    public WeaponEvent(Jump jump, String itemId) {
+        super(Constants.EventDetailType.WEAPON, jump, itemId);
     }
 
     @Override
