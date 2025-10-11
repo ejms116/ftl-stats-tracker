@@ -10,6 +10,16 @@ import java.util.Collection;
 import java.util.List;
 
 public class AbstractBuildableTreeNode implements BuildableTreeNode {
+    protected String sourceFile;
+
+    public String getSourceFile() {
+        return sourceFile;
+    }
+
+    public void setSourceFile(String sourceFile) {
+        this.sourceFile = sourceFile;
+    }
+
     @XmlAnyElement
     private List<Element> unknownElements;
 

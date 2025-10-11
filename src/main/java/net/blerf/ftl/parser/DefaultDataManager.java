@@ -639,6 +639,7 @@ public class DefaultDataManager extends DataManager {
 
 				List<ShipEvent> shipEventList = tmpEncounters.getShipEvents();
 				for ( ShipEvent shipEvent : shipEventList ) {
+					shipEvent.setSourceFile(entry.getKey());
 					dlcShipEventIdMap.put( shipEvent.getId(), shipEvent );
 					List<String> occurence = new ArrayList<>();
 					occurence.add("ShipEvent");
