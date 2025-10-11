@@ -10,6 +10,7 @@ public class AugmentEvent extends ItemEvent {
 
     public AugmentEvent(Jump jump, String itemId) {
         super(Constants.EventDetailType.AUGMENT, jump, itemId);
+        setItemType(SavedGameParser.StoreItemType.AUGMENT);
     }
 
     @Override

@@ -3,8 +3,10 @@ package net.gausman.ftl.model.change.effects;
 import net.gausman.ftl.model.Constants;
 
 public class StringStatEffect {
-    private final Constants.General general;
-    private final String value;
+    private Constants.General general;
+    private String value;
+
+    public StringStatEffect() {}
 
     public StringStatEffect(Constants.General general, String value) {
         this.general = general;

@@ -19,7 +19,10 @@ public class Constants {
         STORE(Color.LIGHT_GRAY),
         DAMAGE(Color.ORANGE),      // damage/warning
         REPAIR(new Color(139, 69, 19)), // brownish for repair/fix
-        USE(Color.PINK);           // usage/action
+        USE(Color.PINK),           // usage/action
+        STAT(Color.DARK_GRAY),
+        ERROR(Color.WHITE),
+        ;
 
         private final Color color;
 
@@ -34,8 +37,7 @@ public class Constants {
 
     public enum EventCategory {
             OTHER("Other"),
-            EVENT("Event"), // todo if possible we want to get rid of this
-            USE("Use"),
+            RESOURCES("Resources"),
             GENERAL("General"),
             ITEM("Items"),
             SYSTEM("System"), // includes Reactor
@@ -67,18 +69,21 @@ public class Constants {
 
     public enum EventDetailType {
         REPAIR("Repair", EventCategory.OTHER),
-        RESOURCE("Resources", EventCategory.OTHER),
         DAMAGE("Damage", EventCategory.OTHER),
         SHIP_SETUP("Ship setup", EventCategory.OTHER),
-        SCRAP_DIFF_ERROR("Scrap Diff Error", EventCategory.OTHER),
+        RESOURCE_DIFF_ERROR("Resource Diff Error", EventCategory.OTHER),
 
-        DEFAULT("Default", EventCategory.EVENT), // todo if possible we want to get rid of this
-
-        USE_FUEL("Fuel used", EventCategory.USE),
-        USE_MISSILE("Missiles used", EventCategory.USE),
-        USE_DRONE("Drones used", EventCategory.USE),
+        RESOURCES_RECEIVED("Resources received", EventCategory.RESOURCES),
+        BUY_FUEL("Fuel buy", EventCategory.RESOURCES),
+        BUY_MISSILE("Missiles buy", EventCategory.RESOURCES),
+        BUY_DRONE("Drones buy", EventCategory.RESOURCES),
+        USE_FUEL("Fuel used", EventCategory.RESOURCES),
+        USE_MISSILE("Missiles used", EventCategory.RESOURCES),
+        USE_DRONE("Drones used", EventCategory.RESOURCES),
+        USE_HACKING("Hacking used", EventCategory.RESOURCES),
 
         SCRAP_COLLECTED("Scrap collected", EventCategory.GENERAL),
+        SRA_EXTRA_SCRAP("SRA bonus scrap", EventCategory.GENERAL),
         BEACONS_EXPLORED("Beacons explored", EventCategory.GENERAL),
         SHIPS_DESTROYED("Ships destroyed", EventCategory.GENERAL),
         CREW_HIRED("Crew hired", EventCategory.GENERAL),
@@ -97,6 +102,7 @@ public class Constants {
         CREW_MASTERY("Crew Mastery", EventCategory.CREW),
         CREW_SKILL("Crew Skill", EventCategory.CREW),
         CREW_STAT("Crew Stat", EventCategory.CREW),
+
 
         ;
 
@@ -261,13 +267,16 @@ public class Constants {
         }
     }
 
-    public enum Reactor{
-        POWER_BAR("Power Bar"),
+    public enum ItemOrigin{
+        START("Start"),
+        BUY("Buy"),
+        BUY_EVENT("Buy Event"),
+        REWARD("Reward"),
         ;
 
         private final String displayName;
 
-        Reactor(String displayName){
+        ItemOrigin(String displayName){
             this.displayName = displayName;
         }
 
@@ -312,6 +321,7 @@ public class Constants {
     public enum ScrapOrigin {
         NORMAL("Normal"),
         FREE("Free stuff"),
+        SRA("Scrap Recovery Arm")
         ;
 
         private final String displayName;
@@ -331,7 +341,6 @@ public class Constants {
         DRONE_PARTS("Drone parts"),
         REPAIR("Repair"),
         SYSTEM_BUY("System buy"),
-        SYSTEM_UPGRADE("System upgrade"),
         REACTOR("Reactor"),
         WEAPONS("Weapons"),
         DRONES("Drones"),

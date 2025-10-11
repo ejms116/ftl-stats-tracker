@@ -4,7 +4,6 @@ import net.blerf.ftl.parser.SavedGameParser;
 import net.gausman.ftl.model.Constants;
 import net.gausman.ftl.model.SimpleTableItem;
 import net.gausman.ftl.model.record.Jump;
-import net.gausman.ftl.model.table.EventFilter;
 import net.gausman.ftl.model.table.EventTableModel;
 import net.gausman.ftl.model.table.JumpTableModel;
 import net.gausman.ftl.view.renderer.ResourceEffectsRenderer;
@@ -19,8 +18,12 @@ import java.util.*;
 
 public class EventTablePanel extends JSplitPane {
     private final JButton openEventInBrowserButton = new JButton("Open in Event Browser");
-    private final EnumSet<Constants.EventDetailType> selectedEventDetailTypes = EnumSet.allOf(Constants.EventDetailType.class);
+    private final JButton jumpToNewestEventButton = new JButton("⚠ Showing historic ship status - click to show newest");
+    private final EnumSet<Constants.EventDetailType> selectedEventDetailTypes = EnumSet.noneOf(Constants.EventDetailType.class);
     private final EnumSet<Constants.EventTag> selectedTags = EnumSet.allOf(Constants.EventTag.class);
+
+    private final Map<Constants.EventCategory, JCheckBoxMenuItem> eventTypeMasterItems = new EnumMap<>(Constants.EventCategory.class);
+    private final Map<Constants.EventDetailType, JCheckBoxMenuItem> eventTypeDetailItems = new EnumMap<>(Constants.EventDetailType.class);
 
     public static final int PREFERRED_WIDTH_3_DIGITS = 10;
 
@@ -68,6 +71,38 @@ public class EventTablePanel extends JSplitPane {
         // ------- Event Types ----------
         JMenu typeFilterMenu = new JMenu("Filter Types ▼");
 
+        JCheckBoxMenuItem toggleAllTypesItem = new JCheckBoxMenuItem("Toggle All Types", true);
+        toggleAllTypesItem.addActionListener(e -> {
+            boolean selected = toggleAllTypesItem.isSelected();
+            if (selected){
+                for (JCheckBoxMenuItem item : eventTypeMasterItems.values()){
+                    item.setState(true);
+                }
+                for (JCheckBoxMenuItem item : eventTypeDetailItems.values()){
+                    item.setState(true);
+                }
+                selectedEventDetailTypes.addAll(EnumSet.allOf(Constants.EventDetailType.class));
+            } else {
+                for (JCheckBoxMenuItem item : eventTypeMasterItems.values()){
+                    item.setState(false);
+                }
+                for (JCheckBoxMenuItem item : eventTypeDetailItems.values()){
+                    item.setState(false);
+                }
+                selectedEventDetailTypes.clear();
+            }
+            updateTableFilter();
+        });
+        typeFilterMenu.add(toggleAllTypesItem);
+
+        JMenuItem resetFilterItem = new JMenuItem("Reset Type Filter");
+        resetFilterItem.addActionListener(e -> {
+            setupDefaultFilters();
+            updateTableFilter();
+        });
+
+        typeFilterMenu.add(resetFilterItem);
+
         Map<Constants.EventCategory, List<Constants.EventDetailType>> categoryMap = new LinkedHashMap<>();
         for (Constants.EventCategory category : Constants.EventCategory.values()) {
             categoryMap.put(category, new ArrayList<>());
@@ -76,18 +111,21 @@ public class EventTablePanel extends JSplitPane {
             categoryMap.get(detail.getEventCategory()).add(detail);
         }
 
+
         for (Constants.EventCategory category : Constants.EventCategory.values()){
             JMenu categoryMenu = new JMenu(category.toString());
 
             JCheckBoxMenuItem masterItem = new JCheckBoxMenuItem("All " + category.toString(), true);
+            eventTypeMasterItems.put(category, masterItem);
 
             categoryMenu.add(masterItem);
             categoryMenu.addSeparator();
 
-            List<JCheckBoxMenuItem> detailItems = new ArrayList<>();
+            List<JCheckBoxMenuItem> detailItemsTemp = new ArrayList<>();
             for (Constants.EventDetailType detail : categoryMap.get(category)) {
                 JCheckBoxMenuItem detailItem = new JCheckBoxMenuItem(detail.toString(), selectedEventDetailTypes.contains(detail));
-                detailItems.add(detailItem);
+                eventTypeDetailItems.put(detail, detailItem);
+                detailItemsTemp.add(detailItem);
                 categoryMenu.add(detailItem);
                 detailItem.addActionListener(e -> {
                     if (detailItem.isSelected()){
@@ -102,7 +140,7 @@ public class EventTablePanel extends JSplitPane {
             // Sync master checkbox with detail checkboxes
             masterItem.addActionListener(e -> {
                 boolean selected = masterItem.isSelected();
-                for (JCheckBoxMenuItem detailItem : detailItems) {
+                for (JCheckBoxMenuItem detailItem : detailItemsTemp) {
                     detailItem.setSelected(selected);
                     for (Constants.EventDetailType detailType : categoryMap.get(category)){
                         if (selected){
@@ -111,7 +149,6 @@ public class EventTablePanel extends JSplitPane {
                             selectedEventDetailTypes.remove(detailType);
                         }
                     }
-
                 }
                 updateTableFilter();
             });
@@ -119,6 +156,8 @@ public class EventTablePanel extends JSplitPane {
         }
         menuBar.add(typeFilterMenu);
         filterPanel.add(menuBar);
+
+
 
 
         // ------- TAGS ---------
@@ -162,8 +201,25 @@ public class EventTablePanel extends JSplitPane {
 
         menuBar.add(tagFilterMenu);
 
+
+
+
         // Action buttons
         filterPanel.add(openEventInBrowserButton);
+
+        jumpToNewestEventButton.setBackground(new Color(255, 200, 0)); // orange/yellow tone
+        jumpToNewestEventButton.setForeground(Color.BLACK);
+        jumpToNewestEventButton.setOpaque(true);
+        jumpToNewestEventButton.setBorderPainted(false);
+        jumpToNewestEventButton.setFocusPainted(false);
+        jumpToNewestEventButton.setFont(jumpToNewestEventButton.getFont().deriveFont(Font.BOLD));
+
+        // --- Icon ---
+        // Option 1: built-in Unicode warning triangle
+//        jumpToNewestEventButton.setIcon(new JLabel("\u26A0").getIcon());
+
+        jumpToNewestEventButton.setVisible(false);
+        filterPanel.add(jumpToNewestEventButton);
 
         JPanel bottomPanel = new JPanel(new BorderLayout());
         bottomPanel.add(filterPanel, BorderLayout.NORTH);
@@ -206,18 +262,45 @@ public class EventTablePanel extends JSplitPane {
 
     // todo we probably want this to be saved into the settings.cfg file
     private void setupDefaultFilters() {
-//        // General
-//        selectedEventDetailTypes.remove(Constants.EventDetailType.BEACONS_EXPLORED);
-//        selectedEventDetailTypes.remove(Constants.EventDetailType.SHIPS_DESTROYED);
-//        selectedEventDetailTypes.remove(Constants.EventDetailType.CREW_HIRED);
+//        selectedEventDetailTypes.addAll(EnumSet.noneOf(Constants.EventDetailType.class));
+        selectedEventDetailTypes.clear();
+        for (JCheckBoxMenuItem item : eventTypeMasterItems.values()){
+            item.setState(false);
+            item.setSelected(false);
+        }
+        for (JCheckBoxMenuItem item : eventTypeDetailItems.values()){
+            item.setState(false);
+            item.setSelected(false);
+        }
 
-//        // Use
-//        selectedEventDetailTypes.remove(Constants.EventDetailType.USE_FUEL);
-//
-//        // Crew
-//        selectedEventDetailTypes.remove(Constants.EventDetailType.CREW_SKILL);
-//        selectedEventDetailTypes.remove(Constants.EventDetailType.CREW_STAT);
+//        setDetailsItemState(Constants.EventDetailType.RESOURCES_RECEIVED, true);
+//        setDetailsItemState(Constants.EventDetailType.SCRAP_COLLECTED, true);
+
+        setDetailsItemState(Constants.EventDetailType.WEAPON, true);
+        setDetailsItemState(Constants.EventDetailType.DRONE, true);
+        setDetailsItemState(Constants.EventDetailType.AUGMENT, true);
+
+        setDetailsItemState(Constants.EventDetailType.SYSTEM, true);
+        setDetailsItemState(Constants.EventDetailType.SUBSYSTEM, true);
+        setDetailsItemState(Constants.EventDetailType.REACTOR, true);
+
+        setDetailsItemState(Constants.EventDetailType.CREW_NEW, true);
+        setDetailsItemState(Constants.EventDetailType.CREW_LOST, true);
     }
+
+    private void setDetailsItemState(Constants.EventDetailType type, boolean state){
+        if (state){
+            selectedEventDetailTypes.add(type);
+        } else {
+            selectedEventDetailTypes.remove(type);
+        }
+        JCheckBoxMenuItem item = eventTypeDetailItems.get(type);
+        if (item != null) {
+            item.setState(state);
+            item.setSelected(state);
+        }
+    }
+
 
     public void updateJumpInfoPanel(Jump jump){
         if (!(jump.equals(this.jump))){
@@ -248,6 +331,12 @@ public class EventTablePanel extends JSplitPane {
     }
 
     private void updateTableFilter() {
+        int viewRow = table.getSelectedRow();
+        Integer selectedModelRow = null;
+        if (viewRow >= 0) {
+            selectedModelRow = table.convertRowIndexToModel(viewRow);
+        }
+
         RowFilter<EventTableModel, Integer> rf = new RowFilter<>() {
             @Override
             public boolean include(Entry<? extends EventTableModel, ? extends Integer> entry) {
@@ -270,48 +359,35 @@ public class EventTablePanel extends JSplitPane {
 
 //                return matchType && matchTag && !fuelUsed;
                 return matchType && matchTag;
-
-
             }
         };
 
         sorter.setRowFilter(rf);
-    }
 
-
-    // This method will update the row filter based on the filter states.
-    public void updateRowFilter(Map<EventFilter, Boolean> filterStates) {
-        RowFilter<EventTableModel, Integer> filter = new RowFilter<>() {
-            @Override
-            public boolean include(Entry<? extends EventTableModel, ? extends Integer> entry) {
-                Constants.EventType type = (Constants.EventType) entry.getValue(5); // Event Type
-                String id = (String) entry.getValue(7);  // Assuming 'id' is in column 9
-
-                // Custom filtering logic based on filterStates
-                boolean showRow = true;
-
-                if (filterStates.get(EventFilter.HIDE_FUEL_USED_EVENTS)) {
-                    if (type.equals(Constants.EventType.USE) && id.equals(Constants.Resource.FUEL.toString())) {
-                        showRow = false;
-                    }
-                }
-
-                if (filterStates.get(EventFilter.HIDE_START_EVENTS)){
-                    if (type.equals(Constants.EventType.START)) {
-                        showRow = false;
-                    }
-                }
-
-                return showRow;
+        // Re-apply selection if possible
+        if (selectedModelRow != null) {
+            // Check if that row is still visible after filtering
+            int newViewRow = table.convertRowIndexToView(selectedModelRow);
+            if (newViewRow >= 0) {
+                table.setRowSelectionInterval(newViewRow, newViewRow);
+                table.scrollRectToVisible(table.getCellRect(newViewRow, 0, true));
+            } else {
+                // If not visible anymore, clear selection
+                table.clearSelection();
             }
-        };
-
-        sorter.setRowFilter(filter);
-
+        }
     }
 
     public void setOpenEventInBrowserButton(ActionListener listener){
         openEventInBrowserButton.addActionListener(listener);
+    }
+
+    public void setJumpToNewestEventButton(ActionListener listener){
+        jumpToNewestEventButton.addActionListener(listener);
+    }
+
+    public void showOrHideJumpToNewestEventButton(boolean visible){
+        jumpToNewestEventButton.setVisible(visible);
     }
 
     public JTable getTable(){

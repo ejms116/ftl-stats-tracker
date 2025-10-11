@@ -12,6 +12,7 @@ public class DroneEvent extends ItemEvent {
 
     public DroneEvent(Jump jump, String itemId) {
         super(Constants.EventDetailType.DRONE, jump, itemId);
+        setItemType(SavedGameParser.StoreItemType.DRONE);
     }
 
     @Override

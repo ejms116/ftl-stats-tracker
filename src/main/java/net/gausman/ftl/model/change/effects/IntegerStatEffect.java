@@ -3,8 +3,10 @@ package net.gausman.ftl.model.change.effects;
 import net.gausman.ftl.model.Constants;
 
 public class IntegerStatEffect {
-    private final Constants.General general;
-    private final int value;
+    private Constants.General general;
+    private int value;
+
+    public IntegerStatEffect() {}
 
     public IntegerStatEffect(Constants.General general, int value) {
         this.general = general;

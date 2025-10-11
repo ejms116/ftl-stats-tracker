@@ -214,7 +214,7 @@ public class GausmanUtil {
             case SavedGameParser.StoreItemType.WEAPON -> dm.getWeapon(id).getTitle().getTextValue();
             case SavedGameParser.StoreItemType.DRONE -> dm.getDrone(id).getTitle().getTextValue();
             case SavedGameParser.StoreItemType.SYSTEM -> dm.getSystem(id).getTitle().getTextValue();
-            case SavedGameParser.StoreItemType.REACTOR -> Constants.Reactor.valueOf(id).toString();
+            case SavedGameParser.StoreItemType.REACTOR -> "Reactor"; //Constants.Reactor.valueOf(id).toString();
             case GENERAL -> id;
         };
     }

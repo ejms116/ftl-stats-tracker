@@ -113,6 +113,7 @@ public class RunService {
 
 
         // New Jump
+        int emptyJumpCount = 0;
         if (currentRun.getCurrentJump().getCurrentBeaconId() != currentGameState.getCurrentBeaconId()){
             newJump = true;
             // When backtracking the game does not necessarily save the game
@@ -120,6 +121,7 @@ public class RunService {
             // the amount is the difference between the new and last beacons explored stats minus 1 (for the new jump)
             int beaconsExploredDiff = currentGameState.getTotalBeaconsExplored() - currentRun.getCurrentJump().getTotalBeaconsExplored();
             if (beaconsExploredDiff > 1){
+                emptyJumpCount = beaconsExploredDiff-1;
                 int beaconsExploredTemp = currentRun.getCurrentJump().getTotalBeaconsExplored();
                 for (int i = 0; i < beaconsExploredDiff-1; i++){
                     beaconsExploredTemp++;
@@ -153,8 +155,14 @@ public class RunService {
         }
 
         // Adding Events
-        EventBox box = eventService.getEventsFromGameStateComparison(lastGameState, currentGameState, currentRun.getCurrentJump());
-        addEventsFromEventBox(box); // assigns the EventIds
+        try {
+            EventBox box = eventService.getEventsFromGameStateComparison(lastGameState, currentGameState, currentRun.getCurrentJump(), emptyJumpCount);
+            addEventsFromEventBox(box);
+        } catch (Exception e){
+            log.error("Error when comparing the game states");
+        }
+
+         // assigns the EventIds
 
         // save to json file
         saveRunToJson(new File(CURRENT_RUN_FILENAME));

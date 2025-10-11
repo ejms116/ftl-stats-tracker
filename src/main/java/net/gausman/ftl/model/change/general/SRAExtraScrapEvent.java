@@ -5,12 +5,12 @@ import net.gausman.ftl.model.ShipStatusModel;
 import net.gausman.ftl.model.change.Event;
 import net.gausman.ftl.model.record.Jump;
 
-public class ScrapCollectedEvent extends Event {
+public class SRAExtraScrapEvent extends Event {
+    public SRAExtraScrapEvent() {}
 
-    public ScrapCollectedEvent() {}
-
-    public ScrapCollectedEvent(Jump jump){
-        super(Constants.EventDetailType.SCRAP_COLLECTED, jump);
+    public SRAExtraScrapEvent(Jump jump){
+        super(Constants.EventDetailType.SRA_EXTRA_SCRAP, jump);
+        addTag(Constants.EventTag.REWARD);
     }
 
     @Override
@@ -20,7 +20,7 @@ public class ScrapCollectedEvent extends Event {
 
         model.getSectorMetrics().update(
                 getJump().getSector(),
-                Constants.ScrapOrigin.NORMAL,
+                Constants.ScrapOrigin.SRA,
                 mult*getResourceEffects().getOrDefault(Constants.Resource.SCRAP,0)
         );
     }

@@ -15,6 +15,9 @@ public class EventTableModel extends AbstractTableModel {
     private final String[] columnNames = {"Time", "S", "J", "Type", "Resources", "Tags", "Text"};
     private Instant startTime;
 
+    public Integer getNewestEventId(){
+        return events.firstKey();
+    }
 
     public void setEvents(NavigableMap<Integer, Event> newEvents) {
         this.events = newEvents.descendingMap();
@@ -60,7 +63,7 @@ public class EventTableModel extends AbstractTableModel {
             case 0 -> GausmanUtil.formatDuration(Duration.between(startTime, event.getTs()));
             case 1 -> event.getJump().getSector().getId();
             case 2 -> event.getJump().getId();
-            case 3 -> event.getEventFilterType();
+            case 3 -> event.getEventDetailType();
             case 4 -> event.getResourceEffects();
             case 5 -> event.getTags();
             case 6 -> event.getDisplayText();

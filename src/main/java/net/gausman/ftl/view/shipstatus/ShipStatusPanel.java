@@ -2,13 +2,9 @@ package net.gausman.ftl.view.shipstatus;
 
 import net.blerf.ftl.parser.SavedGameParser.SystemType;
 import net.gausman.ftl.model.*;
-import net.gausman.ftl.view.charts.HullChartPanel;
 import net.gausman.ftl.view.charts.ScrapGainedChartPanel;
-import net.gausman.ftl.view.charts.ScrapUsedChartPanel;
-import net.gausman.ftl.view.charts.ScrapUsedPieChartPanel;
 
 import javax.swing.*;
-import javax.swing.border.TitledBorder;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;

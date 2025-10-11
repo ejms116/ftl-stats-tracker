@@ -7,10 +7,10 @@ public class Item {
     private final String id;
     private final String text;
     private final SavedGameParser.StoreItemType itemType;
-    private final Constants.EventType origin;
+    private final Constants.ItemOrigin origin;
     private Constants.ItemState state;
 
-    public Item(String id, SavedGameParser.StoreItemType itemType, Constants.EventType origin) {
+    public Item(String id, SavedGameParser.StoreItemType itemType, Constants.ItemOrigin origin) {
         this.id = id;
         this.text = GausmanUtil.getTextToId(itemType, id);
         this.itemType = itemType;
@@ -39,7 +39,7 @@ public class Item {
         return itemType;
     }
 
-    public Constants.EventType getOrigin() {
+    public Constants.ItemOrigin getOrigin() {
         return origin;
     }
 

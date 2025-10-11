@@ -20,8 +20,11 @@ public class SystemEvent extends Event {
         this.playerUpgrade = playerUpgrade;
         this.amount = amount;
         this.newAmount = newAmount;
-
-        setDisplayText(String.format("%s upgraded by %s, now level: %s", type, amount, newAmount));
+        String action = String.format("upgraded by %s", amount);
+        if (amount == newAmount && !getTags().contains(Constants.EventTag.START)){
+            action = "bought";
+        }
+        setDisplayText(String.format("%s %s, now level: %s", type, action, newAmount));
     }
 
     public SavedGameParser.SystemType getType() {
@@ -61,8 +64,8 @@ public class SystemEvent extends Event {
 
         model.getSectorMetrics().update(
                 getJump().getSector(),
-                Constants.ScrapUsedCategory.SYSTEM_BUY, // todo remove system upgrade?
-                -getResourceEffects().getOrDefault(Constants.Resource.SCRAP,0)
+                Constants.ScrapUsedCategory.SYSTEM_BUY,
+                mult*-getResourceEffects().getOrDefault(Constants.Resource.SCRAP,0)
         );
     }
 }

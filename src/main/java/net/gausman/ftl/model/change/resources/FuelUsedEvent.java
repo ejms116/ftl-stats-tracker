@@ -1,10 +1,12 @@
-package net.gausman.ftl.model.change.use;
+package net.gausman.ftl.model.change.resources;
 
 import net.gausman.ftl.model.Constants;
 import net.gausman.ftl.model.change.Event;
 import net.gausman.ftl.model.record.Jump;
 
 public class FuelUsedEvent extends Event {
+    public FuelUsedEvent() {}
+
     public FuelUsedEvent(Jump jump) {
         super(Constants.EventDetailType.USE_FUEL, jump);
         setResourceEffect(Constants.Resource.FUEL, -1);

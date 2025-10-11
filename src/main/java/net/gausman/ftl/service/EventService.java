@@ -13,16 +13,15 @@ import net.gausman.ftl.model.change.*;
 import net.gausman.ftl.model.change.crew.*;
 import net.gausman.ftl.model.change.effects.IntegerStatEffect;
 import net.gausman.ftl.model.change.effects.StringStatEffect;
+import net.gausman.ftl.model.change.other.ResourceDiffErrorEvent;
 import net.gausman.ftl.model.change.general.*;
 import net.gausman.ftl.model.change.item.AugmentEvent;
 import net.gausman.ftl.model.change.item.DroneEvent;
 import net.gausman.ftl.model.change.item.WeaponEvent;
 import net.gausman.ftl.model.change.other.*;
+import net.gausman.ftl.model.change.resources.*;
 import net.gausman.ftl.model.change.system.ReactorEvent;
 import net.gausman.ftl.model.change.system.SystemEvent;
-import net.gausman.ftl.model.change.use.DronesUsedEvent;
-import net.gausman.ftl.model.change.use.FuelUsedEvent;
-import net.gausman.ftl.model.change.use.MissilesUsedEvent;
 import net.gausman.ftl.model.record.EventBox;
 import net.gausman.ftl.model.record.Jump;
 import net.gausman.ftl.util.GausmanUtil;
@@ -33,15 +32,14 @@ import java.lang.reflect.Field;
 import java.util.*;
 import java.util.stream.Stream;
 
+import static net.gausman.ftl.model.change.resources.DronesBoughtEvent.DRONES_PRICE_STORE;
+
 public class EventService {
     private static final Logger log = LoggerFactory.getLogger(EventService.class);
 
     private static final String MISSILE_SELL_EVENT = "SELL_MISSILES";
     private static final String DRONE_SELL_EVENT = "SELL_DRONES";
     public static final int STARTING_FUEL = 16;
-    public static final int FUEL_PRICE_STORE = 3;
-    public static final int MISSILE_PRICE_STORE = 6;
-    public static final int DRONE_PRICE_STORE = 8;
 
     private DataManager dm = DataManager.get();
 
@@ -82,6 +80,7 @@ public class EventService {
         generalInfoEvent.addStringStatEffects(new StringStatEffect(Constants.General.SHIP_NAME, newGameState.getPlayerShipName()));
         generalInfoEvent.addStringStatEffects(new StringStatEffect(Constants.General.SHIP_BLUEPRINT, newGameState.getPlayerShipBlueprintId()));
         generalInfoEvent.addStringStatEffects(new StringStatEffect(Constants.General.DIFFICULTY, newGameState.getDifficulty().toString()));
+        generalInfoEvent.addIntegerStatEffects(new IntegerStatEffect(Constants.General.BEACONS_EXPLORED, 1));
 
         generalInfoEvent.setDisplayText("Setting name, blueprint and difficulty");
         events.add(generalInfoEvent);
@@ -94,7 +93,7 @@ public class EventService {
         }
 
         // Resources
-        ResourceEvent resourcesStartEvent = new ResourceEvent( jump);
+        ResourcesReceivedEvent resourcesStartEvent = new ResourcesReceivedEvent( jump);
         resourcesStartEvent.addTag(Constants.EventTag.START);
         resourcesStartEvent.setResourceEffect(Constants.Resource.FUEL, STARTING_FUEL);
 
@@ -174,7 +173,7 @@ public class EventService {
         return eventBox;
     }
 
-    public EventBox getEventsFromGameStateComparison(SavedGameParser.SavedGameState lastGameState, SavedGameParser.SavedGameState currentGameState, Jump jump) {
+    public EventBox getEventsFromGameStateComparison(SavedGameParser.SavedGameState lastGameState, SavedGameParser.SavedGameState currentGameState, Jump jump, int emptyJumpCount) {
         // For testing
         encounterStateList.add(currentGameState.getEncounter());
 
@@ -184,6 +183,13 @@ public class EventService {
 
         if (lastGameState == null || currentGameState == null){
             return box;
+        }
+
+        boolean jumped = true;
+        if (lastGameState.getCurrentBeaconId() == currentGameState.getCurrentBeaconId()){
+            jumped = false;
+        } else {
+            events.add(new FuelUsedEvent(jump));
         }
 
 
@@ -221,34 +227,28 @@ public class EventService {
             events.add(crewHiredEvent);
         }
 
-
-        boolean jumped = true;
-        SavedGameParser.StoreState newStore = currentGameState.getBeaconList().get(currentGameState.getCurrentBeaconId()).getStore();
+        // todo store checking...
+        SavedGameParser.StoreState newStore = null;
+        if (currentGameState.getSectorNumber() == lastGameState.getSectorNumber()){
+            newStore = currentGameState.getBeaconList().get(lastGameState.getCurrentBeaconId()).getStore();
+        }
         SavedGameParser.StoreState oldStore = lastGameState.getBeaconList().get(lastGameState.getCurrentBeaconId()).getStore();
 
         List<String> boughtItems = new ArrayList<>();
         List<String> boughtCrew = new ArrayList<>();
-
-        if (lastGameState.getCurrentBeaconId() == currentGameState.getCurrentBeaconId()){
-            jumped = false;
-        } else {
-            events.add(new FuelUsedEvent(jump));
-        }
 
         int repairCountDiff = 0;
         int fuelBought = 0;
         int missilesBought = 0;
         int dronesBought = 0;
 
-        if (!jumped && newStore != null){
-
-
+        // in a previous version we used !jumped instead of oldStore != null
+        // the reason we switched is that when you get a store from an event jumped is false but oldStore is still null
+        if (oldStore != null && newStore != null){
             for (int i = 0; i < newStore.getShelfList().size(); i++){
                 for (int j = 0; j < newStore.getShelfList().get(i).getItems().size(); j++){
                     if (!newStore.getShelfList().get(i).getItems().get(j).isAvailable()){
                         if (oldStore.getShelfList().get(i).getItems().get(j).isAvailable()){
-
-
                             // Drone control comes with a free drone
                             // extra data: 0 -> DEFENSE_1, 1 -> REPAIR, 2 -> COMBAT_1
                             // the drone systems itself costs 60 scrap, and half of the price of the drone that comes with it is added
@@ -307,57 +307,44 @@ public class EventService {
             }
 
             if (lastGameState.getBeaconList().get(lastGameState.getCurrentBeaconId()).getStore() == null){
-                log.error("shop error");
+                log.error("last shop error");
             }
 
-            fuelBought = lastGameState.getBeaconList().get(lastGameState.getCurrentBeaconId()).getStore().getFuel() -
-                    currentGameState.getBeaconList().get(currentGameState.getCurrentBeaconId()).getStore().getFuel();
+            if (currentGameState.getBeaconList().get(currentGameState.getCurrentBeaconId()).getStore() == null){
+                log.error("new shop error");
+            }
+
+            fuelBought = oldStore.getFuel() - newStore.getFuel();
             if (fuelBought > 0){
-                ResourceEvent fuelBoughtEvent = new ResourceEvent(jump);
-                fuelBoughtEvent.setResourceEffect(Constants.Resource.FUEL, fuelBought);
-                fuelBoughtEvent.setResourceEffect(Constants.Resource.SCRAP, -FUEL_PRICE_STORE * fuelBought);
+                FuelBoughtEvent fuelBoughtEvent = new FuelBoughtEvent(jump, fuelBought);
                 fuelBoughtEvent.addTag(Constants.EventTag.STORE);
-                fuelBoughtEvent.addTag(Constants.EventTag.BUY);
-                fuelBoughtEvent.setDisplayText("Bought fuel");
                 events.add(fuelBoughtEvent);
             }
-            missilesBought = lastGameState.getBeaconList().get(lastGameState.getCurrentBeaconId()).getStore().getMissiles() -
-                    currentGameState.getBeaconList().get(currentGameState.getCurrentBeaconId()).getStore().getMissiles();
+            missilesBought = oldStore.getMissiles() - newStore.getMissiles();
             if (missilesBought > 0){
-                ResourceEvent missilesBoughtEvent = new ResourceEvent(jump);
-                missilesBoughtEvent.setResourceEffect(Constants.Resource.MISSILE, missilesBought);
-                missilesBoughtEvent.setResourceEffect(Constants.Resource.SCRAP, -MISSILE_PRICE_STORE * missilesBought);
+                MissilesBoughtEvent missilesBoughtEvent = new MissilesBoughtEvent(jump, missilesBought);
                 missilesBoughtEvent.addTag(Constants.EventTag.STORE);
-                missilesBoughtEvent.addTag(Constants.EventTag.BUY);
-                missilesBoughtEvent.setDisplayText("Bought missiles");
                 events.add(missilesBoughtEvent);
             }
-            dronesBought = lastGameState.getBeaconList().get(lastGameState.getCurrentBeaconId()).getStore().getDroneParts() -
-                    currentGameState.getBeaconList().get(currentGameState.getCurrentBeaconId()).getStore().getDroneParts();
+            dronesBought = oldStore.getDroneParts() - newStore.getDroneParts();
             if (dronesBought > 0) {
-                ResourceEvent dronesBoughtEvent = new ResourceEvent(jump);
-                dronesBoughtEvent.setResourceEffect(Constants.Resource.DRONE, dronesBought);
-                dronesBoughtEvent.setResourceEffect(Constants.Resource.SCRAP, -DRONE_PRICE_STORE * dronesBought);
+                DronesBoughtEvent dronesBoughtEvent = new DronesBoughtEvent(jump, dronesBought);
                 dronesBoughtEvent.addTag(Constants.EventTag.STORE);
-                dronesBoughtEvent.addTag(Constants.EventTag.BUY);
-                dronesBoughtEvent.setDisplayText("Bought drone parts");
                 events.add(dronesBoughtEvent);
             }
 
-
             // repair
             repairCountDiff = currentGameState.getStateVar(StateVar.STORE_REPAIR.getId()) - lastGameState.getStateVar(StateVar.STORE_REPAIR.getId());
-            if (repairCountDiff > 0){ // TODO does this work with "REPAIR"?
+            if (repairCountDiff > 0){
                 RepairEvent repairBoughtEvent = new RepairEvent(jump);
                 repairBoughtEvent.setResourceEffect(Constants.Resource.HULL, repairCountDiff);
                 repairBoughtEvent.setResourceEffect(Constants.Resource.SCRAP, -GausmanUtil.getCostResource(Constants.Resource.HULL.name(), repairCountDiff, currentGameState.getSectorNumber()));
                 repairBoughtEvent.addTag(Constants.EventTag.REPAIR);
                 repairBoughtEvent.addTag(Constants.EventTag.STORE);
+                repairBoughtEvent.addTag(Constants.EventTag.BUY);
                 repairBoughtEvent.setDisplayText("Bought repairs");
                 events.add(repairBoughtEvent);
             }
-
-
         }
 
         // drones/missiles used
@@ -368,13 +355,7 @@ public class EventService {
         int droneUsedDiff = currentGameState.getStateVar(StateVar.USED_DRONE.getId()) - lastGameState.getStateVar(StateVar.USED_DRONE.getId());
         if (droneUsedDiff > 0){
             events.add(new DronesUsedEvent(jump, droneUsedDiff));
-
         }
-
-        // Scrap -> completely new topic
-        int oldScrap = lastGameState.getPlayerShip().getScrapAmt();
-        int newScrap = currentGameState.getPlayerShip().getScrapAmt();
-
 
         // Hull
         int oldHull = lastGameState.getPlayerShip().getHullAmt();
@@ -389,15 +370,20 @@ public class EventService {
 
         // Todo repair events?
 
-
         // Resources
         int oldFuelCount = lastGameState.getPlayerShip().getFuelAmt();
         int newFuelCount = currentGameState.getPlayerShip().getFuelAmt();
 
-        ResourceEvent resourcesRewardEvent = new ResourceEvent(jump);
+        ResourcesReceivedEvent resourcesRewardEvent = new ResourcesReceivedEvent(jump);
         resourcesRewardEvent.addTag(Constants.EventTag.REWARD);
 
-        int fuelRewardCount = newFuelCount - oldFuelCount - fuelBought;
+        // starting with the new fuelCount we try to guess how many fuel we got as reward
+        // we subtract the fuel we had before
+        // we subtract the fuel we bought (from stores) todo fuel buy events
+        // if jumped is true (meaning the player jumped to a new beacon between the two save files) we add 1 again
+        // we also add the emptyJumpCount (jumps where the player backtracked and no save file was written)
+        int fuelRewardCount = newFuelCount - oldFuelCount - fuelBought + emptyJumpCount;
+        fuelRewardCount += (jumped ? 1 : 0);
         if (fuelRewardCount > 0){
             resourcesRewardEvent.setResourceEffect(Constants.Resource.FUEL, fuelRewardCount);
         }
@@ -429,17 +415,28 @@ public class EventService {
         int oldDronesCount = lastGameState.getPlayerShip().getDronePartsAmt();
         int newDronesCount = currentGameState.getPlayerShip().getDronePartsAmt();
 
+        // hint: the drones used stat in the state vars unfortunately does not increment when using hacking
+        // so we don't have a good way to decide if a drone part was used for hacking
+        // the workaround is this: normally a save file writing is triggered before the player receives rewards
+        // so in that case dronesRewardCount is -1 (because hacking was used and the player did not get (yet) drones as a reward
+        // we also check if the player actually has hacking
+        // this might fail if the player uses hacking and then also receives drone parts before the next save file is written
+        // but that's the best we can do as far as i know
         int dronesRewardCount = newDronesCount - oldDronesCount + droneUsedDiff - dronesBought;
-        if (dronesRewardCount > 0){
+        if (dronesRewardCount > 0) {
             resourcesRewardEvent.setResourceEffect(Constants.Resource.DRONE, dronesRewardCount);
-        } else if (dronesRewardCount < 0){
+        } else {
             if (isDronesSellEvent){
                 Event dronesSellEvent = new Event(jump);
                 dronesSellEvent.addTag(Constants.EventTag.SELL);
                 dronesSellEvent.addTag(Constants.EventTag.EVENT);
-                dronesSellEvent.setResourceEffect(Constants.Resource.SCRAP, -dronesRewardCount * 8);
+                dronesSellEvent.setResourceEffect(Constants.Resource.SCRAP, -dronesRewardCount * DRONES_PRICE_STORE);
                 dronesSellEvent.setResourceEffect(Constants.Resource.DRONE, -dronesRewardCount);
                 events.add(dronesSellEvent);
+            } else {
+                if (dronesRewardCount == -1 && currentGameState.getPlayerShip().getSystemsMap().containsKey(SavedGameParser.SystemType.HACKING)){
+                    events.add(new HackingUsedEvent(jump, 1));
+                }
             }
         }
 
@@ -523,7 +520,7 @@ public class EventService {
         int sellCost = 0;
         for (String weapon: removedWeapons){
             if (typeNow == Constants.EventType.SELL){
-                sellCost = GausmanUtil.getCostStoreItemId(SavedGameParser.StoreItemType.WEAPON, weapon);
+                sellCost = GausmanUtil.getCostStoreItemId(SavedGameParser.StoreItemType.WEAPON, weapon)/2;
                 WeaponEvent newWeaponSellEvent = new WeaponEvent(jump, weapon);
                 newWeaponSellEvent.addTag(Constants.EventTag.SELL);
                 newWeaponSellEvent.addTag(Constants.EventTag.STORE);
@@ -534,7 +531,7 @@ public class EventService {
 
         for (String drone: removedDrones){
             if (typeNow == Constants.EventType.SELL){
-                sellCost = GausmanUtil.getCostStoreItemId(SavedGameParser.StoreItemType.DRONE, drone);
+                sellCost = GausmanUtil.getCostStoreItemId(SavedGameParser.StoreItemType.DRONE, drone)/2;
                 DroneEvent newDroneSellEvent = new DroneEvent(jump, drone);
                 newDroneSellEvent.addTag(Constants.EventTag.SELL);
                 newDroneSellEvent.addTag(Constants.EventTag.STORE);
@@ -546,7 +543,7 @@ public class EventService {
 
         for (String augment: removedAugments){
             if (typeNow == Constants.EventType.SELL){
-                sellCost = GausmanUtil.getCostStoreItemId(SavedGameParser.StoreItemType.AUGMENT, augment);
+                sellCost = GausmanUtil.getCostStoreItemId(SavedGameParser.StoreItemType.AUGMENT, augment)/2;
                 AugmentEvent newAugmentSellEvent = new AugmentEvent(jump, augment);
                 newAugmentSellEvent.addTag(Constants.EventTag.SELL);
                 newAugmentSellEvent.addTag(Constants.EventTag.STORE);
@@ -591,29 +588,10 @@ public class EventService {
         }
 
 
-//        if (newCapacitySV > oldCapacitySV){
-//            while (newCapacitySV > oldCapacitySV){
-//                oldReactorCapacity++;
-//                oldCapacitySV++;
-//                // Todo merge into one event
-//                ReactorEvent reactorUpgradeEvent = new ReactorEvent(jump, 1, newReactorCapacity);
-//                reactorUpgradeEvent.setResourceEffect(Constants.Resource.SCRAP, -GausmanUtil.getReactorUpgradeCost(oldReactorCapacity));
-//                events.add(reactorUpgradeEvent);
-//            }
-//        }
-//
-//        // reactor upgrades from events are not included in the state vars
-//        int reactorDiff = newReactorCapacity - oldReactorCapacity;
-//        if (reactorDiff > 0){
-//            ReactorEvent freeReactorFromEvent = new ReactorEvent(jump, newReactorCapacity - oldReactorCapacity, newReactorCapacity);
-//            freeReactorFromEvent.addTag(Constants.EventTag.REWARD);
-//            events.add(freeReactorFromEvent);
-//        }
-
-
         // ship upgrades
+        // Scrap
         int shipUpgradeCount = currentGameState.getStateVar(StateVar.SYSTEM_UPGRADE.getId()) - lastGameState.getStateVar(StateVar.SYSTEM_UPGRADE.getId());
-        int scrapDiff = newScrap - oldScrap;
+        int scrapDiff = currentGameState.getPlayerShip().getScrapAmt() - lastGameState.getPlayerShip().getScrapAmt();
 
         SavedGameParser.ShipState newShipState = currentGameState.getPlayerShip();
         SavedGameParser.ShipState oldShipState = lastGameState.getPlayerShip();
@@ -657,7 +635,7 @@ public class EventService {
             for (SystemEvent systemEvent : tempSystemUpgrades){
                 if (possibleSystemUpgradeEvent.contains(systemEvent.getType())){
                     systemEvent.setPlayerUpgrade(false);
-                    systemEvent.setScrap(-scrapDiff); // Todo calculate
+//                    systemEvent.setScrap(-scrapDiff); // Todo calculate
                     break;
                 }
             }
@@ -679,28 +657,70 @@ public class EventService {
 //        FTLEventList ftlEventList = dm.getEventListById("SAVE_CIVILIAN_LIST");
 //        FTLEvent ftlEvent = dm.getEventById("PIRATE_STATION_CROPS");
 
+        // SRA Extra Scrap
+        // if the player collected scrap and has a Scrap Recovery arm we want to add the extra scrap
+        // normally the extra scrap is just 10% rounded down
+        // the problem is that for double rewards the amount is calculated for both scrap values seperately
+        // so 27 + 34 = 61 only gives 2 + 3 = 5 extra scrap
+        // we don't know the individual numbers so we just use the sum for the extra scrap estimate
+        // if the actual difference is equal to the estimate or exactly one lower it should be good
+        // this might fail if there is an event where the player gets scrap 3 or more times (which is not possible afaik)
+        // todo we can improve this logic when we go deeper into the event tracking
+        // basically the extraScrapGuess can be 1 scrap higher for every additional (other than the first) time we get scrap
+        // one scrap reward -> always correct
+        // two scrap reward -> guess might be 1 too high
+        // three scrap rewards -> guess might be 2 too high (I don't think this can happen)
+        if (lastGameState.getPlayerShip().getAugmentIdList().contains("SCRAP_COLLECTOR") && scrapCollected > 0){
+            int expectedScrapDiff = 0;
+            for (Event e : events){
+                expectedScrapDiff += e.getResourceEffects().getOrDefault(Constants.Resource.SCRAP, 0);
+            }
+            int remainingScrapDiff = scrapDiff - expectedScrapDiff;
+            int extraScrapGuess = scrapCollected / 10;
+            // we always want to add the extra scrap event even if the number might be off by one
+            // because not adding it would be more wrong
+            if (remainingScrapDiff == extraScrapGuess || remainingScrapDiff == extraScrapGuess - 1) {
+                SRAExtraScrapEvent sraExtraScrapEvent = new SRAExtraScrapEvent(jump);
+                sraExtraScrapEvent.setResourceEffect(Constants.Resource.SCRAP, remainingScrapDiff);
+                events.add(sraExtraScrapEvent);
 
-        // Scrap Diff
-        int scrapChangeExpected = 0;
-        for (Event e : events){
-            scrapChangeExpected += e.getResourceEffects().getOrDefault(Constants.Resource.SCRAP, 0);
+            } else {
+                SRAExtraScrapEvent sraExtraScrapEvent = new SRAExtraScrapEvent(jump);
+                sraExtraScrapEvent.setResourceEffect(Constants.Resource.SCRAP, extraScrapGuess);
+                events.add(sraExtraScrapEvent);
+                log.info("scrap diff error");
+            }
         }
-        int scrapChangeDiff = currentGameState.getPlayerShip().getScrapAmt() - lastGameState.getPlayerShip().getScrapAmt() - scrapChangeExpected;
 
-        if (scrapChangeDiff != 0){
-            ScrapDiffErrorEvent scrapChangeDiffEvent = new ScrapDiffErrorEvent(jump);
-            scrapChangeDiffEvent.setResourceEffect(Constants.Resource.SCRAP, scrapChangeDiff);
-            scrapChangeDiffEvent.setDisplayText("scrap change diff");
-            events.add(scrapChangeDiffEvent);
+        // Generate Resource difference events
+        // these should ideally never happen, but if they do we can use this for debugging
+        // also we need these in case of an error so that the resource numbers are correct after the problematic jump
+        List<Event> resourceDiffErrorEvents = new ArrayList<>();
+        generateResourceDiffErrorEvents(resourceDiffErrorEvents, events, jump, Constants.Resource.SCRAP,
+                currentGameState.getPlayerShip().getScrapAmt() - lastGameState.getPlayerShip().getScrapAmt());
+
+        // here we need to include the emptyJumpCount
+        generateResourceDiffErrorEvents(resourceDiffErrorEvents, events, jump, Constants.Resource.FUEL,
+                currentGameState.getPlayerShip().getFuelAmt() - lastGameState.getPlayerShip().getFuelAmt() + emptyJumpCount);
+
+        generateResourceDiffErrorEvents(resourceDiffErrorEvents, events, jump, Constants.Resource.MISSILE,
+                currentGameState.getPlayerShip().getMissilesAmt() - lastGameState.getPlayerShip().getMissilesAmt());
+
+
+        generateResourceDiffErrorEvents(resourceDiffErrorEvents, events, jump, Constants.Resource.DRONE,
+                currentGameState.getPlayerShip().getDronePartsAmt() - lastGameState.getPlayerShip().getDronePartsAmt());
+
+
+        generateResourceDiffErrorEvents(resourceDiffErrorEvents, events, jump, Constants.Resource.HULL,
+                currentGameState.getPlayerShip().getHullAmt() - lastGameState.getPlayerShip().getHullAmt());
+
+        if (!resourceDiffErrorEvents.isEmpty()){
+            if (resourceDiffErrorEvents.stream().anyMatch(e -> e.getResourceEffects().containsKey(Constants.Resource.DRONE))){
+                log.error("drone error");
+            }
+            events.addAll(resourceDiffErrorEvents);
+            log.error("Resource difference error occured");
         }
-
-        // Fuel Diff
-
-        // Missiles Diff
-
-        // Drones Diff
-
-        // Hull diff
 
         box.setEncounterState(currentGameState.getEncounter());
 
@@ -708,8 +728,35 @@ public class EventService {
 
     }
 
+    private void generateResourceDiffErrorEvents(
+            List<Event> errorEvents,
+            List<Event> events,
+            Jump jump,
+            Constants.Resource resource, int actualDiff){
+
+        int changeExpected = 0;
+        for (Event e : events){
+            changeExpected += e.getResourceEffects().getOrDefault(resource, 0);
+        }
+
+        int changeDiff = actualDiff - changeExpected;
+
+        if (changeDiff != 0){
+            ResourceDiffErrorEvent changeDiffEvent = new ResourceDiffErrorEvent(jump);
+            changeDiffEvent.setResourceEffect(resource, changeDiff);
+            changeDiffEvent.setDisplayText(String.format("Resource difference error: %s", resource));
+            errorEvents.add(changeDiffEvent);
+        }
+    }
+
     private List<Event> getCrewEvents(SavedGameParser.SavedGameState lastGameState, SavedGameParser.SavedGameState currentGameState, List<String> boughtCrew, Jump jump){
         List<Event> events = new ArrayList<>();
+
+        // the gamestate contains two lists for crew: playerShip and nearbyShip
+        // the problem is that when boarding the enemy ship the players crew is in the crewlist of the nearby ship
+        // because of that we need to merge the two lists together
+        // only looking at crew with "isPlayerControlled=true", because the crewList of the players ship can also contain enemy boarders
+        // now the big problem is that when the players crew is split we don't know the position when the crew gets back
 
         List<SavedGameParser.CrewState> lastCrewStatePlayer =
                 Optional.ofNullable(lastGameState.getPlayerShip())
@@ -767,21 +814,6 @@ public class EventService {
         }
 
         // Assign the best match for every old crew
-//        possibleMatchesOldToNew.entrySet().stream()
-//                .sorted(Comparator.comparingInt(entry -> entry.getValue().size())) // Todo maybe we need to sort after every assignment
-//                .forEach(entry -> {
-//                    Integer key = entry.getKey();
-//                    List<Integer> possibleValues = entry.getValue();
-//                    possibleValues.removeAll(newCrewMatched);
-//                    if (!possibleValues.isEmpty()) {
-//                        Integer chosen = possibleValues.getFirst(); // Todo Maybe prefer crew with the same name if possible
-//                        newCrewMatched.add(chosen);
-//                        mapOldToNew.put(key, chosen);
-//                    } else {
-//                        mapOldToNew.put(key, null);
-//                    }
-//                });
-
         // While we still have unprocessed entries
         while (!possibleMatchesOldToNew.isEmpty()) {
             // Sort dynamically by number of possible matches
@@ -859,6 +891,9 @@ public class EventService {
             Constants.EventType eventType = crewBought ? Constants.EventType.BUY : Constants.EventType.REWARD;
             Constants.EventTag tag = crewBought ? Constants.EventTag.BUY : Constants.EventTag.REWARD;
             CrewNewEvent event = new CrewNewEvent(jump);
+            if (tag.equals(Constants.EventTag.BUY)){ // todo crew bought from events
+                event.setResourceEffect(Constants.Resource.SCRAP, -dm.getCrew(cs.getRace().getId()).getCost());
+            }
             event.addTag(tag);
             event.setCrewPosition(lastCrewState.size());
             event.setCrew(new Crew(cs, eventType)); // todo why do we need eventType?
@@ -867,13 +902,13 @@ public class EventService {
         }
 
         if (!validateMap(mapStateToInternal, newCrewState)){
-            log.error("Map validation failed");
+            log.error("Crew map validation failed");
         }
 
         mapStateToInternal = projectValues(mapStateToInternal, mapOldToNew);
 
         if (!validateMap(mapStateToInternal, newCrewState) || mapStateToInternal.size() != newCrewState.size()){
-            log.error("Map validation failed after recalculation");
+            log.error("Crew map validation failed after recalculation");
         }
 
         return events;
@@ -957,6 +992,7 @@ public class EventService {
 //                    GausmanUtil.getCrewTypeName(lastCrewState.getRace().getId()) + " - " + lastCrewState.getName(),
             event.addTag(Constants.EventTag.DISCARD);
             event.setCrewPosition(crewPosition);
+            event.setDisplayText(String.format("%s - %s", lastCrewState.getRace().name(), lastCrewState.getName()));
             events.add(event);
             return events;
         }

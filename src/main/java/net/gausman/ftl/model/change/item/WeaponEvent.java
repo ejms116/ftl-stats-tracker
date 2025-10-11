@@ -11,6 +11,7 @@ public class WeaponEvent extends ItemEvent {
 
     public WeaponEvent(Jump jump, String itemId) {
         super(Constants.EventDetailType.WEAPON, jump, itemId);
+        setItemType(SavedGameParser.StoreItemType.WEAPON);
     }
 
     @Override
