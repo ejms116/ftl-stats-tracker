@@ -8,24 +8,31 @@ import net.gausman.ftl.model.record.Sector;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
-import org.jfree.chart.axis.CategoryAxis;
-import org.jfree.chart.axis.CategoryLabelPositions;
 import org.jfree.chart.axis.NumberAxis;
+import org.jfree.chart.labels.ItemLabelAnchor;
+import org.jfree.chart.labels.ItemLabelPosition;
+import org.jfree.chart.labels.StandardCategoryItemLabelGenerator;
 import org.jfree.chart.plot.CategoryPlot;
 import org.jfree.chart.renderer.category.StackedBarRenderer;
+import org.jfree.chart.ui.TextAnchor;
 import org.jfree.data.RangeType;
+import org.jfree.data.category.CategoryDataset;
 import org.jfree.data.category.DefaultCategoryDataset;
 
 import javax.swing.*;
 import java.awt.*;
+import java.text.DecimalFormat;
+import java.text.FieldPosition;
+import java.text.NumberFormat;
+import java.text.ParsePosition;
 import java.util.Map;
 
 public class ScrapGainedChartPanel extends JPanel {
 
-    private final DefaultCategoryDataset dataset;
+    private final DefaultCategoryDataset defaultDataset;
 
     public ScrapGainedChartPanel() {
-        dataset = new DefaultCategoryDataset();
+        defaultDataset = new DefaultCategoryDataset();
         initDatasetFromPos(0);
 
         setLayout(new BorderLayout());
@@ -35,7 +42,7 @@ public class ScrapGainedChartPanel extends JPanel {
                 "Scrap Gained per Sector",
                 null,   // hide X-axis label
                 null,   // hide Y-axis label
-                dataset
+                defaultDataset
         );
 
         // --- Customize plot ---
@@ -59,9 +66,30 @@ public class ScrapGainedChartPanel extends JPanel {
 
         // Show values on bars
         renderer.setDefaultItemLabelsVisible(true);
-        renderer.setDefaultItemLabelGenerator(
-                new org.jfree.chart.labels.StandardCategoryItemLabelGenerator()
+        renderer.setDefaultItemLabelGenerator(new org.jfree.chart.labels.StandardCategoryItemLabelGenerator(){
+
+            @Override
+            public String generateLabel(CategoryDataset dataset, int row, int column) {
+                Number value = dataset.getValue(row, column);
+                if (value == null || value.intValue() == 0){
+                    return null;
+                }
+                return this.generateLabelString(dataset, row, column);
+            }
+
+        });
+
+
+        renderer.setDefaultPositiveItemLabelPosition(
+                new ItemLabelPosition(ItemLabelAnchor.CENTER, TextAnchor.CENTER)
         );
+
+        renderer.setPositiveItemLabelPositionFallback(
+                new ItemLabelPosition(ItemLabelAnchor.OUTSIDE12, TextAnchor.BOTTOM_CENTER)
+        );
+
+
+        renderer.setDefaultItemLabelsVisible(true);
 
         plot.setRenderer(renderer);
 
@@ -90,7 +118,7 @@ public class ScrapGainedChartPanel extends JPanel {
 
         // --- Wrap chart ---
         ChartPanel chartPanel = new ChartPanel(chart);
-        chartPanel.setPreferredSize(new Dimension(400, 200));
+//        chartPanel.setPreferredSize(new Dimension(400, 200));
         chartPanel.setMouseWheelEnabled(false);
 
         add(chartPanel, BorderLayout.CENTER);
@@ -103,17 +131,17 @@ public class ScrapGainedChartPanel extends JPanel {
 //            String text = String.format("%s - %s", outer.getKey().getId(), outer.getKey().getSectorDot().getTitle());
             String text = String.valueOf(outer.getKey().getId());
             for (Map.Entry<Constants.ScrapOrigin, Integer> innerEntry : outer.getValue().getScrapGained().entrySet()){
-                dataset.setValue(innerEntry.getValue(), innerEntry.getKey(), text);
+                defaultDataset.setValue(innerEntry.getValue(), innerEntry.getKey(), text);
             }
         }
 
     }
 
     private void initDatasetFromPos(int pos){
-        dataset.clear();
+        defaultDataset.clear();
         for (int i = pos + 1; i < 9; i++){
             for (Constants.ScrapOrigin origin : Constants.ScrapOrigin.values()){
-                dataset.setValue(0, origin, Integer.toString(i));
+                defaultDataset.setValue(0, origin, Integer.toString(i));
             }
         }
     }

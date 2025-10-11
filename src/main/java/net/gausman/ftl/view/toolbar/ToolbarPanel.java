@@ -5,8 +5,6 @@ import java.awt.*;
 import java.awt.event.ActionListener;
 
 public class ToolbarPanel extends JPanel {
-
-
     public static final String TRACKING_TOGGLE_BUTTON_OFF = "Off";
     public static final String TRACKING_TOGGLE_BUTTON_ON = "On";
 

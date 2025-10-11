@@ -4,17 +4,26 @@ import net.blerf.ftl.constants.Difficulty;
 import net.blerf.ftl.parser.DataManager;
 import net.blerf.ftl.parser.SavedGameParser;
 import net.blerf.ftl.parser.SavedGameParser.StateVar;
-import net.blerf.ftl.xml.*;
+import net.blerf.ftl.xml.DroneBlueprint;
+import net.blerf.ftl.xml.ShipBlueprint;
+import net.blerf.ftl.xml.WeaponBlueprint;
 import net.gausman.ftl.model.Constants;
 import net.gausman.ftl.model.Crew;
 import net.gausman.ftl.model.change.*;
 import net.gausman.ftl.model.change.crew.*;
+import net.gausman.ftl.model.change.effects.IntegerStatEffect;
+import net.gausman.ftl.model.change.effects.StringStatEffect;
+import net.gausman.ftl.model.change.other.ResourceDiffErrorEvent;
+import net.gausman.ftl.model.change.general.*;
 import net.gausman.ftl.model.change.item.AugmentEvent;
 import net.gausman.ftl.model.change.item.DroneEvent;
 import net.gausman.ftl.model.change.item.WeaponEvent;
-import net.gausman.ftl.model.change.ReactorEvent;
-import net.gausman.ftl.model.change.ResourceEvent;
-import net.gausman.ftl.model.record.*;
+import net.gausman.ftl.model.change.other.*;
+import net.gausman.ftl.model.change.resources.*;
+import net.gausman.ftl.model.change.system.ReactorEvent;
+import net.gausman.ftl.model.change.system.SystemEvent;
+import net.gausman.ftl.model.record.EventBox;
+import net.gausman.ftl.model.record.Jump;
 import net.gausman.ftl.util.GausmanUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,15 +32,20 @@ import java.lang.reflect.Field;
 import java.util.*;
 import java.util.stream.Stream;
 
+import static net.gausman.ftl.model.change.resources.DronesBoughtEvent.DRONES_PRICE_STORE;
+
 public class EventService {
     private static final Logger log = LoggerFactory.getLogger(EventService.class);
 
     private static final String MISSILE_SELL_EVENT = "SELL_MISSILES";
     private static final String DRONE_SELL_EVENT = "SELL_DRONES";
+    public static final int STARTING_FUEL = 16;
 
     private DataManager dm = DataManager.get();
 
     private List<SavedGameParser.EncounterState> encounterStateList = new ArrayList<>();
+
+    private Map<Integer, Integer> mapStateToInternal = new HashMap<>();
 
     public void initEventService(){
         encounterStateList.clear();
@@ -42,7 +56,8 @@ public class EventService {
         List<Event> lastJumpEvents = new ArrayList<>();
         EventBox eventBox = new EventBox(events, lastJumpEvents);
 
-        events.add(new ResourceEvent(Constants.EventType.USE, 1, 0, Constants.Resource.FUEL.name(), jump));
+        FuelUsedEvent defaultFuelEvent = new FuelUsedEvent(jump);
+        events.add(defaultFuelEvent);
 
         return eventBox;
     }
@@ -60,10 +75,15 @@ public class EventService {
         SavedGameParser.ShipState shipState = newGameState.getPlayerShip();
 
         // GeneralInfo
-        events.add(new GeneralEvent(Constants.EventType.START, 0, newGameState.getPlayerShipName(), jump, Constants.General.SHIP_NAME));
-        events.add(new GeneralEvent(Constants.EventType.START, 0, GausmanUtil.convertBlueprintName(newGameState.getPlayerShipBlueprintId()) , jump, Constants.General.SHIP_BLUEPRINT));
-        events.add(new GeneralEvent(Constants.EventType.START, 0, newGameState.getDifficulty().toString(), jump, Constants.General.DIFFICULTY));
+        ShipSetupEvent generalInfoEvent = new ShipSetupEvent(jump);
+        generalInfoEvent.addTag(Constants.EventTag.START);
+        generalInfoEvent.addStringStatEffects(new StringStatEffect(Constants.General.SHIP_NAME, newGameState.getPlayerShipName()));
+        generalInfoEvent.addStringStatEffects(new StringStatEffect(Constants.General.SHIP_BLUEPRINT, newGameState.getPlayerShipBlueprintId()));
+        generalInfoEvent.addStringStatEffects(new StringStatEffect(Constants.General.DIFFICULTY, newGameState.getDifficulty().toString()));
+        generalInfoEvent.addIntegerStatEffects(new IntegerStatEffect(Constants.General.BEACONS_EXPLORED, 1));
 
+        generalInfoEvent.setDisplayText("Setting name, blueprint and difficulty");
+        events.add(generalInfoEvent);
 
         int startingScrap = 0;
         if (newGameState.getDifficulty().equals(Difficulty.NORMAL)){
@@ -73,34 +93,44 @@ public class EventService {
         }
 
         // Resources
-        events.add(new ResourceEvent(Constants.EventType.START, shipBlueprint.getHealth().amount, 0, Constants.Resource.HULL.name(), jump));
-        events.add(new ResourceEvent(Constants.EventType.START, 16, 0, Constants.Resource.FUEL.name(), jump));
-        if (shipBlueprint.getDroneList() != null){
-            events.add(new ResourceEvent(Constants.EventType.START, shipBlueprint.getDroneList().drones, 0,Constants.Resource.DRONE.name(), jump));
-        }
-        events.add(new ResourceEvent(Constants.EventType.START, shipBlueprint.getWeaponList().missiles, 0,Constants.Resource.MISSILE.name(), jump));
-        events.add(new GeneralEvent(Constants.EventType.START,0, startingScrap, "scrap collected", jump, Constants.General.SCRAP_COLLECTED));
+        ResourcesReceivedEvent resourcesStartEvent = new ResourcesReceivedEvent( jump);
+        resourcesStartEvent.addTag(Constants.EventTag.START);
+        resourcesStartEvent.setResourceEffect(Constants.Resource.FUEL, STARTING_FUEL);
 
-        // Power
-        events.add(new ReactorEvent(Constants.EventType.START, shipBlueprint.getMaxPower().amount, 0, Constants.Reactor.POWER_BAR.name(), jump));
+        if (shipBlueprint.getDroneList() != null){
+            resourcesStartEvent.setResourceEffect(Constants.Resource.DRONE, shipBlueprint.getDroneList().drones);
+        }
+        resourcesStartEvent.setResourceEffect(Constants.Resource.MISSILE, shipBlueprint.getWeaponList().missiles);
+        resourcesStartEvent.setDisplayText("Received starting resources");
+        events.add(resourcesStartEvent);
+
+        // Hull & scrap
+        ShipSetupEvent hullScrapStartEvent = new ShipSetupEvent(jump);
+        hullScrapStartEvent.addTag(Constants.EventTag.START);
+        hullScrapStartEvent.setResourceEffect(Constants.Resource.HULL, shipBlueprint.getHealth().amount);
+        hullScrapStartEvent.setResourceEffect(Constants.Resource.SCRAP, startingScrap);
+        hullScrapStartEvent.setDisplayText("Setting starting hull and scrap");
+        events.add(hullScrapStartEvent);
+
+
 
         // Crew
         int index = 0;
         for (SavedGameParser.CrewState crewState : newGameState.getPlayerShip().getCrewList()) {
-            NewCrewEvent event = new NewCrewEvent(
-                    SavedGameParser.StoreItemType.CREW,
-                    Constants.EventType.START,
-                    1,
-                    GausmanUtil.getCostStoreItemId(SavedGameParser.StoreItemType.CREW, crewState.getRace().getId()),
-                    GausmanUtil.getCrewTypeName(crewState.getRace().getId()) + " - " + crewState.getName(),
-                    jump
-            );
-            event.setCrewPosition(index);
-            event.setCrew(new Crew(crewState, Constants.EventType.START));
-            events.add(event);
+            CrewNewEvent creweventNew = new CrewNewEvent(jump);
+            creweventNew.addTag(Constants.EventTag.START);
+            creweventNew.setCrewPosition(index);
+            creweventNew.setCrew(new Crew(crewState, Constants.EventType.START)); // todo we should change this
+            creweventNew.addIntegerStatEffects(new IntegerStatEffect(Constants.General.CREW_HIRED, 1));
+            events.add(creweventNew);
             index++;
         }
 
+        // Power
+        ReactorEvent reactorEvent = new ReactorEvent(jump, shipBlueprint.getMaxPower().amount, shipBlueprint.getMaxPower().amount);
+        reactorEvent.addTag(Constants.EventTag.START);
+        reactorEvent.getTags().remove(Constants.EventTag.BUY);
+        events.add(reactorEvent);
 
         // Systems
         for (Map.Entry<SavedGameParser.SystemType, List<SavedGameParser.SystemState>> entry: newGameState.getPlayerShip().getSystemsMap().entrySet()){
@@ -109,31 +139,31 @@ public class EventService {
                 if (capacity == 0){
                     continue;
                 }
-                SystemEvent systemEvent = new SystemEvent(
-                        Constants.EventType.START, capacity,
-                        0, // todo scrap of starting systems (Buy+uprades)
-                        systemState.getSystemType().getId(),
-                        jump,
-                        systemState.getSystemType(),
-                        false);
-
+                SystemEvent systemEvent = new SystemEvent(jump, systemState.getSystemType(), false, capacity, capacity);
+                systemEvent.addTag(Constants.EventTag.START);
                 events.add(systemEvent);
             }
         }
 
         // Weapons
         for (SavedGameParser.WeaponState weaponState: newGameState.getPlayerShip().getWeaponList()){
-            events.add(new WeaponEvent(Constants.EventType.START, 1, GausmanUtil.getCostStoreItemId(SavedGameParser.StoreItemType.WEAPON, weaponState.getWeaponId()), weaponState.getWeaponId(), jump));
+            WeaponEvent weaponEvent = new WeaponEvent(jump, weaponState.getWeaponId());
+            weaponEvent.addTag(Constants.EventTag.START);
+            events.add(weaponEvent);
         }
 
         // Drones
         for (SavedGameParser.DroneState droneState: newGameState.getPlayerShip().getDroneList()){
-            events.add(new DroneEvent(Constants.EventType.START, 1,GausmanUtil.getCostStoreItemId(SavedGameParser.StoreItemType.DRONE, droneState.getDroneId()), droneState.getDroneId(), jump));
+            DroneEvent droneEvent = new DroneEvent(jump, droneState.getDroneId());
+            droneEvent.addTag(Constants.EventTag.START);
+            events.add(droneEvent);
         }
 
         // Augments
         for (String augmentId: newGameState.getPlayerShip().getAugmentIdList()){
-            events.add(new AugmentEvent(Constants.EventType.START, 1,GausmanUtil.getCostStoreItemId(SavedGameParser.StoreItemType.AUGMENT, augmentId), augmentId, jump));
+            AugmentEvent augmentEvent = new AugmentEvent( jump, augmentId);
+            augmentEvent.addTag(Constants.EventTag.START);
+            events.add(augmentEvent);
         }
 
         // INFO We assume here that the player ship does not start with anything in the cargo, which is true for vanilla FTL
@@ -143,7 +173,7 @@ public class EventService {
         return eventBox;
     }
 
-    public EventBox getEventsFromGameStateComparison(SavedGameParser.SavedGameState lastGameState, SavedGameParser.SavedGameState currentGameState, Jump jump) {
+    public EventBox getEventsFromGameStateComparison(SavedGameParser.SavedGameState lastGameState, SavedGameParser.SavedGameState currentGameState, Jump jump, int emptyJumpCount) {
         // For testing
         encounterStateList.add(currentGameState.getEncounter());
 
@@ -155,6 +185,13 @@ public class EventService {
             return box;
         }
 
+        boolean jumped = true;
+        if (lastGameState.getCurrentBeaconId() == currentGameState.getCurrentBeaconId()){
+            jumped = false;
+        } else {
+            events.add(new FuelUsedEvent(jump));
+        }
+
 
         CargoConsolidator oldCargo = new CargoConsolidator(lastGameState);
         CargoConsolidator newCargo = new CargoConsolidator(currentGameState);
@@ -162,71 +199,84 @@ public class EventService {
         // General Info
         int beaconsExploredDiff = currentGameState.getTotalBeaconsExplored() - lastGameState.getTotalBeaconsExplored();
         if (beaconsExploredDiff > 0){
-            events.add(new GeneralEvent(Constants.EventType.GENERAL, beaconsExploredDiff, "bacon", jump, Constants.General.BEACONS_EXPLORED));
+            BeaconsExploredEvent beaconsExploredEvent = new BeaconsExploredEvent(jump);
+            beaconsExploredEvent.addIntegerStatEffects(new IntegerStatEffect(Constants.General.BEACONS_EXPLORED, beaconsExploredDiff));
+            events.add(beaconsExploredEvent);
         }
 
         int shipsDestroyedDiff = currentGameState.getTotalShipsDefeated() - lastGameState.getTotalShipsDefeated();
         if (shipsDestroyedDiff > 0){
-            events.add(new GeneralEvent(Constants.EventType.GENERAL, shipsDestroyedDiff, "ships destroyed", jump, Constants.General.SHIPS_DESTROYED));
+            ShipsDestroyedEvent shipsDestroyedEvent = new ShipsDestroyedEvent(jump);
+            shipsDestroyedEvent.addIntegerStatEffects(new IntegerStatEffect(Constants.General.SHIPS_DESTROYED, shipsDestroyedDiff));
+            events.add(shipsDestroyedEvent);
         }
 
         int scrapCollected = currentGameState.getTotalScrapCollected() - lastGameState.getTotalScrapCollected();
         if (scrapCollected > 0){
-            events.add(new GeneralEvent(Constants.EventType.GENERAL,0, scrapCollected, "scrap collected", jump, Constants.General.SCRAP_COLLECTED));
+            ScrapCollectedEvent scrapCollectedEvent = new ScrapCollectedEvent(jump);
+            scrapCollectedEvent.addIntegerStatEffects(new IntegerStatEffect(Constants.General.SCRAP_COLLECTED, scrapCollected));
+            scrapCollectedEvent.setResourceEffect(Constants.Resource.SCRAP, scrapCollected);
+            scrapCollectedEvent.addTag(Constants.EventTag.REWARD);
+            events.add(scrapCollectedEvent);
         }
 
         int crewHiredDiff = currentGameState.getTotalCrewHired() - lastGameState.getTotalCrewHired();
         if (crewHiredDiff > 0){
-            events.add(new GeneralEvent(Constants.EventType.GENERAL, crewHiredDiff, "crew hired", jump, Constants.General.CREW_HIRED));
+            CrewHiredEvent crewHiredEvent = new CrewHiredEvent(jump);
+            crewHiredEvent.addIntegerStatEffects(new IntegerStatEffect(Constants.General.CREW_HIRED, crewHiredDiff));
+            events.add(crewHiredEvent);
         }
 
-
-        boolean jumped = true;
-        SavedGameParser.StoreState newStore = currentGameState.getBeaconList().get(currentGameState.getCurrentBeaconId()).getStore();
+        // todo store checking...
+        SavedGameParser.StoreState newStore = null;
+        if (currentGameState.getSectorNumber() == lastGameState.getSectorNumber()){
+            newStore = currentGameState.getBeaconList().get(lastGameState.getCurrentBeaconId()).getStore();
+        }
         SavedGameParser.StoreState oldStore = lastGameState.getBeaconList().get(lastGameState.getCurrentBeaconId()).getStore();
 
         List<String> boughtItems = new ArrayList<>();
         List<String> boughtCrew = new ArrayList<>();
-
-        if (lastGameState.getCurrentBeaconId() == currentGameState.getCurrentBeaconId()){
-            jumped = false;
-        } else {
-            events.add(new ResourceEvent(Constants.EventType.USE, 1, 0, Constants.Resource.FUEL.name(), jump));
-        }
 
         int repairCountDiff = 0;
         int fuelBought = 0;
         int missilesBought = 0;
         int dronesBought = 0;
 
-        if (!jumped && newStore != null){
-
-
+        // in a previous version we used !jumped instead of oldStore != null
+        // the reason we switched is that when you get a store from an event jumped is false but oldStore is still null
+        if (oldStore != null && newStore != null){
             for (int i = 0; i < newStore.getShelfList().size(); i++){
                 for (int j = 0; j < newStore.getShelfList().get(i).getItems().size(); j++){
                     if (!newStore.getShelfList().get(i).getItems().get(j).isAvailable()){
                         if (oldStore.getShelfList().get(i).getItems().get(j).isAvailable()){
-
-
                             // Drone control comes with a free drone
                             // extra data: 0 -> DEFENSE_1, 1 -> REPAIR, 2 -> COMBAT_1
                             // the drone systems itself costs 60 scrap, and half of the price of the drone that comes with it is added
                             // so the cost of the systems depends on the drones that comes with it, and the drone then is free
                             int localCost = 0;
                             if (newStore.getShelfList().get(i).getItems().get(j).getItemId().equals("drones")){
+                                DroneEvent freeDroneWhenBuyingDroneControl;
                                 if (newStore.getShelfList().get(i).getItems().get(j).getExtraData() == 0){
-                                    events.add(new DroneEvent(Constants.EventType.REWARD, 1, GausmanUtil.getCostStoreItemId(SavedGameParser.StoreItemType.DRONE, "DEFENSE_1"),"DEFENSE_1", jump));
+                                    freeDroneWhenBuyingDroneControl = new DroneEvent(jump, "DEFENSE_1");
+//                                    events.add(new DroneEvent(Constants.EventType.REWARD, 1, GausmanUtil.getCostStoreItemId(SavedGameParser.StoreItemType.DRONE, "DEFENSE_1"),"DEFENSE_1", jump));
                                     boughtItems.add("DEFENSE_1");
                                     localCost += 25;
                                 } else if (newStore.getShelfList().get(i).getItems().get(j).getExtraData() == 1) {
-                                    events.add(new DroneEvent(Constants.EventType.REWARD, 1, GausmanUtil.getCostStoreItemId(SavedGameParser.StoreItemType.DRONE, "REPAIR"),"REPAIR", jump));
+                                    freeDroneWhenBuyingDroneControl = new DroneEvent(jump, "REPAIR");
+//                                    events.add(new DroneEvent(Constants.EventType.REWARD, 1, GausmanUtil.getCostStoreItemId(SavedGameParser.StoreItemType.DRONE, "REPAIR"),"REPAIR", jump));
                                     boughtItems.add("REPAIR");
                                     localCost += 15;
                                 } else if (newStore.getShelfList().get(i).getItems().get(j).getExtraData() == 2){
-                                    events.add(new DroneEvent(Constants.EventType.REWARD, 1, GausmanUtil.getCostStoreItemId(SavedGameParser.StoreItemType.DRONE, "COMBAT_1"),"COMBAT_1", jump));
+                                    freeDroneWhenBuyingDroneControl = new DroneEvent(jump, "COMBAT_1");
+//                                    events.add(new DroneEvent(Constants.EventType.REWARD, 1, GausmanUtil.getCostStoreItemId(SavedGameParser.StoreItemType.DRONE, "COMBAT_1"),"COMBAT_1", jump));
                                     boughtItems.add("COMBAT_1");
                                     localCost += 25;
+                                } else {
+                                    throw new IllegalArgumentException("Unsupported extra drone info: " + newStore.getShelfList().get(i).getItems().get(j).getExtraData());
                                 }
+                                freeDroneWhenBuyingDroneControl.addTag(Constants.EventTag.BUY);
+                                freeDroneWhenBuyingDroneControl.addTag(Constants.EventTag.REWARD);
+                                events.add(freeDroneWhenBuyingDroneControl);
                             }
                             localCost += GausmanUtil.getCostStoreItemType(newStore.getShelfList().get(i).getItemType(), newStore.getShelfList().get(i).getItems().get(j));
                             // Crew is handled later because it's more complex (by comparing the crewlist)
@@ -236,13 +286,16 @@ public class EventService {
                             } else {
                                 Event boughtItemEvent;
                                 switch (newStore.getShelfList().get(i).getItemType()){
-                                    case WEAPON -> boughtItemEvent = new WeaponEvent(Constants.EventType.BUY, 1, localCost, newStore.getShelfList().get(i).getItems().get(j).getItemId(), jump);
-                                    case DRONE -> boughtItemEvent = new DroneEvent(Constants.EventType.BUY, 1, localCost, newStore.getShelfList().get(i).getItems().get(j).getItemId(), jump);
-                                    case AUGMENT -> boughtItemEvent = new AugmentEvent(Constants.EventType.BUY, 1, localCost, newStore.getShelfList().get(i).getItems().get(j).getItemId(), jump);
-                                    case SYSTEM -> boughtItemEvent = new SystemEvent(Constants.EventType.BUY, 1, localCost, newStore.getShelfList().get(i).getItems().get(j).getItemId(), jump, SavedGameParser.SystemType.findById(newStore.getShelfList().get(i).getItems().get(j).getItemId()), true);
-
+                                    case WEAPON -> boughtItemEvent = new WeaponEvent(jump, newStore.getShelfList().get(i).getItems().get(j).getItemId());
+                                    case DRONE -> boughtItemEvent = new DroneEvent(jump, newStore.getShelfList().get(i).getItems().get(j).getItemId());
+                                    case AUGMENT -> boughtItemEvent = new AugmentEvent(jump, newStore.getShelfList().get(i).getItems().get(j).getItemId());
+                                    case SYSTEM -> boughtItemEvent = new SystemEvent(jump, SavedGameParser.SystemType.findById(newStore.getShelfList().get(i).getItems().get(j).getItemId()), true, 1, 1);
+                                    // todo newAmount is not 1 if you buy systems, then it's 2
                                     default -> throw new IllegalArgumentException("Unsupported ItemType: " + newStore.getShelfList().get(i).getItemType());
                                 }
+                                boughtItemEvent.addTag(Constants.EventTag.BUY);
+                                boughtItemEvent.addTag(Constants.EventTag.STORE);
+                                boughtItemEvent.setResourceEffect(Constants.Resource.SCRAP, -localCost);
                                 events.add(boughtItemEvent);
 
                                 boughtItems.add(newStore.getShelfList().get(i).getItems().get(j).getItemId());
@@ -253,46 +306,56 @@ public class EventService {
                 }
             }
 
-            fuelBought = lastGameState.getBeaconList().get(lastGameState.getCurrentBeaconId()).getStore().getFuel() -
-                    currentGameState.getBeaconList().get(currentGameState.getCurrentBeaconId()).getStore().getFuel();
-            if (fuelBought > 0){
-                events.add(new ResourceEvent(Constants.EventType.BUY, fuelBought, GausmanUtil.getCostResource(Constants.Resource.FUEL.name(), fuelBought, currentGameState.getSectorNumber()), Constants.Resource.FUEL.name(), jump));
-            }
-            missilesBought = lastGameState.getBeaconList().get(lastGameState.getCurrentBeaconId()).getStore().getMissiles() -
-                    currentGameState.getBeaconList().get(currentGameState.getCurrentBeaconId()).getStore().getMissiles();
-            if (missilesBought > 0){
-                events.add(new ResourceEvent(Constants.EventType.BUY, missilesBought, GausmanUtil.getCostResource(Constants.Resource.MISSILE.name(), missilesBought, currentGameState.getSectorNumber()), Constants.Resource.MISSILE.name(), jump));
-            }
-            dronesBought = lastGameState.getBeaconList().get(lastGameState.getCurrentBeaconId()).getStore().getDroneParts() -
-                    currentGameState.getBeaconList().get(currentGameState.getCurrentBeaconId()).getStore().getDroneParts();
-            if (dronesBought > 0) {
-                events.add(new ResourceEvent(Constants.EventType.BUY, dronesBought, GausmanUtil.getCostResource(Constants.Resource.DRONE.name(), dronesBought, currentGameState.getSectorNumber()), Constants.Resource.DRONE.name(), jump));
+            if (lastGameState.getBeaconList().get(lastGameState.getCurrentBeaconId()).getStore() == null){
+                log.error("last shop error");
             }
 
+            if (currentGameState.getBeaconList().get(currentGameState.getCurrentBeaconId()).getStore() == null){
+                log.error("new shop error");
+            }
+
+            fuelBought = oldStore.getFuel() - newStore.getFuel();
+            if (fuelBought > 0){
+                FuelBoughtEvent fuelBoughtEvent = new FuelBoughtEvent(jump, fuelBought);
+                fuelBoughtEvent.addTag(Constants.EventTag.STORE);
+                events.add(fuelBoughtEvent);
+            }
+            missilesBought = oldStore.getMissiles() - newStore.getMissiles();
+            if (missilesBought > 0){
+                MissilesBoughtEvent missilesBoughtEvent = new MissilesBoughtEvent(jump, missilesBought);
+                missilesBoughtEvent.addTag(Constants.EventTag.STORE);
+                events.add(missilesBoughtEvent);
+            }
+            dronesBought = oldStore.getDroneParts() - newStore.getDroneParts();
+            if (dronesBought > 0) {
+                DronesBoughtEvent dronesBoughtEvent = new DronesBoughtEvent(jump, dronesBought);
+                dronesBoughtEvent.addTag(Constants.EventTag.STORE);
+                events.add(dronesBoughtEvent);
+            }
 
             // repair
             repairCountDiff = currentGameState.getStateVar(StateVar.STORE_REPAIR.getId()) - lastGameState.getStateVar(StateVar.STORE_REPAIR.getId());
-            if (repairCountDiff > 0){ // TODO does this work with "REPAIR"?
-                events.add(new ResourceEvent(Constants.EventType.BUY, repairCountDiff, GausmanUtil.getCostResource(Constants.Resource.HULL.name(), repairCountDiff, currentGameState.getSectorNumber()), Constants.Resource.HULL.name(), jump));
+            if (repairCountDiff > 0){
+                RepairEvent repairBoughtEvent = new RepairEvent(jump);
+                repairBoughtEvent.setResourceEffect(Constants.Resource.HULL, repairCountDiff);
+                repairBoughtEvent.setResourceEffect(Constants.Resource.SCRAP, -GausmanUtil.getCostResource(Constants.Resource.HULL.name(), repairCountDiff, currentGameState.getSectorNumber()));
+                repairBoughtEvent.addTag(Constants.EventTag.REPAIR);
+                repairBoughtEvent.addTag(Constants.EventTag.STORE);
+                repairBoughtEvent.addTag(Constants.EventTag.BUY);
+                repairBoughtEvent.setDisplayText("Bought repairs");
+                events.add(repairBoughtEvent);
             }
-
-
         }
 
         // drones/missiles used
         int missileUsedDiff = currentGameState.getStateVar(StateVar.USED_MISSILE.getId()) - lastGameState.getStateVar(StateVar.USED_MISSILE.getId());
         if (missileUsedDiff > 0){
-            events.add(new ResourceEvent(Constants.EventType.USE, missileUsedDiff, 0, Constants.Resource.MISSILE.name(), jump));
+            events.add(new MissilesUsedEvent(jump, missileUsedDiff));
         }
         int droneUsedDiff = currentGameState.getStateVar(StateVar.USED_DRONE.getId()) - lastGameState.getStateVar(StateVar.USED_DRONE.getId());
         if (droneUsedDiff > 0){
-            events.add(new ResourceEvent(Constants.EventType.USE, droneUsedDiff, 0, Constants.Resource.DRONE.name(), jump));
+            events.add(new DronesUsedEvent(jump, droneUsedDiff));
         }
-
-        // Scrap -> completely new topic
-        int oldScrap = lastGameState.getPlayerShip().getScrapAmt();
-        int newScrap = currentGameState.getPlayerShip().getScrapAmt();
-
 
         // Hull
         int oldHull = lastGameState.getPlayerShip().getHullAmt();
@@ -300,23 +363,33 @@ public class EventService {
 
         int hullDamage = oldHull + repairCountDiff - newHull;
         if (hullDamage > 0){
-            events.add(new ResourceEvent(Constants.EventType.DAMAGE, hullDamage, 0, Constants.Resource.HULL.name(), jump));
+            DamageEvent hullDamageEvent = new DamageEvent(jump);
+            hullDamageEvent.setResourceEffect(Constants.Resource.HULL, -hullDamage);
+            events.add(hullDamageEvent);
         }
 
         // Todo repair events?
-
 
         // Resources
         int oldFuelCount = lastGameState.getPlayerShip().getFuelAmt();
         int newFuelCount = currentGameState.getPlayerShip().getFuelAmt();
 
-        int fuelRewardCount = newFuelCount - oldFuelCount - fuelBought;
+        ResourcesReceivedEvent resourcesRewardEvent = new ResourcesReceivedEvent(jump);
+        resourcesRewardEvent.addTag(Constants.EventTag.REWARD);
+
+        // starting with the new fuelCount we try to guess how many fuel we got as reward
+        // we subtract the fuel we had before
+        // we subtract the fuel we bought (from stores) todo fuel buy events
+        // if jumped is true (meaning the player jumped to a new beacon between the two save files) we add 1 again
+        // we also add the emptyJumpCount (jumps where the player backtracked and no save file was written)
+        int fuelRewardCount = newFuelCount - oldFuelCount - fuelBought + emptyJumpCount;
+        fuelRewardCount += (jumped ? 1 : 0);
         if (fuelRewardCount > 0){
-            events.add(new ResourceEvent(Constants.EventType.REWARD, fuelRewardCount, 0, Constants.Resource.FUEL.name(), jump));
+            resourcesRewardEvent.setResourceEffect(Constants.Resource.FUEL, fuelRewardCount);
         }
 
         // Todo fuel trade events?
-
+        // todo missiles/drones sell Events
         String eventText = currentGameState.getEncounter().getText();
         boolean isMissilesSellEvent = currentGameState.getEncounter().getText().contains(MISSILE_SELL_EVENT);
 
@@ -325,16 +398,15 @@ public class EventService {
 
         int missilesRewardCount = newMissilesCount - oldMissilesCount + missileUsedDiff - missilesBought;
         if (missilesRewardCount > 0){
-            events.add(new ResourceEvent(Constants.EventType.REWARD, missilesRewardCount, 0, Constants.Resource.MISSILE.name(), jump));
+            resourcesRewardEvent.setResourceEffect(Constants.Resource.MISSILE, missilesRewardCount);
         } else if (missilesRewardCount < 0) {
             if (isMissilesSellEvent) {
-                events.add(new ResourceEvent(
-                        Constants.EventType.SELL,
-                        -missilesRewardCount,
-                        -missilesRewardCount * 6,
-                        Constants.Resource.MISSILE.name(),
-                        jump
-                ));
+                Event missilesSellEvent = new Event(jump);
+                missilesSellEvent.addTag(Constants.EventTag.SELL);
+                missilesSellEvent.addTag(Constants.EventTag.EVENT);
+                missilesSellEvent.setResourceEffect(Constants.Resource.SCRAP, -missilesRewardCount * 6);
+                missilesSellEvent.setResourceEffect(Constants.Resource.MISSILE, -missilesRewardCount);
+                events.add(missilesSellEvent);
             }
         }
 
@@ -343,19 +415,34 @@ public class EventService {
         int oldDronesCount = lastGameState.getPlayerShip().getDronePartsAmt();
         int newDronesCount = currentGameState.getPlayerShip().getDronePartsAmt();
 
+        // hint: the drones used stat in the state vars unfortunately does not increment when using hacking
+        // so we don't have a good way to decide if a drone part was used for hacking
+        // the workaround is this: normally a save file writing is triggered before the player receives rewards
+        // so in that case dronesRewardCount is -1 (because hacking was used and the player did not get (yet) drones as a reward
+        // we also check if the player actually has hacking
+        // this might fail if the player uses hacking and then also receives drone parts before the next save file is written
+        // but that's the best we can do as far as i know
         int dronesRewardCount = newDronesCount - oldDronesCount + droneUsedDiff - dronesBought;
-        if (dronesRewardCount > 0){
-            events.add(new ResourceEvent(Constants.EventType.REWARD, dronesRewardCount, 0, Constants.Resource.DRONE.name(), jump));
-        } else if (dronesRewardCount < 0){
+        if (dronesRewardCount > 0) {
+            resourcesRewardEvent.setResourceEffect(Constants.Resource.DRONE, dronesRewardCount);
+        } else {
             if (isDronesSellEvent){
-                events.add(new ResourceEvent(
-                        Constants.EventType.SELL,
-                        -dronesRewardCount,
-                        -dronesRewardCount * 8,
-                        Constants.Resource.DRONE.name(),
-                        jump
-                ));
+                Event dronesSellEvent = new Event(jump);
+                dronesSellEvent.addTag(Constants.EventTag.SELL);
+                dronesSellEvent.addTag(Constants.EventTag.EVENT);
+                dronesSellEvent.setResourceEffect(Constants.Resource.SCRAP, -dronesRewardCount * DRONES_PRICE_STORE);
+                dronesSellEvent.setResourceEffect(Constants.Resource.DRONE, -dronesRewardCount);
+                events.add(dronesSellEvent);
+            } else {
+                if (dronesRewardCount == -1 && currentGameState.getPlayerShip().getSystemsMap().containsKey(SavedGameParser.SystemType.HACKING)){
+                    events.add(new HackingUsedEvent(jump, 1));
+                }
             }
+        }
+
+        if (!resourcesRewardEvent.getResourceEffects().isEmpty()){
+            resourcesRewardEvent.setDisplayText("Received resources");
+            events.add(resourcesRewardEvent);
         }
 
         // TODO missile/drone sale event?
@@ -384,15 +471,21 @@ public class EventService {
         }
 
         for (String weapon: newWeapons){
-            events.add(new WeaponEvent(Constants.EventType.REWARD, 1, GausmanUtil.getCostStoreItemId(SavedGameParser.StoreItemType.WEAPON, weapon), weapon, jump));
+            WeaponEvent newWeaponEvent = new WeaponEvent(jump, weapon);
+            newWeaponEvent.addTag(Constants.EventTag.REWARD);
+            events.add(newWeaponEvent);
         }
 
         for (String drone: newDrones){
-            events.add(new DroneEvent(Constants.EventType.REWARD, 1, GausmanUtil.getCostStoreItemId(SavedGameParser.StoreItemType.DRONE, drone), drone, jump));
+            DroneEvent newdroneEvent = new DroneEvent(jump, drone);
+            newdroneEvent.addTag(Constants.EventTag.REWARD);
+            events.add(newdroneEvent);
         }
 
         for (String augment: newAugments){
-            events.add(new AugmentEvent(Constants.EventType.REWARD, 1, GausmanUtil.getCostStoreItemId(SavedGameParser.StoreItemType.AUGMENT, augment), augment, jump));
+            AugmentEvent augmentEvent = new AugmentEvent(jump, augment);
+            augmentEvent.addTag(Constants.EventTag.REWARD);
+            events.add(augmentEvent);
         }
 
         // Removed Items
@@ -427,23 +520,35 @@ public class EventService {
         int sellCost = 0;
         for (String weapon: removedWeapons){
             if (typeNow == Constants.EventType.SELL){
-                sellCost = GausmanUtil.getCostStoreItemId(SavedGameParser.StoreItemType.WEAPON, weapon);
-                tempSellEvents.add(new WeaponEvent(typeNow, 1, sellCost, weapon, jump));
+                sellCost = GausmanUtil.getCostStoreItemId(SavedGameParser.StoreItemType.WEAPON, weapon)/2;
+                WeaponEvent newWeaponSellEvent = new WeaponEvent(jump, weapon);
+                newWeaponSellEvent.addTag(Constants.EventTag.SELL);
+                newWeaponSellEvent.addTag(Constants.EventTag.STORE);
+                newWeaponSellEvent.setResourceEffect(Constants.Resource.SCRAP, sellCost);
+                tempSellEvents.add(newWeaponSellEvent);
             }
         }
 
         for (String drone: removedDrones){
             if (typeNow == Constants.EventType.SELL){
-                sellCost = GausmanUtil.getCostStoreItemId(SavedGameParser.StoreItemType.DRONE, drone);
-                tempSellEvents.add(new DroneEvent(typeNow, 1, sellCost, drone, jump));
+                sellCost = GausmanUtil.getCostStoreItemId(SavedGameParser.StoreItemType.DRONE, drone)/2;
+                DroneEvent newDroneSellEvent = new DroneEvent(jump, drone);
+                newDroneSellEvent.addTag(Constants.EventTag.SELL);
+                newDroneSellEvent.addTag(Constants.EventTag.STORE);
+                newDroneSellEvent.setResourceEffect(Constants.Resource.SCRAP, sellCost);
+                tempSellEvents.add(newDroneSellEvent);
             }
 
         }
 
         for (String augment: removedAugments){
             if (typeNow == Constants.EventType.SELL){
-                sellCost = GausmanUtil.getCostStoreItemId(SavedGameParser.StoreItemType.AUGMENT, augment);
-                tempSellEvents.add(new AugmentEvent(typeNow, 1, sellCost, augment, jump));
+                sellCost = GausmanUtil.getCostStoreItemId(SavedGameParser.StoreItemType.AUGMENT, augment)/2;
+                AugmentEvent newAugmentSellEvent = new AugmentEvent(jump, augment);
+                newAugmentSellEvent.addTag(Constants.EventTag.SELL);
+                newAugmentSellEvent.addTag(Constants.EventTag.STORE);
+                newAugmentSellEvent.setResourceEffect(Constants.Resource.SCRAP, sellCost);
+                tempSellEvents.add(newAugmentSellEvent);
             }
         }
 
@@ -457,29 +562,36 @@ public class EventService {
         int newReactorCapacity = currentGameState.getPlayerShip().getReservePowerCapacity();
         int oldReactorCapacity = lastGameState.getPlayerShip().getReservePowerCapacity();
 
+        // this state var describes how often the player upgraded the reactor
+        // so if you upgrade your reactor by one the state var increases by one
+        // if you upgrade your reactor by two or more the state vor also increases by one
+        // the state var does not increase from reactor upgrade events
         int newCapacitySV = currentGameState.getStateVar(StateVar.REACTOR_UPGRADE.getId());
         int oldCapacitySV = lastGameState.getStateVar(StateVar.REACTOR_UPGRADE.getId());
 
-        if (newCapacitySV > oldCapacitySV){
-            while (newCapacitySV > oldCapacitySV){
-                oldReactorCapacity++;
-                oldCapacitySV++;
-                events.add(new ReactorEvent(Constants.EventType.UPGRADE, 1,
-                        GausmanUtil.getReactorUpgradeCost(oldReactorCapacity), Constants.Reactor.POWER_BAR.name(), jump));
-            }
+        // todo we need to detect reactor upgrade events by reading event choices
+        // one other indicater is: newReactorCapacity > oldReactorCapacity (actullay difference is exactly 1)
+        // and newCapacitySV = oldCapacitySv
+        if ((newReactorCapacity > oldReactorCapacity) && (newCapacitySV == oldCapacitySV)){
+            log.error("undeteced reactor upgrade event");
         }
 
-        // reactor upgrades from events are not included in the state vars
         int reactorDiff = newReactorCapacity - oldReactorCapacity;
         if (reactorDiff > 0){
-            events.add(new ReactorEvent(Constants.EventType.REWARD, reactorDiff,
-                    GausmanUtil.getReactorUpgradeCost(oldReactorCapacity), Constants.Reactor.POWER_BAR.name(), jump));
+            ReactorEvent reactorEvent = new ReactorEvent(jump, reactorDiff, newReactorCapacity);
+            int totalUpgradeCost = 0;
+            for (int i = oldReactorCapacity; i < newReactorCapacity; i++){
+                totalUpgradeCost += GausmanUtil.getReactorUpgradeCost(i+1);
+            }
+            reactorEvent.setResourceEffect(Constants.Resource.SCRAP, -totalUpgradeCost);
+            events.add(reactorEvent);
         }
 
 
         // ship upgrades
+        // Scrap
         int shipUpgradeCount = currentGameState.getStateVar(StateVar.SYSTEM_UPGRADE.getId()) - lastGameState.getStateVar(StateVar.SYSTEM_UPGRADE.getId());
-        int scrapDiff = newScrap - oldScrap;
+        int scrapDiff = currentGameState.getPlayerShip().getScrapAmt() - lastGameState.getPlayerShip().getScrapAmt();
 
         SavedGameParser.ShipState newShipState = currentGameState.getPlayerShip();
         SavedGameParser.ShipState oldShipState = lastGameState.getPlayerShip();
@@ -494,16 +606,10 @@ public class EventService {
                 oldSystemState = oldShipState.getSystem(newSystemState.getSystemType());
                 systemDiff = newSystemState.getCapacity() - oldSystemState.getCapacity();
                 if (systemDiff > 0 && oldSystemState.getCapacity() > 0){
-                    tempSystemUpgrades.add(new SystemEvent(
-                            Constants.EventType.UPGRADE,
-                            systemDiff,
-                            GausmanUtil.getUpgradeCostSystem(newSystemState.getSystemType().getId(), oldSystemState.getCapacity(), newSystemState.getCapacity()),
-                            newSystemState.getSystemType().getId(),
-                            jump,
-                            newSystemState.getSystemType(),
-                            true
-                    ));
-
+                    SystemEvent systemUpgradeEvent = new SystemEvent(jump, newSystemState.getSystemType(), true, systemDiff, newSystemState.getCapacity());
+                    systemUpgradeEvent.addTag(Constants.EventTag.BUY);
+                    systemUpgradeEvent.setResourceEffect(Constants.Resource.SCRAP, -GausmanUtil.getUpgradeCostSystem(newSystemState.getSystemType().getId(), oldSystemState.getCapacity(), newSystemState.getCapacity()));
+                    tempSystemUpgrades.add(systemUpgradeEvent);
                 }
             }
         }
@@ -529,7 +635,7 @@ public class EventService {
             for (SystemEvent systemEvent : tempSystemUpgrades){
                 if (possibleSystemUpgradeEvent.contains(systemEvent.getType())){
                     systemEvent.setPlayerUpgrade(false);
-                    systemEvent.setScrap(-scrapDiff); // Todo calculate
+//                    systemEvent.setScrap(-scrapDiff); // Todo calculate
                     break;
                 }
             }
@@ -537,10 +643,6 @@ public class EventService {
         } else {
             log.error("2 or more System-Upgrade Events on the same beacon are impossible");
         }
-
-
-
-
 
         // Crew
         events.addAll(getCrewEvents(lastGameState, currentGameState, boughtCrew, jump));
@@ -555,25 +657,70 @@ public class EventService {
 //        FTLEventList ftlEventList = dm.getEventListById("SAVE_CIVILIAN_LIST");
 //        FTLEvent ftlEvent = dm.getEventById("PIRATE_STATION_CROPS");
 
+        // SRA Extra Scrap
+        // if the player collected scrap and has a Scrap Recovery arm we want to add the extra scrap
+        // normally the extra scrap is just 10% rounded down
+        // the problem is that for double rewards the amount is calculated for both scrap values seperately
+        // so 27 + 34 = 61 only gives 2 + 3 = 5 extra scrap
+        // we don't know the individual numbers so we just use the sum for the extra scrap estimate
+        // if the actual difference is equal to the estimate or exactly one lower it should be good
+        // this might fail if there is an event where the player gets scrap 3 or more times (which is not possible afaik)
+        // todo we can improve this logic when we go deeper into the event tracking
+        // basically the extraScrapGuess can be 1 scrap higher for every additional (other than the first) time we get scrap
+        // one scrap reward -> always correct
+        // two scrap reward -> guess might be 1 too high
+        // three scrap rewards -> guess might be 2 too high (I don't think this can happen)
+        if (lastGameState.getPlayerShip().getAugmentIdList().contains("SCRAP_COLLECTOR") && scrapCollected > 0){
+            int expectedScrapDiff = 0;
+            for (Event e : events){
+                expectedScrapDiff += e.getResourceEffects().getOrDefault(Constants.Resource.SCRAP, 0);
+            }
+            int remainingScrapDiff = scrapDiff - expectedScrapDiff;
+            int extraScrapGuess = scrapCollected / 10;
+            // we always want to add the extra scrap event even if the number might be off by one
+            // because not adding it would be more wrong
+            if (remainingScrapDiff == extraScrapGuess || remainingScrapDiff == extraScrapGuess - 1) {
+                SRAExtraScrapEvent sraExtraScrapEvent = new SRAExtraScrapEvent(jump);
+                sraExtraScrapEvent.setResourceEffect(Constants.Resource.SCRAP, remainingScrapDiff);
+                events.add(sraExtraScrapEvent);
 
-        // Scrap Diff
-        int scrapChangeExpected = 0;
-        for (Event event : events){
-            scrapChangeExpected += event.getScrapChange();
+            } else {
+                SRAExtraScrapEvent sraExtraScrapEvent = new SRAExtraScrapEvent(jump);
+                sraExtraScrapEvent.setResourceEffect(Constants.Resource.SCRAP, extraScrapGuess);
+                events.add(sraExtraScrapEvent);
+                log.info("scrap diff error");
+            }
         }
-        int scrapChangeDiff = currentGameState.getPlayerShip().getScrapAmt() - lastGameState.getPlayerShip().getScrapAmt() - scrapChangeExpected;
 
-        if (scrapChangeDiff != 0){
-            events.add(new GeneralEvent(Constants.EventType.GENERAL,0, scrapChangeDiff, "unrecognized scrap difference (probably some event)", jump, Constants.General.SCRAP_DIFF));
+        // Generate Resource difference events
+        // these should ideally never happen, but if they do we can use this for debugging
+        // also we need these in case of an error so that the resource numbers are correct after the problematic jump
+        List<Event> resourceDiffErrorEvents = new ArrayList<>();
+        generateResourceDiffErrorEvents(resourceDiffErrorEvents, events, jump, Constants.Resource.SCRAP,
+                currentGameState.getPlayerShip().getScrapAmt() - lastGameState.getPlayerShip().getScrapAmt());
+
+        // here we need to include the emptyJumpCount
+        generateResourceDiffErrorEvents(resourceDiffErrorEvents, events, jump, Constants.Resource.FUEL,
+                currentGameState.getPlayerShip().getFuelAmt() - lastGameState.getPlayerShip().getFuelAmt() + emptyJumpCount);
+
+        generateResourceDiffErrorEvents(resourceDiffErrorEvents, events, jump, Constants.Resource.MISSILE,
+                currentGameState.getPlayerShip().getMissilesAmt() - lastGameState.getPlayerShip().getMissilesAmt());
+
+
+        generateResourceDiffErrorEvents(resourceDiffErrorEvents, events, jump, Constants.Resource.DRONE,
+                currentGameState.getPlayerShip().getDronePartsAmt() - lastGameState.getPlayerShip().getDronePartsAmt());
+
+
+        generateResourceDiffErrorEvents(resourceDiffErrorEvents, events, jump, Constants.Resource.HULL,
+                currentGameState.getPlayerShip().getHullAmt() - lastGameState.getPlayerShip().getHullAmt());
+
+        if (!resourceDiffErrorEvents.isEmpty()){
+            if (resourceDiffErrorEvents.stream().anyMatch(e -> e.getResourceEffects().containsKey(Constants.Resource.DRONE))){
+                log.error("drone error");
+            }
+            events.addAll(resourceDiffErrorEvents);
+            log.error("Resource difference error occured");
         }
-
-        // Fuel Diff
-
-        // Missiles Diff
-
-        // Drones Diff
-
-        // Hull diff
 
         box.setEncounterState(currentGameState.getEncounter());
 
@@ -581,12 +728,35 @@ public class EventService {
 
     }
 
-    //            List<SavedGameParser.CrewState> lastCrewStatePlayer,
-    //            List<SavedGameParser.CrewState> newCrewStatePlayer,
-    //            List<SavedGameParser.CrewState> lastCrewStateEnemy,
-    //            List<SavedGameParser.CrewState> newCrewStateEnemy,
+    private void generateResourceDiffErrorEvents(
+            List<Event> errorEvents,
+            List<Event> events,
+            Jump jump,
+            Constants.Resource resource, int actualDiff){
+
+        int changeExpected = 0;
+        for (Event e : events){
+            changeExpected += e.getResourceEffects().getOrDefault(resource, 0);
+        }
+
+        int changeDiff = actualDiff - changeExpected;
+
+        if (changeDiff != 0){
+            ResourceDiffErrorEvent changeDiffEvent = new ResourceDiffErrorEvent(jump);
+            changeDiffEvent.setResourceEffect(resource, changeDiff);
+            changeDiffEvent.setDisplayText(String.format("Resource difference error: %s", resource));
+            errorEvents.add(changeDiffEvent);
+        }
+    }
+
     private List<Event> getCrewEvents(SavedGameParser.SavedGameState lastGameState, SavedGameParser.SavedGameState currentGameState, List<String> boughtCrew, Jump jump){
         List<Event> events = new ArrayList<>();
+
+        // the gamestate contains two lists for crew: playerShip and nearbyShip
+        // the problem is that when boarding the enemy ship the players crew is in the crewlist of the nearby ship
+        // because of that we need to merge the two lists together
+        // only looking at crew with "isPlayerControlled=true", because the crewList of the players ship can also contain enemy boarders
+        // now the big problem is that when the players crew is split we don't know the position when the crew gets back
 
         List<SavedGameParser.CrewState> lastCrewStatePlayer =
                 Optional.ofNullable(lastGameState.getPlayerShip())
@@ -624,7 +794,6 @@ public class EventService {
         for (int i = 0; i < lastCrewState.size(); i++){
             SavedGameParser.CrewState lastState = lastCrewState.get(i);
             possibleMatchesOldToNew.put(i, new ArrayList<>());
-//            for (int j = 0; j < Math.min(i + 1, newCrewState.size()); j++){
             for (int j = 0; j < newCrewState.size(); j++){
                 SavedGameParser.CrewState newState = newCrewState.get(j);
                 if (lastState.isMale() == newState.isMale()
@@ -645,21 +814,6 @@ public class EventService {
         }
 
         // Assign the best match for every old crew
-//        possibleMatchesOldToNew.entrySet().stream()
-//                .sorted(Comparator.comparingInt(entry -> entry.getValue().size())) // Todo maybe we need to sort after every assignment
-//                .forEach(entry -> {
-//                    Integer key = entry.getKey();
-//                    List<Integer> possibleValues = entry.getValue();
-//                    possibleValues.removeAll(newCrewMatched);
-//                    if (!possibleValues.isEmpty()) {
-//                        Integer chosen = possibleValues.getFirst(); // Todo Maybe prefer crew with the same name if possible
-//                        newCrewMatched.add(chosen);
-//                        mapOldToNew.put(key, chosen);
-//                    } else {
-//                        mapOldToNew.put(key, null);
-//                    }
-//                });
-
         // While we still have unprocessed entries
         while (!possibleMatchesOldToNew.isEmpty()) {
             // Sort dynamically by number of possible matches
@@ -678,35 +832,52 @@ public class EventService {
                 Integer chosen = null;
                 if (!possibleValues.isEmpty()) {
                     if (possibleValues.size() == 1) {
-                        // ✅ Only one option → take it
                         chosen = possibleValues.getFirst();
                     } else {
-                        // ✅ Prefer same-name match if available
                         String oldName = lastCrewState.get(oldId).getName();
                         chosen = possibleValues.stream()
                                 .filter(newId -> newCrewState.get(newId).getName().equals(oldName))
                                 .findFirst()
-                                .orElse(possibleValues.getFirst()); // fallback: just take the first
+                                .orElse(possibleValues.getFirst());
                     }
-
                     newCrewMatched.add(chosen);
                     mapOldToNew.put(oldId, chosen);
                 } else {
                     mapOldToNew.put(oldId, null);
                 }
-
-                // Once processed, remove from the map
                 possibleMatchesOldToNew.remove(oldId);
-                // 🔁 Break out to re-sort after this assignment
                 break;
             }
         }
 
+        if (mapStateToInternal.isEmpty()){
+            mapStateToInternal.putAll(mapOldToNew);
+        }
+
+        // Problem here
+        // when discarding crew the crew positions need to be updated
+        // at the moment this happens at the bottom in the projectValues method
+        // so here the crew positions are wrong
+        // maybe we can add these events after updating the crew positions
+        // or we need pre calculate what the values will be
 
         // Create events for every Crew-match
         // If the old crew does not match with one in the new list the crew is dead/discarded
+        int removedCrewCount = 0;
+        Integer adjustedCrewPosition = null;
+
         for (Map.Entry<Integer, Integer> entry : mapOldToNew.entrySet()) {
-            events.addAll(compareCrewState(lastCrewState.get(entry.getKey()), entry.getValue() != null ? newCrewState.get(entry.getValue()) : null, jump, entry.getKey()));
+            adjustedCrewPosition = getKeyByValue(mapStateToInternal, entry.getKey());
+            if (adjustedCrewPosition != null){
+                adjustedCrewPosition -= removedCrewCount;
+            }
+
+
+            events.addAll(compareCrewState(lastCrewState.get(entry.getKey()), entry.getValue() != null ? newCrewState.get(entry.getValue()) : null, jump, adjustedCrewPosition));
+
+            if (entry.getValue() == null){
+                removedCrewCount++;
+            }
         }
 
         // Last we have to check if all new crew were matched with an old crew
@@ -718,36 +889,110 @@ public class EventService {
             SavedGameParser.CrewState cs = newCrewState.get(i);
             boolean crewBought = removeStringFromList(boughtCrew, cs.getRace().getId());
             Constants.EventType eventType = crewBought ? Constants.EventType.BUY : Constants.EventType.REWARD;
-            NewCrewEvent event = new NewCrewEvent(
-                    SavedGameParser.StoreItemType.CREW,
-                    eventType,
-                    1,
-                    GausmanUtil.getCostStoreItemId(SavedGameParser.StoreItemType.CREW, cs.getRace().getId()),
-                    GausmanUtil.getCrewTypeName(cs.getRace().getId()) + " - " + cs.getName(),
-                    jump
-            );
-            event.setCrewPosition(i);
-            event.setCrew(new Crew(cs, eventType));
-            events.add(event);
+            Constants.EventTag tag = crewBought ? Constants.EventTag.BUY : Constants.EventTag.REWARD;
+            CrewNewEvent event = new CrewNewEvent(jump);
+            if (tag.equals(Constants.EventTag.BUY)){ // todo crew bought from events
+                event.setResourceEffect(Constants.Resource.SCRAP, -dm.getCrew(cs.getRace().getId()).getCost());
+            }
+            event.addTag(tag);
+            event.setCrewPosition(lastCrewState.size());
+            event.setCrew(new Crew(cs, eventType)); // todo why do we need eventType?
+            events.addFirst(event);
+            mapOldToNew.put(lastCrewState.size(), i);
+        }
 
+        if (!validateMap(mapStateToInternal, newCrewState)){
+            log.error("Crew map validation failed");
+        }
+
+        mapStateToInternal = projectValues(mapStateToInternal, mapOldToNew);
+
+        if (!validateMap(mapStateToInternal, newCrewState) || mapStateToInternal.size() != newCrewState.size()){
+            log.error("Crew map validation failed after recalculation");
         }
 
         return events;
     }
 
+    private boolean validateMap(Map<Integer, Integer> map, List<SavedGameParser.CrewState> crewStates){
+        List<Integer> ids = new ArrayList<>();
+        for (Map.Entry<Integer, Integer> entry : map.entrySet()){
+            if (ids.contains(entry.getValue())){
+                return false;
+            }
+            ids.add(entry.getValue());
+        }
+
+        for (int i = 0; i < map.size(); i++){
+            if (!map.containsKey(i)){
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private Integer getKeyByValue(Map<Integer, Integer> map, Integer value) {
+        for (Map.Entry<Integer, Integer> entry : map.entrySet()) {
+            if (Objects.equals(entry.getValue(), value)) {
+                return entry.getKey();
+            }
+        }
+        return null;
+    }
+
+    public Map<Integer, Integer> projectValues(Map<Integer, Integer> map1, Map<Integer, Integer> map2) {
+        Map<Integer, Integer> result = new HashMap<>();
+        if (map1 == null) return result;
+
+        for (Map.Entry<Integer, Integer> e1 : map1.entrySet()) {
+            Integer key = e1.getKey();
+            Integer lookupKey = e1.getValue();
+
+            if (map2 != null && map2.containsKey(lookupKey)) {
+                Integer newValue = map2.get(lookupKey);
+                result.put(key, newValue);
+            } else {
+                result.put(key, e1.getValue());
+            }
+        }
+
+
+        for (Map.Entry<Integer, Integer> e2 : map2.entrySet()){
+            if (!result.containsKey(e2.getKey()) && !result.containsValue(e2.getValue()) && e2.getValue() != null){
+                result.put(e2.getKey(), e2.getValue());
+            }
+        }
+
+        result = compactMap(result);
+
+        return result;
+    }
+
+    private Map<Integer, Integer> compactMap(Map<Integer, Integer> input) {
+        Map<Integer, Integer> result = new LinkedHashMap<>(); // keeps order
+
+        int newKey = 0;
+        for (int oldKey = 0; oldKey <= input.size() - 1; oldKey++) {
+            Integer value = input.get(oldKey);
+            if (value != null) {
+                result.put(newKey++, value);
+            }
+        }
+        return result;
+    }
+
+
+
     private List<Event> compareCrewState(SavedGameParser.CrewState lastCrewState, SavedGameParser.CrewState newCrewState, Jump jump, Integer crewPosition){
         List<Event> events = new ArrayList<>();
         // Crew dead
         if (newCrewState == null){
-            CrewEvent event = new CrewEvent(
-                    SavedGameParser.StoreItemType.CREW,
-                    Constants.EventType.DISCARD,
-                    1,
-                    0,
-                    GausmanUtil.getCrewTypeName(lastCrewState.getRace().getId()) + " - " + lastCrewState.getName(),
-                    jump
-            );
+            CrewLostEvent event = new CrewLostEvent(jump);
+//                    GausmanUtil.getCrewTypeName(lastCrewState.getRace().getId()) + " - " + lastCrewState.getName(),
+            event.addTag(Constants.EventTag.DISCARD);
             event.setCrewPosition(crewPosition);
+            event.setDisplayText(String.format("%s - %s", lastCrewState.getRace().name(), lastCrewState.getName()));
             events.add(event);
             return events;
         }
@@ -757,9 +1002,9 @@ public class EventService {
         // Name Change
         if (!newCrewState.getName().equals(lastCrewState.getName())){
             CrewRenameEvent event = new CrewRenameEvent(
+                    jump,
                     newCrewState.getName(),
-                    lastCrewState.getName(),
-                    jump
+                    lastCrewState.getName()
             );
             event.setCrewPosition(crewPosition);
             events.add(event);
@@ -768,10 +1013,10 @@ public class EventService {
         // Stat Change
         int repairsChange = newCrewState.getRepairs() - lastCrewState.getRepairs();
         if (repairsChange != 0){
-            StatEvent event = new StatEvent(
+            CrewStatEvent event = new CrewStatEvent(
+                    jump,
                     Constants.Stats.REPAIRS,
-                    repairsChange,
-                    jump
+                    repairsChange
             );
             event.setDisplayText(String.format("%s - %s: %s", newCrewState.getName(), Constants.Stats.REPAIRS, newCrewState.getRepairs()));
             event.setCrewPosition(crewPosition);
@@ -780,10 +1025,10 @@ public class EventService {
 
         int combatKillsChange = newCrewState.getCombatKills() - lastCrewState.getCombatKills();
         if (combatKillsChange != 0){
-            StatEvent event = new StatEvent(
+            CrewStatEvent event = new CrewStatEvent(
+                    jump,
                     Constants.Stats.COMBAT_KILLS,
-                    combatKillsChange,
-                    jump
+                    combatKillsChange
             );
             event.setDisplayText(String.format("%s - %s: %s", newCrewState.getName(), Constants.Stats.COMBAT_KILLS, newCrewState.getCombatKills()));
             event.setCrewPosition(crewPosition);
@@ -792,10 +1037,10 @@ public class EventService {
 
         int pilotedEvasionsChange = newCrewState.getPilotedEvasions() - lastCrewState.getPilotedEvasions();
         if (pilotedEvasionsChange != 0){
-            StatEvent event = new StatEvent(
+            CrewStatEvent event = new CrewStatEvent(
+                    jump,
                     Constants.Stats.PILOTED_EVASIONS,
-                    pilotedEvasionsChange,
-                    jump
+                    pilotedEvasionsChange
             );
             event.setCrewPosition(crewPosition);
             event.setDisplayText(String.format("%s - %s: %s", newCrewState.getName(), Constants.Stats.PILOTED_EVASIONS, newCrewState.getPilotedEvasions()));
@@ -804,10 +1049,10 @@ public class EventService {
 
         int jumpsSurvivedChange = newCrewState.getJumpsSurvived() - lastCrewState.getJumpsSurvived();
         if (jumpsSurvivedChange != 0){
-            StatEvent event = new StatEvent(
+            CrewStatEvent event = new CrewStatEvent(
+                    jump,
                     Constants.Stats.JUMPS_SURVIVED,
-                    jumpsSurvivedChange,
-                    jump
+                    jumpsSurvivedChange
             );
             event.setDisplayText(String.format("%s - %s: %s", newCrewState.getName(), Constants.Stats.JUMPS_SURVIVED, newCrewState.getJumpsSurvived()));
             event.setCrewPosition(crewPosition);
@@ -816,10 +1061,10 @@ public class EventService {
 
         int skillMasteriesEarnedChange = newCrewState.getSkillMasteriesEarned() - lastCrewState.getSkillMasteriesEarned();
         if (skillMasteriesEarnedChange != 0){
-            StatEvent event = new StatEvent(
+            CrewStatEvent event = new CrewStatEvent(
+                    jump,
                     Constants.Stats.SKILL_MASTERIES_EARNED,
-                    skillMasteriesEarnedChange,
-                    jump
+                    skillMasteriesEarnedChange
             );
             event.setDisplayText(String.format("%s - %s: %s", newCrewState.getName(), Constants.Stats.SKILL_MASTERIES_EARNED, newCrewState.getSkillMasteriesEarned()));
             event.setCrewPosition(crewPosition);
@@ -830,10 +1075,10 @@ public class EventService {
         // Skill Value Change
         int pilotSkillChange = newCrewState.getPilotSkill() - lastCrewState.getPilotSkill();
         if (pilotSkillChange != 0){
-            SkillEvent event = new SkillEvent(
+            CrewSkillEvent event = new CrewSkillEvent(
+                    jump,
                     Constants.Skill.PILOT,
-                    pilotSkillChange,
-                    jump
+                    pilotSkillChange
             );
             event.setDisplayText(String.format("%s - %s Skill: %s", newCrewState.getName(), Constants.Skill.PILOT, newCrewState.getPilotSkill()));
             event.setCrewPosition(crewPosition);
@@ -842,10 +1087,10 @@ public class EventService {
 
         int engineSkillChange = newCrewState.getEngineSkill() - lastCrewState.getEngineSkill();
         if (engineSkillChange != 0){
-            SkillEvent event = new SkillEvent(
+            CrewSkillEvent event = new CrewSkillEvent(
+                    jump,
                     Constants.Skill.ENGINE,
-                    engineSkillChange,
-                    jump
+                    engineSkillChange
             );
             event.setDisplayText(String.format("%s - %s Skill: %s", newCrewState.getName(), Constants.Skill.ENGINE, newCrewState.getEngineSkill()));
             event.setCrewPosition(crewPosition);
@@ -854,10 +1099,10 @@ public class EventService {
 
         int shieldSkillChange = newCrewState.getShieldSkill() - lastCrewState.getShieldSkill();
         if (shieldSkillChange != 0){
-            SkillEvent event = new SkillEvent(
+            CrewSkillEvent event = new CrewSkillEvent(
+                    jump,
                     Constants.Skill.SHIELD,
-                    shieldSkillChange,
-                    jump
+                    shieldSkillChange
             );
             event.setDisplayText(String.format("%s - %s Skill: %s", newCrewState.getName(), Constants.Skill.SHIELD, newCrewState.getShieldSkill()));
             event.setCrewPosition(crewPosition);
@@ -866,10 +1111,10 @@ public class EventService {
 
         int weaponSkillChange = newCrewState.getWeaponSkill() - lastCrewState.getWeaponSkill();
         if (weaponSkillChange != 0){
-            SkillEvent event = new SkillEvent(
+            CrewSkillEvent event = new CrewSkillEvent(
+                    jump,
                     Constants.Skill.WEAPON,
-                    weaponSkillChange,
-                    jump
+                    weaponSkillChange
             );
             event.setDisplayText(String.format("%s - %s Skill: %s", newCrewState.getName(), Constants.Skill.WEAPON, newCrewState.getWeaponSkill()));
             event.setCrewPosition(crewPosition);
@@ -878,10 +1123,10 @@ public class EventService {
 
         int repairSkillChange = newCrewState.getRepairSkill() - lastCrewState.getRepairSkill();
         if (repairSkillChange != 0){
-            SkillEvent event = new SkillEvent(
+            CrewSkillEvent event = new CrewSkillEvent(
+                    jump,
                     Constants.Skill.REPAIR,
-                    repairSkillChange,
-                    jump
+                    repairSkillChange
             );
             event.setDisplayText(String.format("%s - %s Skill: %s", newCrewState.getName(), Constants.Skill.REPAIR, newCrewState.getRepairSkill()));
             event.setCrewPosition(crewPosition);
@@ -890,10 +1135,10 @@ public class EventService {
 
         int combatSkillChange = newCrewState.getCombatSkill() - lastCrewState.getCombatSkill();
         if (combatSkillChange != 0){
-            SkillEvent event = new SkillEvent(
+            CrewSkillEvent event = new CrewSkillEvent(
+                    jump,
                     Constants.Skill.COMBAT,
-                    combatSkillChange,
-                    jump
+                    combatSkillChange
             );
             event.setDisplayText(String.format("%s - %s Skill: %s", newCrewState.getName(), Constants.Skill.COMBAT, newCrewState.getCombatSkill()));
             event.setCrewPosition(crewPosition);
@@ -904,10 +1149,10 @@ public class EventService {
         // Skill Mastery Change
         if (lastCrewState.getPilotMasteryOne() != newCrewState.getPilotMasteryOne()){
             MasteryEvent event = new MasteryEvent(
+                    jump,
                     Constants.Skill.PILOT,
                     1,
-                    newCrewState.getPilotMasteryOne(),
-                    jump
+                    newCrewState.getPilotMasteryOne()
             );
             event.setDisplayText(String.format("%s - %s Mastery Level %s", newCrewState.getName(), Constants.Skill.PILOT, 1));
             event.setCrewPosition(crewPosition);
@@ -916,10 +1161,10 @@ public class EventService {
 
         if (lastCrewState.getPilotMasteryTwo() != newCrewState.getPilotMasteryTwo()){
             MasteryEvent event = new MasteryEvent(
+                    jump,
                     Constants.Skill.PILOT,
                     2,
-                    newCrewState.getPilotMasteryTwo(),
-                    jump
+                    newCrewState.getPilotMasteryTwo()
             );
             event.setDisplayText(String.format("%s - %s Mastery Level %s", newCrewState.getName(), Constants.Skill.PILOT, 2));
             event.setCrewPosition(crewPosition);
@@ -928,10 +1173,10 @@ public class EventService {
 
         if (lastCrewState.getEngineMasteryOne() != newCrewState.getEngineMasteryOne()){
             MasteryEvent event = new MasteryEvent(
+                    jump,
                     Constants.Skill.ENGINE,
                     1,
-                    newCrewState.getEngineMasteryOne(),
-                    jump
+                    newCrewState.getEngineMasteryOne()
             );
             event.setDisplayText(String.format("%s - %s Mastery Level %s", newCrewState.getName(), Constants.Skill.ENGINE, 1));
             event.setCrewPosition(crewPosition);
@@ -940,10 +1185,10 @@ public class EventService {
 
         if (lastCrewState.getEngineMasteryTwo() != newCrewState.getEngineMasteryTwo()){
             MasteryEvent event = new MasteryEvent(
+                    jump,
                     Constants.Skill.ENGINE,
                     2,
-                    newCrewState.getEngineMasteryTwo(),
-                    jump
+                    newCrewState.getEngineMasteryTwo()
             );
             event.setDisplayText(String.format("%s - %s Mastery Level %s", newCrewState.getName(), Constants.Skill.ENGINE, 2));
             event.setCrewPosition(crewPosition);
@@ -952,10 +1197,10 @@ public class EventService {
 
         if (lastCrewState.getShieldMasteryOne() != newCrewState.getShieldMasteryOne()){
             MasteryEvent event = new MasteryEvent(
+                    jump,
                     Constants.Skill.SHIELD,
                     1,
-                    newCrewState.getShieldMasteryOne(),
-                    jump
+                    newCrewState.getShieldMasteryOne()
             );
             event.setDisplayText(String.format("%s - %s Mastery Level %s", newCrewState.getName(), Constants.Skill.SHIELD, 1));
             event.setCrewPosition(crewPosition);
@@ -964,10 +1209,10 @@ public class EventService {
 
         if (lastCrewState.getShieldMasteryTwo() != newCrewState.getShieldMasteryTwo()){
             MasteryEvent event = new MasteryEvent(
+                    jump,
                     Constants.Skill.SHIELD,
                     2,
-                    newCrewState.getShieldMasteryTwo(),
-                    jump
+                    newCrewState.getShieldMasteryTwo()
             );
             event.setDisplayText(String.format("%s - %s Mastery Level %s", newCrewState.getName(), Constants.Skill.SHIELD, 2));
             event.setCrewPosition(crewPosition);
@@ -976,10 +1221,10 @@ public class EventService {
 
         if (lastCrewState.getWeaponMasteryOne() != newCrewState.getWeaponMasteryOne()){
             MasteryEvent event = new MasteryEvent(
+                    jump,
                     Constants.Skill.WEAPON,
                     1,
-                    newCrewState.getWeaponMasteryOne(),
-                    jump
+                    newCrewState.getWeaponMasteryOne()
             );
             event.setDisplayText(String.format("%s - %s Mastery Level %s", newCrewState.getName(), Constants.Skill.WEAPON, 1));
             event.setCrewPosition(crewPosition);
@@ -988,10 +1233,10 @@ public class EventService {
 
         if (lastCrewState.getWeaponMasteryTwo() != newCrewState.getWeaponMasteryTwo()){
             MasteryEvent event = new MasteryEvent(
+                    jump,
                     Constants.Skill.WEAPON,
                     2,
-                    newCrewState.getWeaponMasteryTwo(),
-                    jump
+                    newCrewState.getWeaponMasteryTwo()
             );
             event.setDisplayText(String.format("%s - %s Mastery Level %s", newCrewState.getName(), Constants.Skill.WEAPON, 2));
             event.setCrewPosition(crewPosition);
@@ -1000,10 +1245,10 @@ public class EventService {
 
         if (lastCrewState.getRepairMasteryOne() != newCrewState.getRepairMasteryOne()){
             MasteryEvent event = new MasteryEvent(
+                    jump,
                     Constants.Skill.REPAIR,
                     1,
-                    newCrewState.getRepairMasteryOne(),
-                    jump
+                    newCrewState.getRepairMasteryOne()
             );
             event.setDisplayText(String.format("%s - %s Mastery Level %s", newCrewState.getName(), Constants.Skill.REPAIR, 1));
             event.setCrewPosition(crewPosition);
@@ -1012,10 +1257,10 @@ public class EventService {
 
         if (lastCrewState.getRepairMasteryTwo() != newCrewState.getRepairMasteryTwo()){
             MasteryEvent event = new MasteryEvent(
+                    jump,
                     Constants.Skill.REPAIR,
                     2,
-                    newCrewState.getRepairMasteryTwo(),
-                    jump
+                    newCrewState.getRepairMasteryTwo()
             );
             event.setDisplayText(String.format("%s - %s Mastery Level %s", newCrewState.getName(), Constants.Skill.REPAIR, 2));
             event.setCrewPosition(crewPosition);
@@ -1024,10 +1269,10 @@ public class EventService {
 
         if (lastCrewState.getCombatMasteryOne() != newCrewState.getCombatMasteryOne()){
             MasteryEvent event = new MasteryEvent(
+                    jump,
                     Constants.Skill.COMBAT,
                     1,
-                    newCrewState.getCombatMasteryOne(),
-                    jump
+                    newCrewState.getCombatMasteryOne()
             );
             event.setDisplayText(String.format("%s - %s Mastery Level %s", newCrewState.getName(), Constants.Skill.COMBAT, 1));
             event.setCrewPosition(crewPosition);
@@ -1036,10 +1281,10 @@ public class EventService {
 
         if (lastCrewState.getCombatMasteryTwo() != newCrewState.getCombatMasteryTwo()){
             MasteryEvent event = new MasteryEvent(
+                    jump,
                     Constants.Skill.COMBAT,
                     2,
-                    newCrewState.getCombatMasteryTwo(),
-                    jump
+                    newCrewState.getCombatMasteryTwo()
             );
             event.setDisplayText(String.format("%s - %s Mastery Level %s", newCrewState.getName(), Constants.Skill.COMBAT, 2));
             event.setCrewPosition(crewPosition);
@@ -1049,58 +1294,58 @@ public class EventService {
         return events;
     }
 
-    private void applyEventToCrew(Crew crew, Event event){
-        switch (event.getEventType()){
-            // we ignore Name Events because those are always first
-            case STAT -> {
-                StatEvent se = (StatEvent) event;
-                String statString = GausmanUtil.convertStatToAttributename(se.getStat());
-                int oldValue = (int) getValueInCrewByAttributename(crew, statString);
-                setValueInCrewByAttributename(crew, statString,oldValue + event.getAmount());
-            }
-            case SKILL -> {
-                SkillEvent se = (SkillEvent) event;
-                String skillString = GausmanUtil.convertSkillToAttributename(se.getSkill());
-                int oldValue = (int) getValueInCrewByAttributename(crew, skillString);
-                setValueInCrewByAttributename(crew, skillString,oldValue + event.getAmount());
-            }
-            case MASTERY -> {
-                MasteryEvent me = (MasteryEvent) event;
-                String masteryString = GausmanUtil.convertMasteryToAttributename(me.getMastery(), ((MasteryEvent) event).getLevel());
-                setValueInCrewByAttributename(crew, masteryString, me.getNewValue());
-            }
-            default -> System.out.println("ApplyEventsToCrew was called with a wrong event Type");
-        }
 
+//    private void applyEventToCrew(Crew crew, Event event){
+//        switch (event.getEventType()){
+//            // we ignore Name Events because those are always first
+//            case STAT -> {
+//                StatEvent se = (StatEvent) event;
+//                String statString = GausmanUtil.convertStatToAttributename(se.getStat());
+//                int oldValue = (int) getValueInCrewByAttributename(crew, statString);
+//                setValueInCrewByAttributename(crew, statString,oldValue + event.getAmount());
+//            }
+//            case SKILL -> {
+//                SkillEvent se = (SkillEvent) event;
+//                String skillString = GausmanUtil.convertSkillToAttributename(se.getSkill());
+//                int oldValue = (int) getValueInCrewByAttributename(crew, skillString);
+//                setValueInCrewByAttributename(crew, skillString,oldValue + event.getAmount());
+//            }
+//            case MASTERY -> {
+//                MasteryEvent me = (MasteryEvent) event;
+//                String masteryString = GausmanUtil.convertMasteryToAttributename(me.getMastery(), ((MasteryEvent) event).getLevel());
+//                setValueInCrewByAttributename(crew, masteryString, me.getNewValue());
+//            }
+//            default -> System.out.println("ApplyEventsToCrew was called with a wrong event Type");
+//        }
+//
+//    }
 
-    }
-
-    private void applyEventsToCrew(Crew crew, List<Event> events){
-        for (Event event : events){
-            switch (event.getEventType()){
-                // we ignore Name Events because those are always first
-                case STAT -> {
-                    StatEvent se = (StatEvent) event;
-                    String statString = GausmanUtil.convertStatToAttributename(se.getStat());
-                    int oldValue = (int) getValueInCrewByAttributename(crew, statString);
-                    setValueInCrewByAttributename(crew, statString,oldValue + event.getAmount());
-                }
-                case SKILL -> {
-                    SkillEvent se = (SkillEvent) event;
-                    String skillString = GausmanUtil.convertSkillToAttributename(se.getSkill());
-                    int oldValue = (int) getValueInCrewByAttributename(crew, skillString);
-                    setValueInCrewByAttributename(crew, skillString,oldValue + event.getAmount());
-                }
-                case MASTERY -> {
-                    MasteryEvent me = (MasteryEvent) event;
-                    String masteryString = GausmanUtil.convertMasteryToAttributename(me.getMastery(), ((MasteryEvent) event).getLevel());
-                    setValueInCrewByAttributename(crew, masteryString, me.getNewValue());
-                }
-                default -> System.out.println("ApplyEventsToCrew was called with a wrong event Type");
-            }
-        }
-
-    }
+//    private void applyEventsToCrew(Crew crew, List<Event> events){
+//        for (Event event : events){
+//            switch (event.getEventType()){
+//                // we ignore Name Events because those are always first
+//                case STAT -> {
+//                    StatEvent se = (StatEvent) event;
+//                    String statString = GausmanUtil.convertStatToAttributename(se.getStat());
+//                    int oldValue = (int) getValueInCrewByAttributename(crew, statString);
+//                    setValueInCrewByAttributename(crew, statString,oldValue + event.getAmount());
+//                }
+//                case SKILL -> {
+//                    SkillEvent se = (SkillEvent) event;
+//                    String skillString = GausmanUtil.convertSkillToAttributename(se.getSkill());
+//                    int oldValue = (int) getValueInCrewByAttributename(crew, skillString);
+//                    setValueInCrewByAttributename(crew, skillString,oldValue + event.getAmount());
+//                }
+//                case MASTERY -> {
+//                    MasteryEvent me = (MasteryEvent) event;
+//                    String masteryString = GausmanUtil.convertMasteryToAttributename(me.getMastery(), ((MasteryEvent) event).getLevel());
+//                    setValueInCrewByAttributename(crew, masteryString, me.getNewValue());
+//                }
+//                default -> System.out.println("ApplyEventsToCrew was called with a wrong event Type");
+//            }
+//        }
+//
+//    }
 
     private Object getValueInCrewByAttributename(Crew crew, String attributename){
         try {

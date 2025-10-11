@@ -4,6 +4,7 @@ import net.gausman.ftl.model.change.Event;
 import net.gausman.ftl.util.GausmanUtil;
 
 import javax.swing.table.AbstractTableModel;
+import java.lang.reflect.Method;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.NavigableMap;
@@ -11,9 +12,12 @@ import java.util.TreeMap;
 
 public class EventTableModel extends AbstractTableModel {
     private NavigableMap<Integer, Event> events = new TreeMap<>();
-    private final String[] columnNames = {"Time", "Sec", "BId", "Jump", "Expl", "Type", "Category", "Text", "Amt", "Scrap",  "Value"};
+    private final String[] columnNames = {"Time", "S", "J", "Type", "Resources", "Tags", "Text"};
     private Instant startTime;
 
+    public Integer getNewestEventId(){
+        return events.firstKey();
+    }
 
     public void setEvents(NavigableMap<Integer, Event> newEvents) {
         this.events = newEvents.descendingMap();
@@ -34,10 +38,16 @@ public class EventTableModel extends AbstractTableModel {
         return columnNames.length;
     }
 
+    public Event getEventById(int eventId){
+        return events.get(eventId);
+    }
+
+
     public Event getRowEvent(int rowIndex){
         int displayIndex = events.size() - 1 - rowIndex;
 
-        Event e = events.get(rowIndex);
+        Event e1 = events.get(rowIndex);
+        Event e2 = events.get(displayIndex);
         return events.get(displayIndex);
     }
 
@@ -52,15 +62,11 @@ public class EventTableModel extends AbstractTableModel {
         return switch (columnIndex){
             case 0 -> GausmanUtil.formatDuration(Duration.between(startTime, event.getTs()));
             case 1 -> event.getJump().getSector().getId();
-            case 2 -> event.getJump().getCurrentBeaconId();
-            case 3 -> event.getJump().getId();
-            case 4 -> event.getJump().getTotalBeaconsExplored();
-            case 5 -> event.getEventType();
-            case 6 -> event.getItemType();
-            case 7 -> event.getDisplayText();
-            case 8 -> event.getAmount();
-            case 9 -> event.getScrap();
-            case 10 -> event.getScrapChange();
+            case 2 -> event.getJump().getId();
+            case 3 -> event.getEventDetailType();
+            case 4 -> event.getResourceEffects();
+            case 5 -> event.getTags();
+            case 6 -> event.getDisplayText();
 
             default -> null;
         };
@@ -71,4 +77,23 @@ public class EventTableModel extends AbstractTableModel {
         return columnNames[column];
     }
 
+    private int tryGetAmount(Object obj) {
+        if (obj == null) return 0;
+
+        try {
+            Method method = obj.getClass().getMethod("getAmount");
+            Object result = method.invoke(obj);
+
+            if (result instanceof Number) {
+                return ((Number) result).intValue();
+            }
+        } catch (NoSuchMethodException e) {
+            // Method doesn't exist, return 0
+        } catch (Exception e) {
+            // Other exceptions like IllegalAccessException, InvocationTargetException
+            e.printStackTrace();
+        }
+
+        return 0;
+    }
 }

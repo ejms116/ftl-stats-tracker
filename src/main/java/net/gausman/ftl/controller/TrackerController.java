@@ -1,10 +1,8 @@
 package net.gausman.ftl.controller;
 
-import net.blerf.ftl.core.EditorConfig;
 import net.blerf.ftl.parser.DataManager;
 import net.blerf.ftl.parser.MysteryBytes;
 import net.blerf.ftl.parser.SavedGameParser;
-import net.gausman.ftl.FTLStatsTracker;
 import net.gausman.ftl.model.RunUpdateResponse;
 import net.gausman.ftl.model.ShipStatusModel;
 import net.gausman.ftl.model.change.Event;
@@ -68,7 +66,7 @@ public class TrackerController {
         eventTablePanel = new EventTablePanel(eventTableModel);
         view.setEventTablePanel(eventTablePanel);
 
-
+        openProgramOnSecondMonitorForTesting();
 
         view.setVisible(true);
 
@@ -130,6 +128,12 @@ public class TrackerController {
             }
         });
 
+        view.getEventTablePanel().setJumpToNewestEventButton(e -> {
+            selectNewestRow();
+//            eventTablePanel.showOrHideJumpToNewestEventButton(false);
+//            updateUI(eventTableModel.getNewestEventId());
+        });
+
 
         JTable table = eventTablePanel.getTable();
         table.getSelectionModel().addListSelectionListener(e -> {
@@ -138,11 +142,39 @@ public class TrackerController {
                 if (selected != -1){
                     int modelRow = table.convertRowIndexToModel(selected);
                     int eventId = eventTableModel.getRowEvent(modelRow).getId();
+                    eventTablePanel.showOrHideJumpToNewestEventButton(!eventTableModel.getNewestEventId().equals(eventId));
                     updateUI(eventId);
                 }
             }
         });
+    }
 
+    private void selectNewestRow(){
+        JTable table = eventTablePanel.getTable();
+//        if (table.getRowCount() == 0){
+//            return;
+//        }
+        int newestModelRow = 0; // eventTableModel.getNewestEventId();
+        int viewRow = -1;
+
+        try {
+            viewRow = table.convertRowIndexToView(newestModelRow);
+        } catch (IndexOutOfBoundsException ignored){
+
+        }
+
+        eventTablePanel.showOrHideJumpToNewestEventButton(false);
+        updateUI(eventTableModel.getNewestEventId());
+
+        if (viewRow > -1){
+            table.setRowSelectionInterval(viewRow, viewRow);
+        } else {
+            table.clearSelection();
+        }
+
+        if (table.getRowCount() > 0){
+            table.scrollRectToVisible(table.getCellRect(0,0,true));
+        }
     }
 
     private void initUI(){
@@ -160,7 +192,7 @@ public class TrackerController {
     private void updateUI(int eventId){
         ShipStatusModel model = runService.getStatusAtId(eventId);
         view.getShipStatusPanel().update(model);
-//        view.getEventTablePanel().updateJumpInfoPanel(eventTableModel.getRowEvent(selected).getJump()); ????
+        view.getEventTablePanel().updateJumpInfoPanel(eventTableModel.getEventById(eventId).getJump());
         view.getChartsPanel().updateDatasets(model.getSectorMetrics());
     }
 
@@ -227,7 +259,8 @@ public class TrackerController {
             eventTableModel.fireTableDataChanged(); // optimize
             SwingUtilities.invokeLater(() -> {
                 if (eventTablePanel.getTable().getRowCount() > 0) {
-                    eventTablePanel.getTable().changeSelection(0, 0, false, false);
+//                    eventTablePanel.getTable().changeSelection(0, 0, false, false);
+                    selectNewestRow();
                 }
             });
             log.info("Game state read successfully.");
@@ -285,7 +318,7 @@ public class TrackerController {
 
 
     private void testSaveFileReading(){
-        File folder = new File("saves\\test");
+        File folder = new File("saves\\test-holo-engi-a");
 
         if (!folder.isDirectory()) {
             System.out.println("Not a directory.");
@@ -299,7 +332,8 @@ public class TrackerController {
             return;
         }
 
-        Arrays.sort(files, Comparator.comparingInt(file -> GausmanUtil.extractLeadingNumber(file.getName())));
+//        Arrays.sort(files, Comparator.comparingInt(file -> GausmanUtil.extractLeadingNumber(file.getName())));
+        Arrays.sort(files, Comparator.comparingInt(file -> GausmanUtil.extractNumberAfterHyphen(file.getName())));
 
         for (File file : files) {
             long lastModified = file.lastModified();

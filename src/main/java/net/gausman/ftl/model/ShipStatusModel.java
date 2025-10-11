@@ -3,14 +3,11 @@ package net.gausman.ftl.model;
 import net.blerf.ftl.parser.SavedGameParser;
 import net.blerf.ftl.parser.SavedGameParser.SystemType;
 import net.gausman.ftl.model.change.*;
-import net.gausman.ftl.model.change.crew.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
 import java.util.*;
-
-import static net.gausman.ftl.util.GausmanUtil.*;
 
 public class ShipStatusModel {
     private static final Logger log = LoggerFactory.getLogger(ShipStatusModel.class);
@@ -20,7 +17,7 @@ public class ShipStatusModel {
 
     private final Map<SystemType, Integer> systems = new EnumMap<>(SystemType.class);
 
-    private final Map<Constants.Reactor, Integer> reactor = new EnumMap<>(Constants.Reactor.class);
+    private int reactor = 0;
     private final Map<Constants.Resource, Integer> resources = new EnumMap<>(Constants.Resource.class);
 
     private final List<Item> itemList;
@@ -50,9 +47,6 @@ public class ShipStatusModel {
             systems.put(type, 0);
         }
 
-        for (Constants.Reactor r : Constants.Reactor.values()){
-            reactor.put(r, 0);
-        }
 
         itemList = new ArrayList<>();
         crewList = new ArrayList<>();
@@ -68,8 +62,7 @@ public class ShipStatusModel {
 
         resources.putAll(status.resources);
         systems.putAll(status.systems);
-        reactor.putAll(status.reactor);
-
+        reactor = status.reactor;
 
         itemList = new ArrayList<>(status.itemList.stream().map(Item::new).toList());
         crewList = new ArrayList<>(status.crewList.stream().map(Crew::new).toList());
@@ -84,279 +77,9 @@ public class ShipStatusModel {
 //        innerMap.put(origin, innerMap.get(origin) + amount);
 //    }
 
-    public void apply(Event event, boolean apply){
-        int mult = apply ? 1 : -1;
 
-        // Update current scrap
-        resources.compute(Constants.Resource.SCRAP, (k,v) -> v + mult * event.getScrapChange());
-
-        switch (event.getItemType()){
-            case GENERAL -> {
-                GeneralEvent ge = (GeneralEvent) event;
-
-                switch (ge.getGeneral()){
-                    case SHIP_NAME, SHIP_BLUEPRINT, DIFFICULTY -> {
-                        if (apply){
-                            generalInfoString.put(ge.getGeneral(), ge.getText());
-                        }
-                    }
-                    case BEACONS_EXPLORED, SHIPS_DESTROYED, CREW_HIRED -> {
-                        generalInfoInteger.compute(ge.getGeneral(), (k,v) -> v + mult * event.getAmount());
-                    }
-                    case SCRAP_COLLECTED -> {
-                        if (!event.getEventType().equals(Constants.EventType.START)){
-                            generalInfoInteger.compute(ge.getGeneral(), (k,v) -> v + mult * event.getScrap());
-                            sectorMetrics.update(event.getJump().getSector(), Constants.ScrapOrigin.NORMAL, mult*event.getScrap());
-                        }
-                    }
-                }
-            }
-
-            case SYSTEM -> {
-                SystemType type = SystemType.findById(event.getText());
-                systems.compute(type, (k,v) -> v + mult * event.getAmount());
-                if (!event.getEventType().equals(Constants.EventType.START)){
-                    sectorMetrics.update(
-                            event.getJump().getSector(),
-                            event.getEventType().equals(Constants.EventType.BUY) ? Constants.ScrapUsedCategory.SYSTEM_BUY : Constants.ScrapUsedCategory.SYSTEM_UPGRADE,
-                            mult*event.getScrap());
-                }
-
-            }
-
-            case RESOURCE -> {
-                Constants.Resource resource = Constants.Resource.valueOf(event.getText());
-                if (resources.containsKey(resource)){
-                    switch (event.getEventType()){
-                        case START, BUY, REWARD -> resources.compute(resource, (k,v) -> v + mult * event.getAmount());
-                        case USE, DAMAGE, SELL -> resources.compute(resource, (k,v) -> v - mult * event.getAmount());
-                        default -> log.info("Resource Event with Type not implemented: " + event.getEventType());
-                        // TODO implement Trading for events
-                    }
-                }else {
-                    log.info("Resource not found");
-                }
-                if (event.getEventType().equals(Constants.EventType.BUY)){
-                    Constants.ScrapUsedCategory cat = switch (resource) {
-                        case FUEL    -> Constants.ScrapUsedCategory.FUEL;
-                        case MISSILE -> Constants.ScrapUsedCategory.MISSILES;
-                        case DRONE   -> Constants.ScrapUsedCategory.DRONE_PARTS;
-                        case HULL ->  Constants.ScrapUsedCategory.REPAIR;
-                        default      -> null;
-                    };
-
-                    if (cat == null) {
-                        break;
-                    }
-
-                    sectorMetrics.update(
-                            event.getJump().getSector(),
-                            cat,
-                            mult*event.getScrap()
-                    );
-
-                }
-
-            }
-
-            case REACTOR -> {
-                Constants.Reactor r = Constants.Reactor.valueOf(event.getText());
-                switch (event.getEventType()){
-                    case START, UPGRADE -> reactor.compute(r, (k,v) -> v + mult * event.getAmount());
-                    default -> log.info("Reactor Event with Type not implemented: " + event.getEventType());
-                }
-                sectorMetrics.update(
-                        event.getJump().getSector(),
-                        Constants.ScrapUsedCategory.REACTOR,
-                        mult*event.getScrap()
-                );
-            }
-
-            case WEAPON, DRONE, AUGMENT -> {
-                switch (event.getEventType()){
-                    case BUY, START, REWARD -> {
-                        if (apply){
-                            itemList.add(new Item(event.getText(), event.getItemType(), event.getEventType()));
-                        } else {
-                            boolean removed = removeMatchingItem(itemList, event.getText(), event.getItemType(), event.getEventType(), Constants.ItemState.INVENTORY);
-                            if (!removed){
-                                log.info("Item could not be removed from list.");
-                            }
-                        }
-                        if (event.getEventType().equals(Constants.EventType.REWARD)){
-                            sectorMetrics.update(event.getJump().getSector(), Constants.ScrapOrigin.FREE, mult*event.getScrap()/2);
-                        }
-                        if (!event.getEventType().equals(Constants.EventType.BUY)){
-                            break;
-                        }
-                        Constants.ScrapUsedCategory cat = switch (event.getItemType()) {
-                            case WEAPON    -> Constants.ScrapUsedCategory.WEAPONS;
-                            case DRONE-> Constants.ScrapUsedCategory.DRONES;
-                            case AUGMENT  -> Constants.ScrapUsedCategory.AUGMENTS;
-                            default      -> null;
-                        };
-
-                        if (cat == null){
-                            break;
-                        }
-                        sectorMetrics.update(
-                                event.getJump().getSector(),
-                                cat,
-                                mult*event.getScrap()
-                        );
-                    }
-                    case SELL, DISCARD -> {
-                        boolean stateChanged;
-                        if (apply){
-                            stateChanged = setStateMatchingItem(
-                                    itemList,
-                                    event.getText(),
-                                    event.getItemType(),
-                                    event.getEventType(),
-                                    Constants.ItemState.INVENTORY,
-                                    convertEventTypeToItemState(event.getEventType()));
-
-                        } else {
-                            stateChanged = setStateMatchingItem(
-                                    itemList,
-                                    event.getText(),
-                                    event.getItemType(),
-                                    event.getEventType(),
-                                    convertEventTypeToItemState(event.getEventType()),
-                                    Constants.ItemState.INVENTORY);
-                        }
-                        if (!stateChanged){
-                            log.info("Item state could not be changed.");
-                        }
-                    }
-                    default -> log.info("Item Event with Type not implemented: " + event.getEventType());
-                }
-
-            }
-
-            case CREW -> {
-                // the crew in the Event is always the Crew after the event is applied
-                // (except for EventType DISCARD, there we use the state before because the Crew is DEAD
-                CrewEvent ce = (CrewEvent) event;
-                switch (event.getEventType()){
-                    case START, BUY, REWARD -> {
-                        if (!(event instanceof NewCrewEvent nce)){
-                            log.info("START, BUY, REWARD Event without Crew");
-                            return;
-                        }
-                        if (apply){
-                            crewList.add(new Crew(nce.getCrew()));
-                        } else {
-                            crewList.remove(nce.getCrew());
-                        }
-
-                        if (!event.getEventType().equals(Constants.EventType.BUY)){
-                            break;
-                        }
-
-                        sectorMetrics.update(
-                                event.getJump().getSector(),
-                                Constants.ScrapUsedCategory.CREW,
-                                mult*event.getScrap()
-                        );
-                    }
-
-                    case DISCARD -> {
-                        if (apply){
-                            Optional<Crew> removedCrew = removeCrewIfPresent(ce.getCrewPosition(), crewList);
-                            removedCrew.ifPresentOrElse(
-                                    crew -> {
-                                        crew.setState(Constants.CrewAliveOrDead.DEAD);
-                                        deadCrewList.add(crew);
-                                    },
-                                    () -> log.info("Can't find crew to DISCARD.")
-                            );
-
-                        } else {
-                            Optional<Crew> removedDeadCrew = removeCrewIfPresent(deadCrewList.size() - 1, deadCrewList);
-                            removedDeadCrew.ifPresentOrElse(
-                                    crew -> {
-                                        crew.setState(Constants.CrewAliveOrDead.ALIVE);
-                                        crewList.add(ce.getCrewPosition(), crew);
-                                    },
-                                    () -> log.info("Can't find DISCARDED Crew to revert.")
-                            );
-
-                        }
-                    }
-
-                    case NAME -> {
-                        if (!(event instanceof CrewRenameEvent crewRenameEvent)){
-                            log.info("NAME Event issue");
-                            return;
-                        }
-                        Crew crewToChange = crewList.get(crewRenameEvent.getCrewPosition());
-                        if (apply){
-                            crewToChange.setName(crewRenameEvent.getNewName());
-                        } else {
-                            crewToChange.setName(crewRenameEvent.getOldName());
-                        }
-                    }
-
-                    case STAT -> {
-                        if (!(event instanceof StatEvent statEvent)){
-                            log.info("STAT Event issue");
-                            return;
-                        }
-
-                        String statString = convertStatToAttributename(statEvent.getStat());
-                        Crew crewToChange = crewList.get(statEvent.getCrewPosition());
-                        int attributeValueBefore = (int) getValueInCrewByAttributename(crewToChange, statString);
-
-                        if (apply){
-                            setValueInCrewByAttributename(crewToChange, statString, attributeValueBefore + statEvent.getAmount());
-                        } else {
-                            setValueInCrewByAttributename(crewToChange, statString, attributeValueBefore);
-                        }
-
-                    }
-
-                    case SKILL -> {
-                        if (!(event instanceof SkillEvent skillEvent)){
-                            log.info("SKILL Event issue");
-                            return;
-                        }
-
-                        String skillString = convertSkillToAttributename(skillEvent.getSkill());
-                        Crew crewToChange = crewList.get(skillEvent.getCrewPosition());
-                        int attributeValueBefore = (int) getValueInCrewByAttributename(crewToChange, skillString);
-
-                        if (apply){
-                            setValueInCrewByAttributename(crewToChange, skillString, attributeValueBefore + skillEvent.getAmount());
-                        } else {
-                            setValueInCrewByAttributename(crewToChange, skillString, attributeValueBefore);
-                        }
-                    }
-
-                    case MASTERY -> {
-                        if (!(event instanceof MasteryEvent masteryEvent)){
-                            log.info("MASTERY Event issue");
-                            return;
-                        }
-
-                        String masteryString = convertMasteryToAttributename(masteryEvent.getMastery(), masteryEvent.getLevel());
-                        Crew crewToChange = crewList.get(masteryEvent.getCrewPosition());
-
-                        if (apply){
-                            setValueInCrewByAttributename(crewToChange, masteryString, masteryEvent.getNewValue());
-                        } else {
-                            setValueInCrewByAttributename(crewToChange, masteryString, !masteryEvent.getNewValue());
-                        }
-                    }
-
-                    default -> log.info("Crew Event with Type not implemented: " + event.getEventType());
-
-                }
-
-            }
-
-            default -> log.info("Apply not implemented for ItemType: "+ event.getItemType());
-        }
+    public void apply(Event event, boolean apply) {
+        event.applyEventToShipStatusModel(this, apply);
     }
 
     public Optional<Crew> removeCrewIfPresent(int index, List<Crew> list) {
@@ -366,7 +89,7 @@ public class ShipStatusModel {
         return Optional.of(list.remove(index));
     }
 
-    private Object getValueInCrewByAttributename(Crew crew, String attributename){
+    public Object getValueInCrewByAttributename(Crew crew, String attributename){
         try {
             Field field = crew.getClass().getDeclaredField(attributename);
             field.setAccessible(true);
@@ -376,7 +99,7 @@ public class ShipStatusModel {
         }
     }
 
-    private void setValueInCrewByAttributename(Crew crew, String attributename, Object newValue){
+    public void setValueInCrewByAttributename(Crew crew, String attributename, Object newValue){
         try {
             Field field = crew.getClass().getDeclaredField(attributename);
             field.setAccessible(true);
@@ -386,15 +109,15 @@ public class ShipStatusModel {
         }
     }
 
-    private Constants.ItemState convertEventTypeToItemState(Constants.EventType eventType){
-        return switch (eventType){
+    public Constants.ItemState convertEventTypeToItemState(Constants.EventTag tag){
+        return switch (tag){
             case SELL -> Constants.ItemState.SOLD;
             case DISCARD -> Constants.ItemState.DISCARDED;
-            case REWARD, UPGRADE, BUY, START, USE, MASTERY, SKILL, STAT, NAME, DAMAGE, GENERAL -> null;
+            default -> null;
         };
     }
 
-    private boolean setStateMatchingItem(List<Item> itemList, String id, SavedGameParser.StoreItemType itemType, Constants.EventType origin, Constants.ItemState itemState, Constants.ItemState newState) {
+    public boolean setStateMatchingItem(String id, SavedGameParser.StoreItemType itemType, Constants.ItemState itemState, Constants.ItemState newState) {
         for (int i = itemList.size() - 1; i >= 0; i--) {
             Item item = itemList.get(i);
             if (item.getId().equals(id) &&
@@ -407,7 +130,7 @@ public class ShipStatusModel {
         return false;
     }
 
-    private boolean removeMatchingItem(List<Item> itemList, String id, SavedGameParser.StoreItemType itemType, Constants.EventType origin, Constants.ItemState itemState) {
+    public boolean removeMatchingItem(String id, SavedGameParser.StoreItemType itemType, Constants.ItemOrigin origin, Constants.ItemState itemState) {
         for (int i = itemList.size() - 1; i >= 0; i--) {
             Item item = itemList.get(i);
             if (item.getId().equals(id) &&
@@ -447,8 +170,12 @@ public class ShipStatusModel {
         return systems;
     }
 
-    public Map<Constants.Reactor, Integer> getReactor() {
+    public int getReactor() {
         return reactor;
+    }
+
+    public void changeReactor(int delta){
+        reactor += delta;
     }
 
     public List<Item> getItemList() {

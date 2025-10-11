@@ -42,6 +42,5 @@ build/
 ###
 target/runs/current_run.json
 runs/
-saves/
 current_run.json
 ftl-editor.cfg

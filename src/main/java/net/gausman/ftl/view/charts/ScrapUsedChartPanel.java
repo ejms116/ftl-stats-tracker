@@ -103,7 +103,7 @@ public class ScrapUsedChartPanel extends JPanel {
         return switch (category){
             case FUEL, MISSILES, DRONE_PARTS -> InternalScrapUsedCategory.RESOURCES;
             case REPAIR -> InternalScrapUsedCategory.REPAIR;
-            case SYSTEM_BUY, SYSTEM_UPGRADE, REACTOR -> InternalScrapUsedCategory.SYSTEMS;
+            case SYSTEM_BUY, REACTOR -> InternalScrapUsedCategory.SYSTEMS;
             case WEAPONS, DRONES, AUGMENTS -> InternalScrapUsedCategory.ITEMS;
             case CREW -> InternalScrapUsedCategory.CREW;
         };

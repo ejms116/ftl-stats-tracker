@@ -2,12 +2,9 @@ package net.gausman.ftl.view.shipstatus;
 
 import net.blerf.ftl.parser.SavedGameParser.SystemType;
 import net.gausman.ftl.model.*;
-import net.gausman.ftl.view.charts.HullChartPanel;
-import net.gausman.ftl.view.charts.ScrapUsedChartPanel;
-import net.gausman.ftl.view.charts.ScrapUsedPieChartPanel;
+import net.gausman.ftl.view.charts.ScrapGainedChartPanel;
 
 import javax.swing.*;
-import javax.swing.border.TitledBorder;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
@@ -32,8 +29,7 @@ public class ShipStatusPanel extends JSplitPane {
 
     private SystemTableModel systemTableModel;
 
-    private HullChartPanel hullChartPanel;
-    private ScrapUsedChartPanel scrapUsedChartPanel;
+    private ScrapGainedChartPanel scrapGainedChartPanel;
 
     private final JSplitPane statusPanel;
     private final JSplitPane sectorPanel;
@@ -53,26 +49,30 @@ public class ShipStatusPanel extends JSplitPane {
 
         statusPanel.setLeftComponent(firstCol);
         statusPanel.setRightComponent(secondCol);
+        statusPanel.setMinimumSize(new Dimension(250, 200));
 
         sectorTableModel = new SectorTableModel();
         sectorTable = new JTable(sectorTableModel);
         jScrollPaneSector = new JScrollPane(sectorTable);
         sectorPanel.setLeftComponent(jScrollPaneSector);
-        sectorPanel.setDividerLocation(200);
+        resizeColumnWidths(sectorTable, jScrollPaneSector);
+
+        sectorTable.getModel().addTableModelListener(e -> {
+            int newWidth = getPreferredTableWidth(sectorTable);
+            Dimension tablePrefSize = sectorTable.getPreferredSize();
+            tablePrefSize.width = newWidth;
+            sectorTable.setPreferredScrollableViewportSize(tablePrefSize);
+            sectorPanel.setDividerLocation(newWidth);
+            resizeColumnWidths(sectorTable, jScrollPaneSector);
+        });
 
         setTopComponent(statusPanel);
         setBottomComponent(sectorPanel);
-        setResizeWeight(0.3);
 
         // Sector Charts
-
-//        hullChartPanel = new HullChartPanel();
-        scrapUsedChartPanel = new ScrapUsedChartPanel();
+        scrapGainedChartPanel = new ScrapGainedChartPanel();
         JTabbedPane tabbedPaneSector = new JTabbedPane();
-//        tabbedPaneSector.addTab("Hull", hullChartPanel);
-//        tabbedPaneSector.addTab("Resources", new ScrapUsedPieChartPanel());
-        tabbedPaneSector.addTab("Scrap usage", scrapUsedChartPanel);
-
+        tabbedPaneSector.addTab("Scrap", scrapGainedChartPanel);
         sectorPanel.setRightComponent(tabbedPaneSector);
 
 
@@ -113,8 +113,6 @@ public class ShipStatusPanel extends JSplitPane {
         tabbedPaneSecondCol.addTab("Systems", jScrollPaneSystems);
         secondCol.add(tabbedPaneSecondCol);
 
-
-
         crewTable.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()){
                 int selected = crewTable.getSelectedRow();
@@ -147,11 +145,10 @@ public class ShipStatusPanel extends JSplitPane {
         }
 
         List<ShipSystem> shipSystems = new ArrayList<>();
-        for (Map.Entry<Constants.Reactor, Integer> entry : model.getReactor().entrySet()){
-            ShipSystem s = new ShipSystem(entry.getKey().toString(), "Reactor", "Other", false);
-            s.setLevel(entry.getValue());
-            shipSystems.add(s);
-        }
+        ShipSystem reactor = new ShipSystem("Reactor", "Reactor", "Other", false);
+        reactor.setLevel(model.getReactor());
+        shipSystems.add(reactor);
+
 
         for (Map.Entry<SystemType, Integer> entry : model.getSystems().entrySet()){
             if (entry.getValue() < 1){
@@ -172,116 +169,47 @@ public class ShipStatusPanel extends JSplitPane {
         crewTableModel.setCrewList(fullCrewList);
         sectorTableModel.setSectorMetrics(model.getSectorMetrics());
 
-        scrapUsedChartPanel.updateDataset(model.getSectorMetrics());
-//        hullChartPanel.updateDataset(model.getSectorMetrics());
-
+        scrapGainedChartPanel.updateDataset(model.getSectorMetrics());
 //        resizeColumnWidths(sectorTable, jScrollPaneSector);
     }
 
-    private JPanel createPanelBoxTable(String title, JTable table){
-        JPanel listPanel = new JPanel();
-        listPanel.setLayout(new BoxLayout(listPanel, BoxLayout.Y_AXIS));
-        JScrollPane jScrollPane = new JScrollPane(table);
+    public static int getPreferredTableWidth(JTable table) {
+        int total = 0;
+        for (int col = 0; col < table.getColumnCount(); col++) {
+            TableColumn column = table.getColumnModel().getColumn(col);
 
+            int preferred = 0;
 
-        // Add the list title as a border
-        listPanel.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(Color.GRAY),
-                title,
-                TitledBorder.LEADING,
-                TitledBorder.TOP,
-                new Font("SansSerif", Font.BOLD, 12)
-        ));
-
-        listPanel.add(jScrollPane);
-
-
-        // We wrap the panel in a panel with Flowlayout so that it shrinks...
-        JPanel flowPanel = new JPanel();
-        flowPanel.setLayout(new FlowLayout());
-        flowPanel.add(listPanel);
-
-        return flowPanel;
-    }
-
-    private JPanel createPanelBox(String title, Map<?, ShipStatusPanelRow> map){
-        JPanel listPanel = new JPanel();
-        listPanel.setLayout(new BoxLayout(listPanel, BoxLayout.Y_AXIS));
-
-
-        // Add the list title as a border
-        listPanel.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(Color.GRAY),
-                title,
-                TitledBorder.LEADING,
-                TitledBorder.TOP,
-                new Font("SansSerif", Font.BOLD, 12)
-        ));
-
-        for (ShipStatusPanelRow row : map.values()){
-            listPanel.add(row);
-        }
-
-        // We wrap the panel in a panel with Flowlayout so that it shrinks...
-        JPanel flowPanel = new JPanel();
-        flowPanel.setLayout(new FlowLayout());
-        flowPanel.add(listPanel);
-
-        return flowPanel;
-
-    }
-
-    private JPanel createSystemListPanel(List<SystemListItem> systems, String title) {
-        JPanel listPanel = new JPanel();
-        listPanel.setLayout(new BoxLayout(listPanel, BoxLayout.Y_AXIS));
-
-
-        // Add the list title as a border
-        listPanel.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(Color.GRAY),
-                title,
-                TitledBorder.LEADING,
-                TitledBorder.TOP,
-                new Font("SansSerif", Font.BOLD, 12)
-        ));
-
-        if (systems.isEmpty()) {
-            systems.add(new SystemListItem("none", 0));
-        }
-
-        for (SystemListItem systemListItem : systems) {
-            JPanel rowPanel = new JPanel();
-            rowPanel.setLayout(new BorderLayout());
-            rowPanel.setPreferredSize(new Dimension(140, 20));
-
-            JLabel systemLabel = new JLabel(systemListItem.getName());
-            systemLabel.setPreferredSize(new Dimension(120, 20));
-            JLabel levelLabel = new JLabel();
-            if (systemListItem.getLevel() > -1) {
-                levelLabel.setText(String.valueOf(systemListItem.getLevel()));
+            // Header width
+            TableCellRenderer headerRenderer = column.getHeaderRenderer();
+            if (headerRenderer == null) {
+                headerRenderer = table.getTableHeader().getDefaultRenderer();
             }
-//            levelLabel.setPreferredSize(new Dimension(20,20));
-            levelLabel.setHorizontalAlignment(SwingConstants.RIGHT);
+            Component headerComp = headerRenderer.getTableCellRendererComponent(
+                    table, column.getHeaderValue(), false, false, 0, col);
+            preferred = Math.max(preferred, headerComp.getPreferredSize().width);
 
-            rowPanel.add(systemLabel, BorderLayout.WEST);
-            rowPanel.add(levelLabel, BorderLayout.EAST);
-            listPanel.add(rowPanel);
+            // Cell width
+            for (int row = 0; row < table.getRowCount(); row++) {
+                TableCellRenderer cellRenderer = table.getCellRenderer(row, col);
+                Component comp = cellRenderer.getTableCellRendererComponent(
+                        table, table.getValueAt(row, col), false, false, row, col);
+                preferred = Math.max(preferred, comp.getPreferredSize().width);
+            }
+
+            preferred += 10; // add some margin
+            total += preferred;
         }
-
-        // We wrap the panel in a panel with Flowlayout so that it shrinks...
-        JPanel flowPanel = new JPanel();
-        flowPanel.setLayout(new FlowLayout());
-        flowPanel.add(listPanel);
-
-        return flowPanel;
+        return total + table.getIntercellSpacing().width * (table.getColumnCount() - 1);
     }
+
 
     public void resizeColumnWidths(JTable table, JScrollPane scrollPane) {
         final TableColumnModel columnModel = table.getColumnModel();
         int totalWidth = 0;
 
         for (int column = 0; column < table.getColumnCount(); column++) {
-            int width = 50; // minimum width
+            int width = 5; // minimum width
 
             // calculate max width for column
             for (int row = 0; row < table.getRowCount(); row++) {
@@ -308,12 +236,20 @@ public class ShipStatusPanel extends JSplitPane {
         int insets = table.getInsets().left + table.getInsets().right;
         int scrollWidth = totalWidth + spacing + insets;
 
-        Dimension preferred = new Dimension(scrollWidth, scrollPane.getPreferredSize().height);
-        scrollPane.setPreferredSize(preferred);
-        scrollPane.setMinimumSize(preferred);
+        int rowCount = table.getRowCount();
+        int rowHeight = table.getRowHeight();
+        int tableHeight = rowCount * rowHeight;
+
+        int headerHeight = table.getTableHeader().getPreferredSize().height;
+        Dimension prefSize = table.getPreferredSize();
+        prefSize.height = tableHeight + headerHeight;
+        table.setPreferredScrollableViewportSize(prefSize);
+
+//        Dimension preferred = new Dimension(scrollWidth, scrollPane.getPreferredSize().height);
+//        scrollPane.setPreferredSize(preferred);
+//        scrollPane.setMinimumSize(preferred);
+
+        scrollPane.revalidate();
     }
-
-
-
 
 }

@@ -164,6 +164,8 @@ public class ShipEvent extends AbstractBuildableTreeNode {
 				.append("</b>")
 //				.append(" - Hostile: ")
 //				.append(hostile)
+				.append(" File: ")
+				.append(getSourceFile())
 				.append("</html>");
 		return sb.toString();
 	}

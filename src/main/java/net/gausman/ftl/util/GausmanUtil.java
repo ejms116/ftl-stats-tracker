@@ -1,6 +1,7 @@
 package net.gausman.ftl.util;
 
 import net.blerf.ftl.parser.DataManager;
+import net.blerf.ftl.parser.DefaultDataManager;
 import net.blerf.ftl.parser.SavedGameParser;
 import net.blerf.ftl.xml.ShipBlueprint;
 import net.blerf.ftl.xml.SystemBlueprint;
@@ -17,6 +18,8 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class GausmanUtil {
     private static final Logger log = LoggerFactory.getLogger(GausmanUtil.class);
@@ -96,6 +99,16 @@ public class GausmanUtil {
             return 0;
         }
 
+    }
+
+    public static Constants.ScrapUsedCategory convertResourceToScrapUsedCategory(Constants.Resource resource){
+        return switch (resource){
+            case HULL -> Constants.ScrapUsedCategory.REPAIR;
+            case FUEL -> Constants.ScrapUsedCategory.FUEL;
+            case MISSILE -> Constants.ScrapUsedCategory.MISSILES;
+            case DRONE -> Constants.ScrapUsedCategory.DRONE_PARTS;
+            case SCRAP -> null;
+        };
     }
 
     public static String convertBlueprintName(String blueprint){
@@ -201,7 +214,7 @@ public class GausmanUtil {
             case SavedGameParser.StoreItemType.WEAPON -> dm.getWeapon(id).getTitle().getTextValue();
             case SavedGameParser.StoreItemType.DRONE -> dm.getDrone(id).getTitle().getTextValue();
             case SavedGameParser.StoreItemType.SYSTEM -> dm.getSystem(id).getTitle().getTextValue();
-            case SavedGameParser.StoreItemType.REACTOR -> Constants.Reactor.valueOf(id).toString();
+            case SavedGameParser.StoreItemType.REACTOR -> "Reactor"; //Constants.Reactor.valueOf(id).toString();
             case GENERAL -> id;
         };
     }
@@ -250,6 +263,25 @@ public class GausmanUtil {
             return Integer.MAX_VALUE; // put files without numbers at the end
         }
     }
+
+    public static int extractNumberAfterHyphen(String filename) {
+        try {
+            // try to match a number after a hyphen (e.g. "2 - 10.sav")
+            Pattern afterHyphen = Pattern.compile("-\\s*(\\d+)");
+            Matcher m = afterHyphen.matcher(filename);
+            if (m.find()) return Integer.parseInt(m.group(1));
+
+            // fallback: take the last number in the filename
+            Pattern anyNumber = Pattern.compile("\\d+");
+            m = anyNumber.matcher(filename);
+            int last = -1;
+            while (m.find()) last = Integer.parseInt(m.group());
+            return last == -1 ? Integer.MAX_VALUE : last;
+        } catch (Exception e) {
+            return Integer.MAX_VALUE;
+        }
+    }
+
 
     public static String convertStatToAttributename(Constants.Stats stat){
         return switch (stat){
