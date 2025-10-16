@@ -4,6 +4,7 @@ import net.gausman.ftl.model.Constants;
 import net.gausman.ftl.model.ShipStatusModel;
 import net.gausman.ftl.model.change.Event;
 import net.gausman.ftl.model.record.Jump;
+import net.gausman.ftl.model.record.StoreInfo;
 
 public class RepairEvent extends Event {
     public RepairEvent() {}
@@ -22,5 +23,11 @@ public class RepairEvent extends Event {
                 Constants.ScrapUsedCategory.REPAIR,
                 mult*-getResourceEffects().getOrDefault(Constants.Resource.SCRAP,0)
         );
+
+        StoreInfo storeInfo = model.getSectorMetrics().getInfo(getJump().getSector()).getStoreInfoMap().get(getJump().getCurrentBeaconId());
+
+        if (storeInfo != null){
+            storeInfo.setRepairCount(storeInfo.getRepairCount() + mult*getResourceEffects().getOrDefault(Constants.Resource.HULL, 0));
+        }
     }
 }

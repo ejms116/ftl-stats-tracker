@@ -7,6 +7,8 @@ import net.gausman.ftl.model.record.Sector;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
+import org.jfree.chart.axis.CategoryAxis;
+import org.jfree.chart.axis.CategoryLabelPositions;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.labels.StandardCategoryItemLabelGenerator;
 import org.jfree.chart.plot.CategoryPlot;
@@ -86,10 +88,10 @@ public class ScrapUsedChartPanel extends JPanel {
             chart.getLegend().setItemPaint(Color.WHITE);
         }
 
-//        CategoryAxis domainAxis = plot.getDomainAxis();
-//        domainAxis.setCategoryLabelPositions(
-//                CategoryLabelPositions.createUpRotationLabelPositions(Math.PI / 4) // 45° upwards
-//        );
+        CategoryAxis domainAxis = plot.getDomainAxis();
+        domainAxis.setCategoryLabelPositions(
+                CategoryLabelPositions.createUpRotationLabelPositions(Math.PI / 4) // 45° upwards
+        );
 
 
         ChartPanel chartPanel = new ChartPanel(chart);
@@ -110,18 +112,18 @@ public class ScrapUsedChartPanel extends JPanel {
     }
 
     public void updateDataset(SectorMetrics sectorMetrics){
-        initDatasetFromPos(0);
+        dataset.clear();
         for (Map.Entry<Sector, SectorInfo> outer : sectorMetrics.getData().entrySet()){
-//            String text = String.format("%s - %s", outer.getKey().getId(), outer.getKey().getSectorDot().getTitle());
-            String text = String.valueOf(outer.getKey().getId());
+            String text = String.format("%s - %s", outer.getKey().getId(), outer.getKey().getSectorDot().getTitle());
+//            String text = String.valueOf(outer.getKey().getId());
             for (Map.Entry<Constants.ScrapUsedCategory, Integer> innerEntry : outer.getValue().getScrapUsed().entrySet()){
                 addOrSet(dataset, innerEntry.getValue(), convert(innerEntry.getKey()), text);
             }
         }
+        initDatasetFromPos(sectorMetrics.getData().size());
     }
 
     private void initDatasetFromPos(int pos){
-        dataset.clear();
         for (int i = pos + 1; i < 9; i++){
             for (InternalScrapUsedCategory category: InternalScrapUsedCategory.values()){
                 dataset.setValue(0, category, Integer.toString(i));

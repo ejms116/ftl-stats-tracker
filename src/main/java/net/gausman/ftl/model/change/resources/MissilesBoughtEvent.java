@@ -4,6 +4,7 @@ import net.gausman.ftl.model.Constants;
 import net.gausman.ftl.model.ShipStatusModel;
 import net.gausman.ftl.model.change.Event;
 import net.gausman.ftl.model.record.Jump;
+import net.gausman.ftl.model.record.StoreInfo;
 
 public class MissilesBoughtEvent extends Event {
     public static final int MISSILES_PRICE_STORE = 6;
@@ -28,5 +29,10 @@ public class MissilesBoughtEvent extends Event {
                 Constants.ScrapUsedCategory.MISSILES,
                 mult*-getResourceEffects().getOrDefault(Constants.Resource.SCRAP,0)
         );
+        StoreInfo storeInfo = model.getSectorMetrics().getInfo(getJump().getSector()).getStoreInfoMap().get(getJump().getCurrentBeaconId());
+
+        if (storeInfo != null){
+            storeInfo.getStore().setMissiles(storeInfo.getStore().getMissiles() - mult*getResourceEffects().getOrDefault(Constants.Resource.MISSILE, 0));
+        }
     }
 }

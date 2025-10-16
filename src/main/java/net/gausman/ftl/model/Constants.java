@@ -70,6 +70,8 @@ public class Constants {
     public enum EventDetailType {
         REPAIR("Repair", EventCategory.OTHER),
         DAMAGE("Damage", EventCategory.OTHER),
+        STORE_FOUND("Store found", EventCategory.OTHER),
+        STORE_VISITED("Store backtracked", EventCategory.OTHER),
         SHIP_SETUP("Ship setup", EventCategory.OTHER),
         RESOURCE_DIFF_ERROR("Resource Diff Error", EventCategory.OTHER),
 

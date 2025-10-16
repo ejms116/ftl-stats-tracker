@@ -1,11 +1,11 @@
 package net.gausman.ftl.model.change.crew;
 
 
+import net.blerf.ftl.parser.SavedGameParser;
 import net.gausman.ftl.model.Constants;
 import net.gausman.ftl.model.Crew;
 import net.gausman.ftl.model.ShipStatusModel;
 import net.gausman.ftl.model.record.Jump;
-import net.gausman.ftl.util.GausmanUtil;
 
 public class CrewNewEvent extends CrewEvent {
     private Crew crew;
@@ -53,5 +53,15 @@ public class CrewNewEvent extends CrewEvent {
                 Constants.ScrapUsedCategory.CREW,
                 mult*-getResourceEffects().getOrDefault(Constants.Resource.SCRAP,0)
         );
+
+        if (getTags().contains(Constants.EventTag.BUY)){
+            model.getSectorMetrics().update(
+                    getJump().getSector(),
+                    apply,
+                    getJump().getCurrentBeaconId(),
+                    crew.getCrewType().getId(),
+                    SavedGameParser.StoreItemType.CREW
+            );
+        }
     }
 }

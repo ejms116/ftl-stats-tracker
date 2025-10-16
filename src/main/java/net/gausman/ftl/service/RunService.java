@@ -9,10 +9,7 @@ import net.gausman.ftl.model.RunUpdateResponse;
 import net.gausman.ftl.model.ShipStatusModel;
 import net.gausman.ftl.model.change.Event;
 import net.gausman.ftl.model.factory.EventFactory;
-import net.gausman.ftl.model.record.EventBox;
-import net.gausman.ftl.model.record.Jump;
-import net.gausman.ftl.model.record.Run;
-import net.gausman.ftl.model.record.Sector;
+import net.gausman.ftl.model.record.*;
 import net.gausman.ftl.util.GausmanUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -102,15 +99,24 @@ public class RunService {
 
         }
 
+        int currentBeaconId = currentGameState.getCurrentBeaconId();
+        SavedGameParser.StoreState currentBeaconStore = currentGameState.getBeaconList().get(currentBeaconId).getStore();
+//        boolean jumped = currentRun.get
+
         // New Sector, automatically creates Jump
         if (currentRun.getCurrentSector().getId() != currentGameState.getSectorNumber() + 1){
             newSector = true;
             currentRun.addSector(new Sector(currentGameState, currentRun));
         }
 
+        if (isStore(currentGameState)){
+            log.info("store found");
+        }
+
+
+
         // We always update the beaconlist Todo: can we optimize this?
         currentRun.getCurrentSector().setBeaconList(currentGameState.getBeaconList());
-
 
         // New Jump
         int emptyJumpCount = 0;
@@ -162,7 +168,24 @@ public class RunService {
             log.error("Error when comparing the game states");
         }
 
-         // assigns the EventIds
+        // set Store data
+        // When beacons are overrun the store data is removed (store = null)
+        // in that case we don't write data
+        // we just store the full store information, every item on the shelves has an "available" bool
+        // if that bool is false the player bought the item
+        // only for fuel/missiles/drones we save the initial available amount
+//        if (currentBeaconStore != null){
+//            Map<Integer, StoreInfo> storeInfoMap = currentRun.getCurrentSector().getStores();
+//            if (!storeInfoMap.containsKey(currentBeaconId)){
+//                storeInfoMap.put(currentBeaconId, new StoreInfo(currentRun.getCurrentSector().getId(), currentBeaconId, currentBeaconStore));
+//            } else {
+//                storeInfoMap.get(currentBeaconId).setStore(currentBeaconStore);
+//            }
+//            if (newJump || newRun){
+//                storeInfoMap.get(currentBeaconId).addVisitedJump(currentRun.getCurrentJump().getId());
+//            }
+//        }
+
 
         // save to json file
         saveRunToJson(new File(CURRENT_RUN_FILENAME));
@@ -179,6 +202,13 @@ public class RunService {
 
         return new RunUpdateResponse(newRun);
 
+    }
+
+    private boolean isStore(SavedGameParser.SavedGameState gameState){
+        if (gameState.getBeaconList().get(gameState.getCurrentBeaconId()).getStore() != null){
+            return true;
+        }
+        return false;
     }
 
     private void copySaveFile(File file){

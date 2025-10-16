@@ -4,6 +4,7 @@ import net.gausman.ftl.model.Constants;
 import net.gausman.ftl.model.ShipStatusModel;
 import net.gausman.ftl.model.change.Event;
 import net.gausman.ftl.model.record.Jump;
+import net.gausman.ftl.model.record.StoreInfo;
 
 public class DronesBoughtEvent extends Event {
     public static final int DRONES_PRICE_STORE = 8;
@@ -27,5 +28,12 @@ public class DronesBoughtEvent extends Event {
                 Constants.ScrapUsedCategory.DRONES,
                 mult*-getResourceEffects().getOrDefault(Constants.Resource.SCRAP,0)
         );
+
+        StoreInfo storeInfo = model.getSectorMetrics().getInfo(getJump().getSector()).getStoreInfoMap().get(getJump().getCurrentBeaconId());
+
+        if (storeInfo != null){
+            storeInfo.getStore().setDroneParts(storeInfo.getStore().getDroneParts() - mult*getResourceEffects().getOrDefault(Constants.Resource.DRONE, 0));
+        }
+
     }
 }

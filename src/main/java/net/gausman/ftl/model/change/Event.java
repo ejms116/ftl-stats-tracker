@@ -9,12 +9,8 @@ import net.gausman.ftl.model.change.effects.StringStatEffect;
 import net.gausman.ftl.model.change.general.*;
 import net.gausman.ftl.model.change.item.AugmentEvent;
 import net.gausman.ftl.model.change.item.DroneEvent;
-import net.gausman.ftl.model.change.item.ItemEvent;
 import net.gausman.ftl.model.change.item.WeaponEvent;
-import net.gausman.ftl.model.change.other.DamageEvent;
-import net.gausman.ftl.model.change.other.RepairEvent;
-import net.gausman.ftl.model.change.other.ResourceDiffErrorEvent;
-import net.gausman.ftl.model.change.other.ShipSetupEvent;
+import net.gausman.ftl.model.change.other.*;
 import net.gausman.ftl.model.change.resources.*;
 import net.gausman.ftl.model.change.system.ReactorEvent;
 import net.gausman.ftl.model.change.system.SystemEvent;
@@ -35,11 +31,12 @@ import java.util.*;
 @JsonSubTypes({
         // Crew
         @JsonSubTypes.Type(value = CrewEvent.class, name = "CrewEvent"),
-        @JsonSubTypes.Type(value = MasteryEvent.class, name = "MasteryEvent"),
-        @JsonSubTypes.Type(value = CrewRenameEvent.class, name = "NameEvent"),
-        @JsonSubTypes.Type(value = CrewNewEvent.class, name = "NewCrewEvent"),
-        @JsonSubTypes.Type(value = CrewSkillEvent.class, name = "SkillEvent"),
-        @JsonSubTypes.Type(value = CrewStatEvent.class, name = "StatEvent"),
+        @JsonSubTypes.Type(value = CrewLostEvent.class, name = "CrewLostEvent"),
+        @JsonSubTypes.Type(value = CrewMasteryEvent.class, name = "CrewMasteryEvent"),
+        @JsonSubTypes.Type(value = CrewNewEvent.class, name = "CrewNewEvent"),
+        @JsonSubTypes.Type(value = CrewRenameEvent.class, name = "CrewRenameEvent"),
+        @JsonSubTypes.Type(value = CrewSkillEvent.class, name = "CrewSkillEvent"),
+        @JsonSubTypes.Type(value = CrewStatEvent.class, name = "CrewStatEvent"),
 
         // General
         @JsonSubTypes.Type(value = BeaconsExploredEvent.class, name = "BeaconsExploredEvent"),
@@ -53,6 +50,8 @@ import java.util.*;
         @JsonSubTypes.Type(value = RepairEvent.class, name = "RepairEvent"),
         @JsonSubTypes.Type(value = ResourceDiffErrorEvent.class, name = "ResourceDiffErrorEvent"),
         @JsonSubTypes.Type(value = ShipSetupEvent.class, name = "ShipSetupEvent"),
+        @JsonSubTypes.Type(value = StoreFoundEvent.class, name = "StoreFoundEvent"),
+        @JsonSubTypes.Type(value = StoreVisitedEvent.class, name = "StoreVisitedEvent"),
 
         // Item
 //        @JsonSubTypes.Type(value = ItemEvent.class, name = "ItemEvent"),

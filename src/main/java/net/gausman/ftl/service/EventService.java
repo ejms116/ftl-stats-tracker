@@ -227,125 +227,9 @@ public class EventService {
             events.add(crewHiredEvent);
         }
 
-        // todo store checking...
-        SavedGameParser.StoreState newStore = null;
-        if (currentGameState.getSectorNumber() == lastGameState.getSectorNumber()){
-            newStore = currentGameState.getBeaconList().get(lastGameState.getCurrentBeaconId()).getStore();
-        }
-        SavedGameParser.StoreState oldStore = lastGameState.getBeaconList().get(lastGameState.getCurrentBeaconId()).getStore();
-
-        List<String> boughtItems = new ArrayList<>();
-        List<String> boughtCrew = new ArrayList<>();
-
-        int repairCountDiff = 0;
-        int fuelBought = 0;
-        int missilesBought = 0;
-        int dronesBought = 0;
-
-        // in a previous version we used !jumped instead of oldStore != null
-        // the reason we switched is that when you get a store from an event jumped is false but oldStore is still null
-        if (oldStore != null && newStore != null){
-            for (int i = 0; i < newStore.getShelfList().size(); i++){
-                for (int j = 0; j < newStore.getShelfList().get(i).getItems().size(); j++){
-                    if (!newStore.getShelfList().get(i).getItems().get(j).isAvailable()){
-                        if (oldStore.getShelfList().get(i).getItems().get(j).isAvailable()){
-                            // Drone control comes with a free drone
-                            // extra data: 0 -> DEFENSE_1, 1 -> REPAIR, 2 -> COMBAT_1
-                            // the drone systems itself costs 60 scrap, and half of the price of the drone that comes with it is added
-                            // so the cost of the systems depends on the drones that comes with it, and the drone then is free
-                            int localCost = 0;
-                            if (newStore.getShelfList().get(i).getItems().get(j).getItemId().equals("drones")){
-                                DroneEvent freeDroneWhenBuyingDroneControl;
-                                if (newStore.getShelfList().get(i).getItems().get(j).getExtraData() == 0){
-                                    freeDroneWhenBuyingDroneControl = new DroneEvent(jump, "DEFENSE_1");
-//                                    events.add(new DroneEvent(Constants.EventType.REWARD, 1, GausmanUtil.getCostStoreItemId(SavedGameParser.StoreItemType.DRONE, "DEFENSE_1"),"DEFENSE_1", jump));
-                                    boughtItems.add("DEFENSE_1");
-                                    localCost += 25;
-                                } else if (newStore.getShelfList().get(i).getItems().get(j).getExtraData() == 1) {
-                                    freeDroneWhenBuyingDroneControl = new DroneEvent(jump, "REPAIR");
-//                                    events.add(new DroneEvent(Constants.EventType.REWARD, 1, GausmanUtil.getCostStoreItemId(SavedGameParser.StoreItemType.DRONE, "REPAIR"),"REPAIR", jump));
-                                    boughtItems.add("REPAIR");
-                                    localCost += 15;
-                                } else if (newStore.getShelfList().get(i).getItems().get(j).getExtraData() == 2){
-                                    freeDroneWhenBuyingDroneControl = new DroneEvent(jump, "COMBAT_1");
-//                                    events.add(new DroneEvent(Constants.EventType.REWARD, 1, GausmanUtil.getCostStoreItemId(SavedGameParser.StoreItemType.DRONE, "COMBAT_1"),"COMBAT_1", jump));
-                                    boughtItems.add("COMBAT_1");
-                                    localCost += 25;
-                                } else {
-                                    throw new IllegalArgumentException("Unsupported extra drone info: " + newStore.getShelfList().get(i).getItems().get(j).getExtraData());
-                                }
-                                freeDroneWhenBuyingDroneControl.addTag(Constants.EventTag.BUY);
-                                freeDroneWhenBuyingDroneControl.addTag(Constants.EventTag.REWARD);
-                                events.add(freeDroneWhenBuyingDroneControl);
-                            }
-                            localCost += GausmanUtil.getCostStoreItemType(newStore.getShelfList().get(i).getItemType(), newStore.getShelfList().get(i).getItems().get(j));
-                            // Crew is handled later because it's more complex (by comparing the crewlist)
-                            // We just keep track of what crew we bought so we can use it then
-                            if (newStore.getShelfList().get(i).getItemType().equals(SavedGameParser.StoreItemType.CREW)){
-                                boughtCrew.add(newStore.getShelfList().get(i).getItems().get(j).getItemId());
-                            } else {
-                                Event boughtItemEvent;
-                                switch (newStore.getShelfList().get(i).getItemType()){
-                                    case WEAPON -> boughtItemEvent = new WeaponEvent(jump, newStore.getShelfList().get(i).getItems().get(j).getItemId());
-                                    case DRONE -> boughtItemEvent = new DroneEvent(jump, newStore.getShelfList().get(i).getItems().get(j).getItemId());
-                                    case AUGMENT -> boughtItemEvent = new AugmentEvent(jump, newStore.getShelfList().get(i).getItems().get(j).getItemId());
-                                    case SYSTEM -> boughtItemEvent = new SystemEvent(jump, SavedGameParser.SystemType.findById(newStore.getShelfList().get(i).getItems().get(j).getItemId()), true, 1, 1);
-                                    // todo newAmount is not 1 if you buy systems, then it's 2
-                                    default -> throw new IllegalArgumentException("Unsupported ItemType: " + newStore.getShelfList().get(i).getItemType());
-                                }
-                                boughtItemEvent.addTag(Constants.EventTag.BUY);
-                                boughtItemEvent.addTag(Constants.EventTag.STORE);
-                                boughtItemEvent.setResourceEffect(Constants.Resource.SCRAP, -localCost);
-                                events.add(boughtItemEvent);
-
-                                boughtItems.add(newStore.getShelfList().get(i).getItems().get(j).getItemId());
-                            }
-
-                        }
-                    }
-                }
-            }
-
-            if (lastGameState.getBeaconList().get(lastGameState.getCurrentBeaconId()).getStore() == null){
-                log.error("last shop error");
-            }
-
-            if (currentGameState.getBeaconList().get(currentGameState.getCurrentBeaconId()).getStore() == null){
-                log.error("new shop error");
-            }
-
-            fuelBought = oldStore.getFuel() - newStore.getFuel();
-            if (fuelBought > 0){
-                FuelBoughtEvent fuelBoughtEvent = new FuelBoughtEvent(jump, fuelBought);
-                fuelBoughtEvent.addTag(Constants.EventTag.STORE);
-                events.add(fuelBoughtEvent);
-            }
-            missilesBought = oldStore.getMissiles() - newStore.getMissiles();
-            if (missilesBought > 0){
-                MissilesBoughtEvent missilesBoughtEvent = new MissilesBoughtEvent(jump, missilesBought);
-                missilesBoughtEvent.addTag(Constants.EventTag.STORE);
-                events.add(missilesBoughtEvent);
-            }
-            dronesBought = oldStore.getDroneParts() - newStore.getDroneParts();
-            if (dronesBought > 0) {
-                DronesBoughtEvent dronesBoughtEvent = new DronesBoughtEvent(jump, dronesBought);
-                dronesBoughtEvent.addTag(Constants.EventTag.STORE);
-                events.add(dronesBoughtEvent);
-            }
-
-            // repair
-            repairCountDiff = currentGameState.getStateVar(StateVar.STORE_REPAIR.getId()) - lastGameState.getStateVar(StateVar.STORE_REPAIR.getId());
-            if (repairCountDiff > 0){
-                RepairEvent repairBoughtEvent = new RepairEvent(jump);
-                repairBoughtEvent.setResourceEffect(Constants.Resource.HULL, repairCountDiff);
-                repairBoughtEvent.setResourceEffect(Constants.Resource.SCRAP, -GausmanUtil.getCostResource(Constants.Resource.HULL.name(), repairCountDiff, currentGameState.getSectorNumber()));
-                repairBoughtEvent.addTag(Constants.EventTag.REPAIR);
-                repairBoughtEvent.addTag(Constants.EventTag.STORE);
-                repairBoughtEvent.addTag(Constants.EventTag.BUY);
-                repairBoughtEvent.setDisplayText("Bought repairs");
-                events.add(repairBoughtEvent);
-            }
-        }
+        // add store events
+        GenerateStoreEventsResult generateStoreEventsResult = generateStoreEvents(lastGameState, currentGameState, jump);
+        events.addAll(generateStoreEventsResult.getEvents());
 
         // drones/missiles used
         int missileUsedDiff = currentGameState.getStateVar(StateVar.USED_MISSILE.getId()) - lastGameState.getStateVar(StateVar.USED_MISSILE.getId());
@@ -361,7 +245,7 @@ public class EventService {
         int oldHull = lastGameState.getPlayerShip().getHullAmt();
         int newHull = currentGameState.getPlayerShip().getHullAmt();
 
-        int hullDamage = oldHull + repairCountDiff - newHull;
+        int hullDamage = oldHull + generateStoreEventsResult.getRepairCountDiff() - newHull;
         if (hullDamage > 0){
             DamageEvent hullDamageEvent = new DamageEvent(jump);
             hullDamageEvent.setResourceEffect(Constants.Resource.HULL, -hullDamage);
@@ -382,7 +266,7 @@ public class EventService {
         // we subtract the fuel we bought (from stores) todo fuel buy events
         // if jumped is true (meaning the player jumped to a new beacon between the two save files) we add 1 again
         // we also add the emptyJumpCount (jumps where the player backtracked and no save file was written)
-        int fuelRewardCount = newFuelCount - oldFuelCount - fuelBought + emptyJumpCount;
+        int fuelRewardCount = newFuelCount - oldFuelCount - generateStoreEventsResult.getFuelBought() + emptyJumpCount;
         fuelRewardCount += (jumped ? 1 : 0);
         if (fuelRewardCount > 0){
             resourcesRewardEvent.setResourceEffect(Constants.Resource.FUEL, fuelRewardCount);
@@ -396,7 +280,7 @@ public class EventService {
         int oldMissilesCount = lastGameState.getPlayerShip().getMissilesAmt();
         int newMissilesCount = currentGameState.getPlayerShip().getMissilesAmt();
 
-        int missilesRewardCount = newMissilesCount - oldMissilesCount + missileUsedDiff - missilesBought;
+        int missilesRewardCount = newMissilesCount - oldMissilesCount + missileUsedDiff - generateStoreEventsResult.getMissilesBought();
         if (missilesRewardCount > 0){
             resourcesRewardEvent.setResourceEffect(Constants.Resource.MISSILE, missilesRewardCount);
         } else if (missilesRewardCount < 0) {
@@ -422,7 +306,7 @@ public class EventService {
         // we also check if the player actually has hacking
         // this might fail if the player uses hacking and then also receives drone parts before the next save file is written
         // but that's the best we can do as far as i know
-        int dronesRewardCount = newDronesCount - oldDronesCount + droneUsedDiff - dronesBought;
+        int dronesRewardCount = newDronesCount - oldDronesCount + droneUsedDiff - generateStoreEventsResult.getDronesBought();
         if (dronesRewardCount > 0) {
             resourcesRewardEvent.setResourceEffect(Constants.Resource.DRONE, dronesRewardCount);
         } else {
@@ -464,7 +348,7 @@ public class EventService {
             newAugments.remove(augment);
         }
 
-        for (String boughtItem: boughtItems){
+        for (String boughtItem: generateStoreEventsResult.getBoughtItems()){
             newWeapons.remove(boughtItem);
             newDrones.remove(boughtItem);
             newAugments.remove(boughtItem);
@@ -489,18 +373,8 @@ public class EventService {
         }
 
         // Removed Items
-        Constants.EventType typeNow;
-        boolean addToLastJump = false;
         List<Event> tempSellEvents = new ArrayList<>();
-
-        if (newStore != null || oldStore != null){
-            typeNow = Constants.EventType.SELL;
-            if (newStore == null){
-                addToLastJump = true;
-            }
-        } else {
-            typeNow = Constants.EventType.DISCARD;
-        }
+        Constants.EventType typeNow = generateStoreEventsResult.isStorePresent() ? Constants.EventType.SELL : Constants.EventType.DISCARD;
 
         ArrayList<String> removedWeapons = new ArrayList<>(oldCargo.weaponList);
         for (String weapon: newCargo.weaponList){
@@ -519,40 +393,45 @@ public class EventService {
 
         int sellCost = 0;
         for (String weapon: removedWeapons){
-            if (typeNow == Constants.EventType.SELL){
-                sellCost = GausmanUtil.getCostStoreItemId(SavedGameParser.StoreItemType.WEAPON, weapon)/2;
-                WeaponEvent newWeaponSellEvent = new WeaponEvent(jump, weapon);
+            WeaponEvent newWeaponSellEvent = new WeaponEvent(jump, weapon);
+            if (typeNow == Constants.EventType.SELL) {
+                sellCost = GausmanUtil.getCostStoreItemId(SavedGameParser.StoreItemType.WEAPON, weapon) / 2;
                 newWeaponSellEvent.addTag(Constants.EventTag.SELL);
                 newWeaponSellEvent.addTag(Constants.EventTag.STORE);
                 newWeaponSellEvent.setResourceEffect(Constants.Resource.SCRAP, sellCost);
-                tempSellEvents.add(newWeaponSellEvent);
+            } else {
+                newWeaponSellEvent.addTag(Constants.EventTag.DISCARD);
             }
+            tempSellEvents.add(newWeaponSellEvent);
         }
 
         for (String drone: removedDrones){
+            DroneEvent newDroneSellEvent = new DroneEvent(jump, drone);
             if (typeNow == Constants.EventType.SELL){
                 sellCost = GausmanUtil.getCostStoreItemId(SavedGameParser.StoreItemType.DRONE, drone)/2;
-                DroneEvent newDroneSellEvent = new DroneEvent(jump, drone);
                 newDroneSellEvent.addTag(Constants.EventTag.SELL);
                 newDroneSellEvent.addTag(Constants.EventTag.STORE);
                 newDroneSellEvent.setResourceEffect(Constants.Resource.SCRAP, sellCost);
-                tempSellEvents.add(newDroneSellEvent);
+            } else {
+                newDroneSellEvent.addTag(Constants.EventTag.DISCARD);
             }
-
+            tempSellEvents.add(newDroneSellEvent);
         }
 
         for (String augment: removedAugments){
-            if (typeNow == Constants.EventType.SELL){
+            AugmentEvent newAugmentSellEvent = new AugmentEvent(jump, augment);
+            if (typeNow == Constants.EventType.SELL) {
                 sellCost = GausmanUtil.getCostStoreItemId(SavedGameParser.StoreItemType.AUGMENT, augment)/2;
-                AugmentEvent newAugmentSellEvent = new AugmentEvent(jump, augment);
                 newAugmentSellEvent.addTag(Constants.EventTag.SELL);
                 newAugmentSellEvent.addTag(Constants.EventTag.STORE);
                 newAugmentSellEvent.setResourceEffect(Constants.Resource.SCRAP, sellCost);
-                tempSellEvents.add(newAugmentSellEvent);
+            } else {
+                newAugmentSellEvent.addTag(Constants.EventTag.DISCARD);
             }
+            tempSellEvents.add(newAugmentSellEvent);
         }
 
-        if (addToLastJump){
+        if (generateStoreEventsResult.isAddSellEventsToLastJump()){
             lastJumpEvents.addAll(tempSellEvents);
         } else {
             events.addAll(tempSellEvents);
@@ -645,7 +524,7 @@ public class EventService {
         }
 
         // Crew
-        events.addAll(getCrewEvents(lastGameState, currentGameState, boughtCrew, jump));
+        events.addAll(getCrewEvents(lastGameState, currentGameState, generateStoreEventsResult.getBoughtCrew(), jump));
 
 
         // TESTING
@@ -747,6 +626,285 @@ public class EventService {
             changeDiffEvent.setDisplayText(String.format("Resource difference error: %s", resource));
             errorEvents.add(changeDiffEvent);
         }
+    }
+
+    private GenerateStoreEventsResult generateStoreEvents(SavedGameParser.SavedGameState lastGameState, SavedGameParser.SavedGameState currentGameState, Jump jump){
+        GenerateStoreEventsResult result = new GenerateStoreEventsResult();
+
+        // When going into a new sector we never have stores (last and first beacon of every sector don't have stores)
+        // the problem we avoid with this is that we try to get a specific id from the beacon list which might not be there
+        if (lastGameState.getSectorNumber() != currentGameState.getSectorNumber()){
+            return result;
+        }
+
+        SavedGameParser.StoreState storeCurrentBeaconOld = lastGameState.getBeaconList().get(currentGameState.getCurrentBeaconId()).getStore();
+        SavedGameParser.StoreState storeCurrentBeaconNew = currentGameState.getBeaconList().get(currentGameState.getCurrentBeaconId()).getStore();
+        result = generateStoreEventsInternal(storeCurrentBeaconOld, storeCurrentBeaconNew, jump);
+
+        if (storeCurrentBeaconOld != null || storeCurrentBeaconNew != null){
+            result.setStorePresent(true);
+        }
+
+        // player jumped
+        if (currentGameState.getCurrentBeaconId() != lastGameState.getCurrentBeaconId()){
+            SavedGameParser.StoreState storeLastBeaconOld = lastGameState.getBeaconList().get(lastGameState.getCurrentBeaconId()).getStore();
+            SavedGameParser.StoreState storeLastBeaconNew = currentGameState.getBeaconList().get(lastGameState.getCurrentBeaconId()).getStore();
+            GenerateStoreEventsResult tempResult;
+            tempResult = generateStoreEventsInternal(storeLastBeaconOld, storeLastBeaconNew, jump);
+            result.merge(tempResult);
+            if (storeLastBeaconOld != null){
+                result.setAddSellEventsToLastJump(true);
+            }
+            if (storeCurrentBeaconOld != null && storeCurrentBeaconNew != null){
+                StoreVisitedEvent storeVisitedEvent = new StoreVisitedEvent(jump);
+                result.add(storeVisitedEvent);
+            }
+        }
+
+        // repair
+        result.repairCountDiff = currentGameState.getStateVar(StateVar.STORE_REPAIR.getId()) - lastGameState.getStateVar(StateVar.STORE_REPAIR.getId());
+        if (result.repairCountDiff > 0){
+            RepairEvent repairBoughtEvent = new RepairEvent(jump);
+            repairBoughtEvent.setResourceEffect(Constants.Resource.HULL, result.repairCountDiff);
+            repairBoughtEvent.setResourceEffect(Constants.Resource.SCRAP, -GausmanUtil.getCostResource(Constants.Resource.HULL.name(), result.repairCountDiff, currentGameState.getSectorNumber()));
+            repairBoughtEvent.addTag(Constants.EventTag.REPAIR);
+            repairBoughtEvent.addTag(Constants.EventTag.STORE);
+            repairBoughtEvent.addTag(Constants.EventTag.BUY);
+            repairBoughtEvent.setDisplayText("Bought repairs");
+            result.add(repairBoughtEvent);
+        }
+
+        return result;
+    }
+
+    private GenerateStoreEventsResult generateStoreEventsInternal(SavedGameParser.StoreState oldStore, SavedGameParser.StoreState newStore, Jump jump){
+        GenerateStoreEventsResult result = new GenerateStoreEventsResult();
+
+        // found new store either by jumping there or in an event
+        if (oldStore == null && newStore != null){
+            StoreFoundEvent storeFoundEvent = new StoreFoundEvent(jump);
+            storeFoundEvent.setStoreState(newStore);
+            result.add(storeFoundEvent);
+        }
+
+        // beacon got overtaken
+        if (oldStore != null && newStore == null){
+            log.info("store was overtaken");
+        }
+
+        // normal store comparison
+        if (oldStore != null && newStore != null){
+            for (int i = 0; i < newStore.getShelfList().size(); i++){
+                for (int j = 0; j < newStore.getShelfList().get(i).getItems().size(); j++){
+                    if (!newStore.getShelfList().get(i).getItems().get(j).isAvailable()){
+                        if (oldStore.getShelfList().get(i).getItems().get(j).isAvailable()){
+                            // Drone control comes with a free drone
+                            // extra data: 0 -> DEFENSE_1, 1 -> REPAIR, 2 -> COMBAT_1
+                            // the drone systems itself costs 60 scrap, and half of the price of the drone that comes with it is added
+                            // so the cost of the systems depends on the drones that comes with it, and the drone then is free
+                            int localCost = 0;
+                            if (newStore.getShelfList().get(i).getItems().get(j).getItemId().equals("drones")){
+                                DroneEvent freeDroneWhenBuyingDroneControl;
+                                if (newStore.getShelfList().get(i).getItems().get(j).getExtraData() == 0){
+                                    freeDroneWhenBuyingDroneControl = new DroneEvent(jump, "DEFENSE_1");
+//                                    events.add(new DroneEvent(Constants.EventType.REWARD, 1, GausmanUtil.getCostStoreItemId(SavedGameParser.StoreItemType.DRONE, "DEFENSE_1"),"DEFENSE_1", jump));
+                                    result.boughtItems.add("DEFENSE_1");
+                                    localCost += 25;
+                                } else if (newStore.getShelfList().get(i).getItems().get(j).getExtraData() == 1) {
+                                    freeDroneWhenBuyingDroneControl = new DroneEvent(jump, "REPAIR");
+//                                    events.add(new DroneEvent(Constants.EventType.REWARD, 1, GausmanUtil.getCostStoreItemId(SavedGameParser.StoreItemType.DRONE, "REPAIR"),"REPAIR", jump));
+                                    result.boughtItems.add("REPAIR");
+                                    localCost += 15;
+                                } else if (newStore.getShelfList().get(i).getItems().get(j).getExtraData() == 2){
+                                    freeDroneWhenBuyingDroneControl = new DroneEvent(jump, "COMBAT_1");
+//                                    events.add(new DroneEvent(Constants.EventType.REWARD, 1, GausmanUtil.getCostStoreItemId(SavedGameParser.StoreItemType.DRONE, "COMBAT_1"),"COMBAT_1", jump));
+                                    result.boughtItems.add("COMBAT_1");
+                                    localCost += 25;
+                                } else {
+                                    throw new IllegalArgumentException("Unsupported extra drone info: " + newStore.getShelfList().get(i).getItems().get(j).getExtraData());
+                                }
+                                freeDroneWhenBuyingDroneControl.addTag(Constants.EventTag.BUY);
+                                freeDroneWhenBuyingDroneControl.addTag(Constants.EventTag.REWARD);
+                                result.add(freeDroneWhenBuyingDroneControl);
+                            }
+                            localCost += GausmanUtil.getCostStoreItemType(newStore.getShelfList().get(i).getItemType(), newStore.getShelfList().get(i).getItems().get(j));
+                            // Crew is handled later because it's more complex (by comparing the crewlist)
+                            // We just keep track of what crew we bought so we can use it then
+                            if (newStore.getShelfList().get(i).getItemType().equals(SavedGameParser.StoreItemType.CREW)){
+                                result.boughtCrew.add(newStore.getShelfList().get(i).getItems().get(j).getItemId());
+                            } else {
+                                Event boughtItemEvent;
+                                switch (newStore.getShelfList().get(i).getItemType()){
+                                    case WEAPON -> boughtItemEvent = new WeaponEvent(jump, newStore.getShelfList().get(i).getItems().get(j).getItemId());
+                                    case DRONE -> boughtItemEvent = new DroneEvent(jump, newStore.getShelfList().get(i).getItems().get(j).getItemId());
+                                    case AUGMENT -> boughtItemEvent = new AugmentEvent(jump, newStore.getShelfList().get(i).getItems().get(j).getItemId());
+                                    case SYSTEM -> boughtItemEvent = new SystemEvent(jump, SavedGameParser.SystemType.findById(newStore.getShelfList().get(i).getItems().get(j).getItemId()), true, 1, 1);
+                                    // todo newAmount is not 1 if you buy systems, then it's 2
+                                    default -> throw new IllegalArgumentException("Unsupported ItemType: " + newStore.getShelfList().get(i).getItemType());
+                                }
+                                boughtItemEvent.addTag(Constants.EventTag.BUY);
+                                boughtItemEvent.addTag(Constants.EventTag.STORE);
+                                boughtItemEvent.setResourceEffect(Constants.Resource.SCRAP, -localCost);
+                                result.add(boughtItemEvent);
+
+                                result.boughtItems.add(newStore.getShelfList().get(i).getItems().get(j).getItemId());
+                            }
+
+                        }
+                    }
+                }
+            }
+
+            result.fuelBought = oldStore.getFuel() - newStore.getFuel();
+            if (result.fuelBought > 0){
+                FuelBoughtEvent fuelBoughtEvent = new FuelBoughtEvent(jump, result.fuelBought);
+                fuelBoughtEvent.addTag(Constants.EventTag.STORE);
+                result.add(fuelBoughtEvent);
+            }
+            result.missilesBought = oldStore.getMissiles() - newStore.getMissiles();
+            if (result.missilesBought > 0){
+                MissilesBoughtEvent missilesBoughtEvent = new MissilesBoughtEvent(jump, result.missilesBought);
+                missilesBoughtEvent.addTag(Constants.EventTag.STORE);
+                result.add(missilesBoughtEvent);
+            }
+            result.dronesBought = oldStore.getDroneParts() - newStore.getDroneParts();
+            if (result.dronesBought > 0) {
+                DronesBoughtEvent dronesBoughtEvent = new DronesBoughtEvent(jump, result.dronesBought);
+                dronesBoughtEvent.addTag(Constants.EventTag.STORE);
+                result.add(dronesBoughtEvent);
+            }
+
+        }
+        return result;
+    }
+
+
+
+    private GenerateStoreEventsResult generateStoreEventsInternalOld(SavedGameParser.SavedGameState lastGameState, SavedGameParser.SavedGameState currentGameState, Jump jump){
+//    private GenerateStoreEventsResult generateStoreEventsInternal(Jump jump){
+        GenerateStoreEventsResult result = new GenerateStoreEventsResult();
+        // todo store checking...
+        SavedGameParser.StoreState newStore = null;
+        if (currentGameState.getSectorNumber() == lastGameState.getSectorNumber()){
+            newStore = currentGameState.getBeaconList().get(lastGameState.getCurrentBeaconId()).getStore();
+        }
+        SavedGameParser.StoreState oldStore = lastGameState.getBeaconList().get(lastGameState.getCurrentBeaconId()).getStore();
+
+        // New Store event:
+        // 1. case: oldStore == null, newStore != null
+        // 2. case: oldStore != null, newStore != null AND lastGameState.beaconId != newGameState.beaconId
+        if ((oldStore == null && newStore != null) ||
+                (oldStore != null && newStore != null && lastGameState.getCurrentBeaconId() != currentGameState.getCurrentBeaconId())){
+            StoreFoundEvent storeFoundEvent = new StoreFoundEvent(jump);
+            storeFoundEvent.setStoreState(newStore);
+            result.add(storeFoundEvent);
+        }
+
+        // in a previous version we used !jumped instead of oldStore != null
+        // the reason we switched is that when you get a store from an event jumped is false but oldStore is still null
+        if (oldStore != null && newStore != null){
+            for (int i = 0; i < newStore.getShelfList().size(); i++){
+                for (int j = 0; j < newStore.getShelfList().get(i).getItems().size(); j++){
+                    if (!newStore.getShelfList().get(i).getItems().get(j).isAvailable()){
+                        if (oldStore.getShelfList().get(i).getItems().get(j).isAvailable()){
+                            // Drone control comes with a free drone
+                            // extra data: 0 -> DEFENSE_1, 1 -> REPAIR, 2 -> COMBAT_1
+                            // the drone systems itself costs 60 scrap, and half of the price of the drone that comes with it is added
+                            // so the cost of the systems depends on the drones that comes with it, and the drone then is free
+                            int localCost = 0;
+                            if (newStore.getShelfList().get(i).getItems().get(j).getItemId().equals("drones")){
+                                DroneEvent freeDroneWhenBuyingDroneControl;
+                                if (newStore.getShelfList().get(i).getItems().get(j).getExtraData() == 0){
+                                    freeDroneWhenBuyingDroneControl = new DroneEvent(jump, "DEFENSE_1");
+//                                    events.add(new DroneEvent(Constants.EventType.REWARD, 1, GausmanUtil.getCostStoreItemId(SavedGameParser.StoreItemType.DRONE, "DEFENSE_1"),"DEFENSE_1", jump));
+                                    result.boughtItems.add("DEFENSE_1");
+                                    localCost += 25;
+                                } else if (newStore.getShelfList().get(i).getItems().get(j).getExtraData() == 1) {
+                                    freeDroneWhenBuyingDroneControl = new DroneEvent(jump, "REPAIR");
+//                                    events.add(new DroneEvent(Constants.EventType.REWARD, 1, GausmanUtil.getCostStoreItemId(SavedGameParser.StoreItemType.DRONE, "REPAIR"),"REPAIR", jump));
+                                    result.boughtItems.add("REPAIR");
+                                    localCost += 15;
+                                } else if (newStore.getShelfList().get(i).getItems().get(j).getExtraData() == 2){
+                                    freeDroneWhenBuyingDroneControl = new DroneEvent(jump, "COMBAT_1");
+//                                    events.add(new DroneEvent(Constants.EventType.REWARD, 1, GausmanUtil.getCostStoreItemId(SavedGameParser.StoreItemType.DRONE, "COMBAT_1"),"COMBAT_1", jump));
+                                    result.boughtItems.add("COMBAT_1");
+                                    localCost += 25;
+                                } else {
+                                    throw new IllegalArgumentException("Unsupported extra drone info: " + newStore.getShelfList().get(i).getItems().get(j).getExtraData());
+                                }
+                                freeDroneWhenBuyingDroneControl.addTag(Constants.EventTag.BUY);
+                                freeDroneWhenBuyingDroneControl.addTag(Constants.EventTag.REWARD);
+                                result.add(freeDroneWhenBuyingDroneControl);
+                            }
+                            localCost += GausmanUtil.getCostStoreItemType(newStore.getShelfList().get(i).getItemType(), newStore.getShelfList().get(i).getItems().get(j));
+                            // Crew is handled later because it's more complex (by comparing the crewlist)
+                            // We just keep track of what crew we bought so we can use it then
+                            if (newStore.getShelfList().get(i).getItemType().equals(SavedGameParser.StoreItemType.CREW)){
+                                result.boughtCrew.add(newStore.getShelfList().get(i).getItems().get(j).getItemId());
+                            } else {
+                                Event boughtItemEvent;
+                                switch (newStore.getShelfList().get(i).getItemType()){
+                                    case WEAPON -> boughtItemEvent = new WeaponEvent(jump, newStore.getShelfList().get(i).getItems().get(j).getItemId());
+                                    case DRONE -> boughtItemEvent = new DroneEvent(jump, newStore.getShelfList().get(i).getItems().get(j).getItemId());
+                                    case AUGMENT -> boughtItemEvent = new AugmentEvent(jump, newStore.getShelfList().get(i).getItems().get(j).getItemId());
+                                    case SYSTEM -> boughtItemEvent = new SystemEvent(jump, SavedGameParser.SystemType.findById(newStore.getShelfList().get(i).getItems().get(j).getItemId()), true, 1, 1);
+                                    // todo newAmount is not 1 if you buy systems, then it's 2
+                                    default -> throw new IllegalArgumentException("Unsupported ItemType: " + newStore.getShelfList().get(i).getItemType());
+                                }
+                                boughtItemEvent.addTag(Constants.EventTag.BUY);
+                                boughtItemEvent.addTag(Constants.EventTag.STORE);
+                                boughtItemEvent.setResourceEffect(Constants.Resource.SCRAP, -localCost);
+                                result.add(boughtItemEvent);
+
+                                result.boughtItems.add(newStore.getShelfList().get(i).getItems().get(j).getItemId());
+                            }
+
+                        }
+                    }
+                }
+            }
+
+            if (lastGameState.getBeaconList().get(lastGameState.getCurrentBeaconId()).getStore() == null){
+                log.error("last shop error");
+            }
+
+            if (currentGameState.getBeaconList().get(currentGameState.getCurrentBeaconId()).getStore() == null){
+                log.error("new shop error");
+            }
+
+            result.fuelBought = oldStore.getFuel() - newStore.getFuel();
+            if (result.fuelBought > 0){
+                FuelBoughtEvent fuelBoughtEvent = new FuelBoughtEvent(jump, result.fuelBought);
+                fuelBoughtEvent.addTag(Constants.EventTag.STORE);
+                result.add(fuelBoughtEvent);
+            }
+            result.missilesBought = oldStore.getMissiles() - newStore.getMissiles();
+            if (result.missilesBought > 0){
+                MissilesBoughtEvent missilesBoughtEvent = new MissilesBoughtEvent(jump, result.missilesBought);
+                missilesBoughtEvent.addTag(Constants.EventTag.STORE);
+                result.add(missilesBoughtEvent);
+            }
+            result.dronesBought = oldStore.getDroneParts() - newStore.getDroneParts();
+            if (result.dronesBought > 0) {
+                DronesBoughtEvent dronesBoughtEvent = new DronesBoughtEvent(jump, result.dronesBought);
+                dronesBoughtEvent.addTag(Constants.EventTag.STORE);
+                result.add(dronesBoughtEvent);
+            }
+
+            // repair
+            result.repairCountDiff = currentGameState.getStateVar(StateVar.STORE_REPAIR.getId()) - lastGameState.getStateVar(StateVar.STORE_REPAIR.getId());
+            if (result.repairCountDiff > 0){
+                RepairEvent repairBoughtEvent = new RepairEvent(jump);
+                repairBoughtEvent.setResourceEffect(Constants.Resource.HULL, result.repairCountDiff);
+                repairBoughtEvent.setResourceEffect(Constants.Resource.SCRAP, -GausmanUtil.getCostResource(Constants.Resource.HULL.name(), result.repairCountDiff, currentGameState.getSectorNumber()));
+                repairBoughtEvent.addTag(Constants.EventTag.REPAIR);
+                repairBoughtEvent.addTag(Constants.EventTag.STORE);
+                repairBoughtEvent.addTag(Constants.EventTag.BUY);
+                repairBoughtEvent.setDisplayText("Bought repairs");
+                result.add(repairBoughtEvent);
+            }
+        }
+        return result;
     }
 
     private List<Event> getCrewEvents(SavedGameParser.SavedGameState lastGameState, SavedGameParser.SavedGameState currentGameState, List<String> boughtCrew, Jump jump){
@@ -863,21 +1021,34 @@ public class EventService {
 
         // Create events for every Crew-match
         // If the old crew does not match with one in the new list the crew is dead/discarded
-        int removedCrewCount = 0;
-        Integer adjustedCrewPosition = null;
+        Map<Integer, Integer> mapStateToInternalCopy = new HashMap<>(mapStateToInternal);
+        for (Map.Entry<Integer, Integer> entry : mapOldToNew.entrySet()) {
+            // crew lost
+            if (entry.getValue() == null){
+                Integer crewLostPos = getKeyByValue(mapStateToInternal, entry.getKey());
+                if (crewLostPos != null){
+                    mapStateToInternalCopy.remove(crewLostPos);
+                }
+            }
+        }
+        Map<Integer, Integer> mapStateToInternalNew = new HashMap<>();
+        Integer newIndex = 0;
+        for (Integer val : mapStateToInternalCopy.values()){
+            mapStateToInternalNew.put(newIndex, val);
+            newIndex++;
+        }
+
+        Integer adjustedCrewPosition;
 
         for (Map.Entry<Integer, Integer> entry : mapOldToNew.entrySet()) {
-            adjustedCrewPosition = getKeyByValue(mapStateToInternal, entry.getKey());
-            if (adjustedCrewPosition != null){
-                adjustedCrewPosition -= removedCrewCount;
-            }
+            adjustedCrewPosition = getKeyByValue(mapStateToInternalNew, entry.getKey());
 
+            // for Lost crew we need to use the initial mapStateToInternal
+            if (adjustedCrewPosition == null){
+                adjustedCrewPosition = getKeyByValue(mapStateToInternal, entry.getKey());
+            }
 
             events.addAll(compareCrewState(lastCrewState.get(entry.getKey()), entry.getValue() != null ? newCrewState.get(entry.getValue()) : null, jump, adjustedCrewPosition));
-
-            if (entry.getValue() == null){
-                removedCrewCount++;
-            }
         }
 
         // Last we have to check if all new crew were matched with an old crew
@@ -893,6 +1064,7 @@ public class EventService {
             CrewNewEvent event = new CrewNewEvent(jump);
             if (tag.equals(Constants.EventTag.BUY)){ // todo crew bought from events
                 event.setResourceEffect(Constants.Resource.SCRAP, -dm.getCrew(cs.getRace().getId()).getCost());
+                event.addTag(Constants.EventTag.STORE);
             }
             event.addTag(tag);
             event.setCrewPosition(lastCrewState.size());
@@ -1148,7 +1320,7 @@ public class EventService {
 
         // Skill Mastery Change
         if (lastCrewState.getPilotMasteryOne() != newCrewState.getPilotMasteryOne()){
-            MasteryEvent event = new MasteryEvent(
+            CrewMasteryEvent event = new CrewMasteryEvent(
                     jump,
                     Constants.Skill.PILOT,
                     1,
@@ -1160,7 +1332,7 @@ public class EventService {
         }
 
         if (lastCrewState.getPilotMasteryTwo() != newCrewState.getPilotMasteryTwo()){
-            MasteryEvent event = new MasteryEvent(
+            CrewMasteryEvent event = new CrewMasteryEvent(
                     jump,
                     Constants.Skill.PILOT,
                     2,
@@ -1172,7 +1344,7 @@ public class EventService {
         }
 
         if (lastCrewState.getEngineMasteryOne() != newCrewState.getEngineMasteryOne()){
-            MasteryEvent event = new MasteryEvent(
+            CrewMasteryEvent event = new CrewMasteryEvent(
                     jump,
                     Constants.Skill.ENGINE,
                     1,
@@ -1184,7 +1356,7 @@ public class EventService {
         }
 
         if (lastCrewState.getEngineMasteryTwo() != newCrewState.getEngineMasteryTwo()){
-            MasteryEvent event = new MasteryEvent(
+            CrewMasteryEvent event = new CrewMasteryEvent(
                     jump,
                     Constants.Skill.ENGINE,
                     2,
@@ -1196,7 +1368,7 @@ public class EventService {
         }
 
         if (lastCrewState.getShieldMasteryOne() != newCrewState.getShieldMasteryOne()){
-            MasteryEvent event = new MasteryEvent(
+            CrewMasteryEvent event = new CrewMasteryEvent(
                     jump,
                     Constants.Skill.SHIELD,
                     1,
@@ -1208,7 +1380,7 @@ public class EventService {
         }
 
         if (lastCrewState.getShieldMasteryTwo() != newCrewState.getShieldMasteryTwo()){
-            MasteryEvent event = new MasteryEvent(
+            CrewMasteryEvent event = new CrewMasteryEvent(
                     jump,
                     Constants.Skill.SHIELD,
                     2,
@@ -1220,7 +1392,7 @@ public class EventService {
         }
 
         if (lastCrewState.getWeaponMasteryOne() != newCrewState.getWeaponMasteryOne()){
-            MasteryEvent event = new MasteryEvent(
+            CrewMasteryEvent event = new CrewMasteryEvent(
                     jump,
                     Constants.Skill.WEAPON,
                     1,
@@ -1232,7 +1404,7 @@ public class EventService {
         }
 
         if (lastCrewState.getWeaponMasteryTwo() != newCrewState.getWeaponMasteryTwo()){
-            MasteryEvent event = new MasteryEvent(
+            CrewMasteryEvent event = new CrewMasteryEvent(
                     jump,
                     Constants.Skill.WEAPON,
                     2,
@@ -1244,7 +1416,7 @@ public class EventService {
         }
 
         if (lastCrewState.getRepairMasteryOne() != newCrewState.getRepairMasteryOne()){
-            MasteryEvent event = new MasteryEvent(
+            CrewMasteryEvent event = new CrewMasteryEvent(
                     jump,
                     Constants.Skill.REPAIR,
                     1,
@@ -1256,7 +1428,7 @@ public class EventService {
         }
 
         if (lastCrewState.getRepairMasteryTwo() != newCrewState.getRepairMasteryTwo()){
-            MasteryEvent event = new MasteryEvent(
+            CrewMasteryEvent event = new CrewMasteryEvent(
                     jump,
                     Constants.Skill.REPAIR,
                     2,
@@ -1268,7 +1440,7 @@ public class EventService {
         }
 
         if (lastCrewState.getCombatMasteryOne() != newCrewState.getCombatMasteryOne()){
-            MasteryEvent event = new MasteryEvent(
+            CrewMasteryEvent event = new CrewMasteryEvent(
                     jump,
                     Constants.Skill.COMBAT,
                     1,
@@ -1280,7 +1452,7 @@ public class EventService {
         }
 
         if (lastCrewState.getCombatMasteryTwo() != newCrewState.getCombatMasteryTwo()){
-            MasteryEvent event = new MasteryEvent(
+            CrewMasteryEvent event = new CrewMasteryEvent(
                     jump,
                     Constants.Skill.COMBAT,
                     2,

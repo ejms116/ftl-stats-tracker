@@ -31,7 +31,6 @@ public class ToolbarPanel extends JPanel {
         trackingToggleButton.addActionListener(listener);
     }
 
-
     public void setTrackingToggleState(boolean isOn){
         trackingToggleButton.setText(isOn ? TRACKING_TOGGLE_BUTTON_ON : TRACKING_TOGGLE_BUTTON_OFF);
         trackingToggleButton.setBackground(isOn ? Color.GREEN : Color.RED);

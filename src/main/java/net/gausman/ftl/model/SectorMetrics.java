@@ -1,6 +1,8 @@
 package net.gausman.ftl.model;
 
+import net.blerf.ftl.parser.SavedGameParser;
 import net.gausman.ftl.model.record.Sector;
+import net.gausman.ftl.model.record.StoreInfo;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -19,6 +21,14 @@ public class SectorMetrics {
 
     private SectorInfo ensureSector(Sector sector) {
         return data.computeIfAbsent(sector, s -> new SectorInfo());
+    }
+
+    public void update(Sector sector, boolean apply, Integer index, String itemId, SavedGameParser.StoreItemType itemType){
+        ensureSector(sector).setItemAvailableInStore(apply, index, itemId, itemType);
+    }
+
+    public void update(Sector sector, StoreInfo storeInfo, boolean apply, Integer index){
+        ensureSector(sector).applyStoreInfo(apply, index, storeInfo);
     }
 
     public void update(Sector sector, Constants.ScrapOrigin origin, int delta) {

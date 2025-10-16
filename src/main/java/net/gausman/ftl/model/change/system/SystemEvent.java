@@ -67,5 +67,15 @@ public class SystemEvent extends Event {
                 Constants.ScrapUsedCategory.SYSTEM_BUY,
                 mult*-getResourceEffects().getOrDefault(Constants.Resource.SCRAP,0)
         );
+
+        if (getTags().contains(Constants.EventTag.BUY)){
+            model.getSectorMetrics().update(
+                    getJump().getSector(),
+                    apply,
+                    getJump().getCurrentBeaconId(),
+                    type.getId(),
+                    SavedGameParser.StoreItemType.SYSTEM
+            );
+        }
     }
 }

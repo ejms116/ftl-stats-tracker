@@ -25,6 +25,7 @@ public class ShipStatusModel {
     private final List<Crew> deadCrewList;
     private final SectorMetrics sectorMetrics;
 
+
     // New ShipStatus
     public ShipStatusModel(){
         // General Run Info
@@ -70,12 +71,6 @@ public class ShipStatusModel {
 
         sectorMetrics = new SectorMetrics(status.getSectorMetrics());
     }
-
-//    private void addScrapGained(int key, Constants.ScrapOrigin origin, int amount){
-//        Map<Constants.ScrapOrigin, Integer> innerMap = scrapGained.computeIfAbsent(key,
-//                k -> createDefaultScrapGainedMap());
-//        innerMap.put(origin, innerMap.get(origin) + amount);
-//    }
 
 
     public void apply(Event event, boolean apply) {

@@ -8,10 +8,11 @@ import net.gausman.ftl.model.record.Sector;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
+import org.jfree.chart.axis.CategoryAxis;
+import org.jfree.chart.axis.CategoryLabelPositions;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.labels.ItemLabelAnchor;
 import org.jfree.chart.labels.ItemLabelPosition;
-import org.jfree.chart.labels.StandardCategoryItemLabelGenerator;
 import org.jfree.chart.plot.CategoryPlot;
 import org.jfree.chart.renderer.category.StackedBarRenderer;
 import org.jfree.chart.ui.TextAnchor;
@@ -21,10 +22,6 @@ import org.jfree.data.category.DefaultCategoryDataset;
 
 import javax.swing.*;
 import java.awt.*;
-import java.text.DecimalFormat;
-import java.text.FieldPosition;
-import java.text.NumberFormat;
-import java.text.ParsePosition;
 import java.util.Map;
 
 public class ScrapGainedChartPanel extends JPanel {
@@ -106,10 +103,10 @@ public class ScrapGainedChartPanel extends JPanel {
             chart.getLegend().setItemPaint(Color.WHITE);
         }
 
-//        CategoryAxis domainAxis = plot.getDomainAxis();
-//        domainAxis.setCategoryLabelPositions(
-//                CategoryLabelPositions.createUpRotationLabelPositions(Math.PI / 4) // 45° upwards
-//        );
+        CategoryAxis domainAxis = plot.getDomainAxis();
+        domainAxis.setCategoryLabelPositions(
+                CategoryLabelPositions.createUpRotationLabelPositions(Math.PI / 4) // 45° upwards
+        );
 
         NumberAxis yAxis = (NumberAxis)plot.getRangeAxis();
         yAxis.setRangeType(RangeType.POSITIVE);
@@ -126,19 +123,19 @@ public class ScrapGainedChartPanel extends JPanel {
 
 
     public void updateDataset(SectorMetrics sectorMetrics){
-        initDatasetFromPos(0);
+        defaultDataset.clear();
         for (Map.Entry<Sector, SectorInfo> outer : sectorMetrics.getData().entrySet()){
-//            String text = String.format("%s - %s", outer.getKey().getId(), outer.getKey().getSectorDot().getTitle());
-            String text = String.valueOf(outer.getKey().getId());
+            String text = String.format("%s - %s", outer.getKey().getId(), outer.getKey().getSectorDot().getTitle());
+//            String text = String.valueOf(outer.getKey().getId());
             for (Map.Entry<Constants.ScrapOrigin, Integer> innerEntry : outer.getValue().getScrapGained().entrySet()){
                 defaultDataset.setValue(innerEntry.getValue(), innerEntry.getKey(), text);
             }
         }
+        initDatasetFromPos(sectorMetrics.getData().size());
 
     }
 
     private void initDatasetFromPos(int pos){
-        defaultDataset.clear();
         for (int i = pos + 1; i < 9; i++){
             for (Constants.ScrapOrigin origin : Constants.ScrapOrigin.values()){
                 defaultDataset.setValue(0, origin, Integer.toString(i));

@@ -6,16 +6,14 @@ import net.gausman.ftl.model.ShipStatusModel;
 import net.gausman.ftl.model.record.Jump;
 import net.gausman.ftl.util.GausmanUtil;
 
-import java.util.Optional;
-
-public class MasteryEvent extends CrewEvent {
+public class CrewMasteryEvent extends CrewEvent {
     private Constants.Skill mastery;
     private int level;
     private boolean newValue;
 
-    public MasteryEvent(){}
+    public CrewMasteryEvent(){}
 
-    public MasteryEvent(Jump jump, Constants.Skill mastery, int level, boolean newValue){
+    public CrewMasteryEvent(Jump jump, Constants.Skill mastery, int level, boolean newValue){
         super (Constants.EventDetailType.CREW_MASTERY, jump);
         addTag(Constants.EventTag.STAT);
         this.mastery = mastery;
@@ -45,7 +43,7 @@ public class MasteryEvent extends CrewEvent {
             return;
         }
 
-        if (getCrewPosition() >= model.getCrewList().size()){
+        if (getCrewPosition() >= model.getCrewList().size() || getCrewPosition() < 0){
             log.error(String.format("Mastery event: crew position %s out of bounds %s", getCrewPosition(), model.getCrewList().size()));
             return;
         }

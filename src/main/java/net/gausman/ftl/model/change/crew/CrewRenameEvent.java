@@ -36,7 +36,7 @@ public class CrewRenameEvent extends CrewEvent {
             return;
         }
 
-        if (getCrewPosition() >= model.getCrewList().size()){
+        if (getCrewPosition() >= model.getCrewList().size() || getCrewPosition() < 0){
             log.error(String.format("Rename event: crew position %s out of bounds %s", getCrewPosition(), model.getCrewList().size()));
             return;
         }

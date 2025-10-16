@@ -58,7 +58,7 @@ public abstract class ItemEvent extends Event {
                     log.error("Item could not be removed from list.");
                 }
             }
-            updateSectorMetrics(model, mult);
+            updateSectorMetrics(model, apply, mult);
 
         } else if (this.getTags().contains(Constants.EventTag.SELL) ||
             this.getTags().contains(Constants.EventTag.DISCARD)){
@@ -85,7 +85,7 @@ public abstract class ItemEvent extends Event {
 
     }
 
-    private void updateSectorMetrics(ShipStatusModel model, int mult) {
+    private void updateSectorMetrics(ShipStatusModel model, boolean apply, int mult) {
         model.getSectorMetrics().update(
                 getJump().getSector(),
                 convertItemTypeToScrapUsedCategory(getItemType()),
@@ -97,6 +97,16 @@ public abstract class ItemEvent extends Event {
                     getJump().getSector(),
                     Constants.ScrapOrigin.FREE,
                     mult* GausmanUtil.getCostStoreItemId(getItemType(), getItemId())/2
+            );
+        }
+
+        if (getTags().contains(Constants.EventTag.BUY)){
+            model.getSectorMetrics().update(
+                    getJump().getSector(),
+                    apply,
+                    getJump().getCurrentBeaconId(),
+                    getItemId(),
+                    getItemType()
             );
         }
     }

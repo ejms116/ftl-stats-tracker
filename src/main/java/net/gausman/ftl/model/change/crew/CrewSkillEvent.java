@@ -38,7 +38,7 @@ public class CrewSkillEvent extends CrewEvent {
             return;
         }
 
-        if (getCrewPosition() >= model.getCrewList().size()){
+        if (getCrewPosition() >= model.getCrewList().size() || getCrewPosition() < 0){
             log.error(String.format("Skill event: crew position %s out of bounds %s", getCrewPosition(), model.getCrewList().size()));
             return;
         }

@@ -18,6 +18,7 @@ public class ScrapCollectedEvent extends Event {
         super.applyEventToShipStatusModel(model, apply);
         int mult = apply ? 1 : -1;
 
+
         model.getSectorMetrics().update(
                 getJump().getSector(),
                 Constants.ScrapOrigin.NORMAL,

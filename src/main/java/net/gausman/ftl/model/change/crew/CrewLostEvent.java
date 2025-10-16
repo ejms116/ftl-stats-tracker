@@ -8,6 +8,8 @@ import net.gausman.ftl.model.record.Jump;
 import java.util.Optional;
 
 public class CrewLostEvent extends CrewEvent {
+    public CrewLostEvent(){}
+
      public CrewLostEvent(Jump jump){
          super(Constants.EventDetailType.CREW_LOST, jump);
      }

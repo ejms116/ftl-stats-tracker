@@ -1,8 +1,7 @@
 package net.gausman.ftl.view;
 
-import net.gausman.ftl.view.charts.ScrapUsageChartsPanel;
-import net.gausman.ftl.view.shipstatus.ShipStatusPanel;
 import net.gausman.ftl.view.eventtable.EventTablePanel;
+import net.gausman.ftl.view.shipstatus.ShipStatusPanel;
 import net.gausman.ftl.view.toolbar.ToolbarPanel;
 
 import javax.swing.*;
@@ -12,7 +11,6 @@ public class TrackerView extends JFrame {
     private final ToolbarPanel toolbarPanel;
     private EventTablePanel eventTablePanel;
     private final ShipStatusPanel shipStatusPanel;
-    private final ScrapUsageChartsPanel scrapUsageChartsPanel;
 
     private final JSplitPane main;
 
@@ -27,15 +25,10 @@ public class TrackerView extends JFrame {
 
 
         shipStatusPanel = new ShipStatusPanel();
-        scrapUsageChartsPanel = new ScrapUsageChartsPanel();
-
-        JSplitPane leftPanel = new JSplitPane(JSplitPane.VERTICAL_SPLIT, shipStatusPanel, scrapUsageChartsPanel);
-        leftPanel.setResizeWeight(0.5);
-        leftPanel.setDividerLocation(0.5);
 
         toolbarPanel = new ToolbarPanel();
 
-        main.setLeftComponent(leftPanel);
+        main.setLeftComponent(shipStatusPanel);
         main.setResizeWeight(0.5);
 
         add(toolbarPanel, BorderLayout.NORTH);
@@ -62,7 +55,4 @@ public class TrackerView extends JFrame {
         return shipStatusPanel;
     }
 
-    public ScrapUsageChartsPanel getChartsPanel() {
-        return scrapUsageChartsPanel;
-    }
 }

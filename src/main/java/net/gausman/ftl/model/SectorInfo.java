@@ -1,16 +1,21 @@
 package net.gausman.ftl.model;
 
+import net.blerf.ftl.parser.SavedGameParser;
+import net.gausman.ftl.model.record.StoreInfo;
 import net.gausman.ftl.model.sector.DamageStat;
 import net.gausman.ftl.model.sector.RepairStat;
 import net.gausman.ftl.model.sector.SectorStat;
 
 import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.Map;
 
 public class SectorInfo {
     private final EnumMap<Constants.ScrapOrigin, Integer> scrapGained;
     private final EnumMap<Constants.ScrapUsedCategory, Integer> scrapUsed;
     private final EnumMap<Constants.SectorStatsData, SectorStat<?>> sectorStats;
     private final EnumMap<Constants.SectorStatsData, ResourceOriginIntegerMap> sectorStatsData;
+    private final Map<Integer, StoreInfo> storeInfoMap;
 
     public SectorInfo(){
         scrapGained = new EnumMap<>(Constants.ScrapOrigin.class);
@@ -24,13 +29,12 @@ public class SectorInfo {
         sectorStats = new EnumMap<>(Constants.SectorStatsData.class);
         sectorStats.put(Constants.SectorStatsData.DAMAGE, new DamageStat());
         sectorStats.put(Constants.SectorStatsData.REPAIR, new RepairStat());
-//        for (Constants.SectorStatsData sectorStat : Constants.SectorStatsData.values()){
-//            sectorStats.put(sectorStat, new ResourceOriginIntegerMap());
-//        }
+
         sectorStatsData = new EnumMap<>(Constants.SectorStatsData.class);
         for (Constants.SectorStatsData sectorStat : Constants.SectorStatsData.values()){
             sectorStatsData.put(sectorStat, new ResourceOriginIntegerMap());
         }
+        storeInfoMap = new HashMap<>();
     }
 
     public SectorInfo(SectorInfo other){
@@ -38,6 +42,46 @@ public class SectorInfo {
         this.scrapUsed = new EnumMap<>(other.scrapUsed);
         this.sectorStats = new EnumMap<>(other.sectorStats);
         this.sectorStatsData = new EnumMap<>(other.sectorStatsData);
+        this.storeInfoMap = new HashMap<>();
+        for (Map.Entry<Integer, StoreInfo> entry : other.getStoreInfoMap().entrySet()){
+            this.storeInfoMap.put(entry.getKey(), new StoreInfo(entry.getValue()));
+        }
+    }
+
+    public void setItemAvailableInStore(boolean apply, Integer index, String itemId, SavedGameParser.StoreItemType itemType){
+        StoreInfo storeInfo = storeInfoMap.get(index);
+        if (storeInfo == null){
+            return;
+        }
+
+        SavedGameParser.StoreState store = storeInfo.getStore();
+
+        if (store == null){
+            return;
+        }
+
+        for (SavedGameParser.StoreShelf shelf : store.getShelfList()){
+            if (shelf.getItemType().equals(itemType)){
+                for (SavedGameParser.StoreItem item : shelf.getItems()){
+                    if (item.getItemId().equals(itemId)){
+                        if (item.isAvailable() == apply){
+                            item.setAvailable(!apply);
+                            return;
+                        }
+                    }
+                }
+                return;
+            }
+        }
+    }
+
+
+    public void applyStoreInfo(boolean apply, Integer index, StoreInfo storeInfo){
+        if (apply){
+            storeInfoMap.put(index, storeInfo);
+        } else {
+            storeInfoMap.remove(index);
+        }
     }
 
     public void add(Constants.ScrapOrigin origin, int delta){
@@ -48,11 +92,9 @@ public class SectorInfo {
         scrapUsed.put(category, scrapUsed.get(category)+delta);
     }
 
-//    public void add()
-
-//    public void add(Constants.SectorStatsData sectorStats, Constants.ResourceOrigin resourceOrigin, int delta){
-//        sectorStatsData.get(sectorStats).add(resourceOrigin, delta);
-//    }
+    public Map<Integer, StoreInfo> getStoreInfoMap() {
+        return storeInfoMap;
+    }
 
     public EnumMap<Constants.ScrapOrigin, Integer> getScrapGained() {
         return scrapGained;

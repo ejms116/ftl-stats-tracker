@@ -10,10 +10,6 @@ public class CrewEvent extends Event {
 
     public CrewEvent(){}
 
-//    public CrewEvent(String text, Jump jump){
-//        super(Constants.EventCategory.CREW, text, jump);
-//    }
-
     public CrewEvent(Constants.EventDetailType eventDetailType, Jump jump){
         super(eventDetailType, jump);
     }

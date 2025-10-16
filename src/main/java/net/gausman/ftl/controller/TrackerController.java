@@ -185,15 +185,12 @@ public class TrackerController {
         eventTableModel.setStartTime(runService.getCurrentRun().getStartTime());
         eventTableModel.setEvents(runService.getEventMapFlat());
         view.getShipStatusPanel().update(model);
-        view.getChartsPanel().updateDatasets(model.getSectorMetrics());
-
     }
 
     private void updateUI(int eventId){
         ShipStatusModel model = runService.getStatusAtId(eventId);
         view.getShipStatusPanel().update(model);
         view.getEventTablePanel().updateJumpInfoPanel(eventTableModel.getEventById(eventId).getJump());
-        view.getChartsPanel().updateDatasets(model.getSectorMetrics());
     }
 
     private void showEventTreeBrowserView() {
@@ -212,7 +209,7 @@ public class TrackerController {
                 if (toggleTracking) {
                     if (continueSaveFile.exists()){
                         log.info( "FILE "+ file.getName() +" HAS CHANGED" );
-                         loadGameStateFile(continueSaveFile);
+                         loadGameStateFile(continueSaveFile, true);
                     } else {
                         log.info( "FILE "+ file.getName() +" NOT FOUND" ); // TODO prompt when starting a new run
                     }
@@ -225,7 +222,7 @@ public class TrackerController {
         log.info("File Watcher setup complete...");
     }
 
-    private void loadGameStateFile(File file) {
+    private void loadGameStateFile(File file, boolean updateUI) {
 
         FileInputStream in = null;
         StringBuilder hexBuf = new StringBuilder();
@@ -256,13 +253,10 @@ public class TrackerController {
                 eventTableModel.setStartTime(runService.getCurrentRun().getStartTime());
                 eventTableModel.setEvents(runService.getEventMapFlat());
             }
-            eventTableModel.fireTableDataChanged(); // optimize
-            SwingUtilities.invokeLater(() -> {
-                if (eventTablePanel.getTable().getRowCount() > 0) {
-//                    eventTablePanel.getTable().changeSelection(0, 0, false, false);
-                    selectNewestRow();
-                }
-            });
+            if (updateUI){
+                updateUI();
+            }
+
             log.info("Game state read successfully.");
 
             if (!gs.getMysteryList().isEmpty()) {
@@ -301,6 +295,16 @@ public class TrackerController {
         }
     }
 
+    private void updateUI(){
+        eventTableModel.fireTableDataChanged(); // optimize
+        SwingUtilities.invokeLater(() -> {
+            if (eventTablePanel.getTable().getRowCount() > 0) {
+//                    eventTablePanel.getTable().changeSelection(0, 0, false, false);
+                selectNewestRow();
+            }
+        });
+    }
+
     private void copySaveFile(SavedGameParser.SavedGameState currentGameState){
         Instant now = Instant.now();
         try {
@@ -318,7 +322,7 @@ public class TrackerController {
 
 
     private void testSaveFileReading(){
-        File folder = new File("saves\\test-holo-engi-a");
+        File folder = new File("saves\\test-gausman-mantis-a");
 
         if (!folder.isDirectory()) {
             System.out.println("Not a directory.");
@@ -340,9 +344,9 @@ public class TrackerController {
             Date date = new Date(lastModified);
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
             log.info(file.getName() + " - Last modified: " + sdf.format(date));
-            loadGameStateFile(file);
+            loadGameStateFile(file, false);
         }
-
+        updateUI();
         runService.saveRunToJson(new File(CURRENT_RUN_FILENAME));
         log.info("Testing done");
     }
