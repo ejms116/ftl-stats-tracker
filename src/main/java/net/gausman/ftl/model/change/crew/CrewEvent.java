@@ -6,7 +6,7 @@ import net.gausman.ftl.model.record.Jump;
 
 public class CrewEvent extends Event {
     // this refers to the crew position in our ship status NOT the position in the save file
-    private Integer crewPosition;
+    private String crewId;
 
     public CrewEvent(){}
 
@@ -14,12 +14,11 @@ public class CrewEvent extends Event {
         super(eventDetailType, jump);
     }
 
-    public Integer getCrewPosition() {
-        return crewPosition;
+    public String getCrewId() {
+        return crewId;
     }
 
-    public void setCrewPosition(Integer crewPosition) {
-        this.crewPosition = crewPosition;
+    public void setCrewId(String crewId) {
+        this.crewId = crewId;
     }
-
 }

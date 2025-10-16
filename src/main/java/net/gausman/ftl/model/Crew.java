@@ -1,12 +1,28 @@
 package net.gausman.ftl.model;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import net.blerf.ftl.parser.SavedGameParser;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
+// id is the actual id that is generated automatically
+// referenceId is equal to the id if a normal constructor was used
+// if the copy constructor for a deep copy is used the referenceId
+// is equal to the referenceId of the copied object
+// this can happen multiple times
+// so the referenceId is always the Id of the "original" object
+
+@JsonIdentityInfo(
+        generator = ObjectIdGenerators.PropertyGenerator.class,
+        property = "id"
+)
 public class Crew {
+    private final String id = UUID.randomUUID().toString();
+    private final String referenceId;
     private String name;
     // Todo Maybe list of previous names?
     private SavedGameParser.CrewType crewType;
@@ -31,18 +47,22 @@ public class Crew {
     private boolean repairMasteryOne = false, repairMasteryTwo = false;
     private boolean combatMasteryOne = false, combatMasteryTwo = false;
 
-    public Crew(){};
+    public Crew(){
+        this.referenceId = id;
+    };
 
-    public Crew(String name, SavedGameParser.CrewType crewType, Constants.EventType origin, boolean male) {
-        this.name = name;
-        this.crewType = crewType;
-        this.origin = origin;
-        this.state = Constants.CrewAliveOrDead.ALIVE;
-        this.male = male;
-    }
+//    public Crew(String name, SavedGameParser.CrewType crewType, Constants.EventType origin, boolean male) {
+//        this.name = name;
+//        this.crewType = crewType;
+//        this.origin = origin;
+//        this.state = Constants.CrewAliveOrDead.ALIVE;
+//        this.male = male;
+//        this.referenceId = id;
+//    }
 
     // Deep copy
     public Crew(Crew other){
+        this.referenceId = other.referenceId;
         this.name = other.name;
         this.crewType = other.crewType;
         this.origin = other.origin;
@@ -75,6 +95,7 @@ public class Crew {
     }
 
     public Crew(SavedGameParser.CrewState crewState, Constants.EventType origin){
+        this.referenceId = id;
         this.name = crewState.getName();
         this.crewType = crewState.getRace();
         this.origin = origin;
@@ -104,6 +125,14 @@ public class Crew {
         this.repairMasteryTwo = crewState.getRepairMasteryTwo();
         this.combatMasteryOne = crewState.getCombatMasteryOne();
         this.combatMasteryTwo = crewState.getCombatMasteryTwo();
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public String getReferenceId() {
+        return referenceId;
     }
 
     public boolean equalsWithoutOrigin(Object o, Constants.CrewAliveOrDead cs) {

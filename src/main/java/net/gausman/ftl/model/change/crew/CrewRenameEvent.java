@@ -6,6 +6,8 @@ import net.gausman.ftl.model.ShipStatusModel;
 import net.gausman.ftl.model.record.Jump;
 import net.gausman.ftl.util.GausmanUtil;
 
+import java.util.Optional;
+
 public class CrewRenameEvent extends CrewEvent {
     private String oldName;
     private String newName;
@@ -31,27 +33,17 @@ public class CrewRenameEvent extends CrewEvent {
     @Override
     public void applyEventToShipStatusModel(ShipStatusModel model, boolean apply) {
         super.applyEventToShipStatusModel(model, apply);
-        if (getCrewPosition() == null){
-            log.info("Rename event: crew position null");
-            return;
-        }
 
-        if (getCrewPosition() >= model.getCrewList().size() || getCrewPosition() < 0){
-            log.error(String.format("Rename event: crew position %s out of bounds %s", getCrewPosition(), model.getCrewList().size()));
-            return;
-        }
+        Optional<Crew> crewToChange = model.getCrewList().stream()
+                .filter(c -> c.getReferenceId().equals(getCrewId()))
+                .findFirst();
 
-        Crew crewToChange = model.getCrewList().get(getCrewPosition());
-
-        if (crewToChange == null){
-            log.error("Crew for crew rename event not found. Position: " + getCrewPosition());
-            return;
-        }
-
-        if (apply){
-            crewToChange.setName(getNewName());
-        } else {
-            crewToChange.setName(getOldName());
-        }
+        crewToChange.ifPresent(c -> {
+            if (apply){
+                c.setName(getNewName());
+            } else {
+                c.setName(getOldName());
+            }
+        });
     }
 }

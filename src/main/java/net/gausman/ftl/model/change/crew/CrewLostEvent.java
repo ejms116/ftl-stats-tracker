@@ -20,32 +20,21 @@ public class CrewLostEvent extends CrewEvent {
     public void applyEventToShipStatusModel(ShipStatusModel model, boolean apply) {
         super.applyEventToShipStatusModel(model, apply);
 
-        if (getCrewPosition() == null){
-            log.info("Crew lost event: crew position null");
-            return;
-        }
+        Optional<Crew> crewToChange = model.getCrewList().stream()
+                .filter(c -> c.getReferenceId().equals(getCrewId()))
+                .findFirst();
 
-        if (apply){
-            Optional<Crew> removedCrew = model.removeCrewIfPresent(getCrewPosition(), model.getCrewList());
-            removedCrew.ifPresentOrElse(
-                    crew -> {
-                        crew.setState(Constants.CrewAliveOrDead.DEAD);
-                        model.getDeadCrewList().add(crew);
-                    },
-                    () -> log.error("Can't find crew to DISCARD.")
-            );
+        crewToChange.ifPresent(c -> {
+            if (apply){
+                model.getCrewList().remove(c);
+                model.getDeadCrewList().add(c);
+                c.setState(Constants.CrewAliveOrDead.DEAD);
 
-        } else {
-            Optional<Crew> removedDeadCrew = model.removeCrewIfPresent(model.getDeadCrewList().size() - 1, model.getDeadCrewList());
-            removedDeadCrew.ifPresentOrElse(
-                    crew -> {
-                        crew.setState(Constants.CrewAliveOrDead.ALIVE);
-                        model.getCrewList().add(getCrewPosition(), crew);
-                    },
-                    () -> log.error("Can't find DISCARDED Crew to revert.")
-            );
-
-        }
-
+            } else {
+                model.getCrewList().add(c);
+                model.getDeadCrewList().remove(c);
+                c.setState(Constants.CrewAliveOrDead.ALIVE);
+            }
+        });
     }
 }

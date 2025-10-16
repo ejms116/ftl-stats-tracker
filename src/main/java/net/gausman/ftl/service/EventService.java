@@ -44,8 +44,8 @@ public class EventService {
     private DataManager dm = DataManager.get();
 
     private List<SavedGameParser.EncounterState> encounterStateList = new ArrayList<>();
-
-    private Map<Integer, Integer> mapStateToInternal = new HashMap<>();
+    
+    private Map<Integer, String> mapCrewToInternal = new HashMap<>();
 
     public void initEventService(){
         encounterStateList.clear();
@@ -115,14 +115,16 @@ public class EventService {
 
 
         // Crew
-        int index = 0;
+        Integer index = 0;
+        mapCrewToInternal = new HashMap<>();
         for (SavedGameParser.CrewState crewState : newGameState.getPlayerShip().getCrewList()) {
             CrewNewEvent creweventNew = new CrewNewEvent(jump);
             creweventNew.addTag(Constants.EventTag.START);
-            creweventNew.setCrewPosition(index);
-            creweventNew.setCrew(new Crew(crewState, Constants.EventType.START)); // todo we should change this
+            Crew newCrew = new Crew(crewState, Constants.EventType.START);
+            creweventNew.setCrew(newCrew); // todo we should change this
             creweventNew.addIntegerStatEffects(new IntegerStatEffect(Constants.General.CREW_HIRED, 1));
             events.add(creweventNew);
+            mapCrewToInternal.put(index, newCrew.getId());
             index++;
         }
 
@@ -1008,10 +1010,6 @@ public class EventService {
             }
         }
 
-        if (mapStateToInternal.isEmpty()){
-            mapStateToInternal.putAll(mapOldToNew);
-        }
-
         // Problem here
         // when discarding crew the crew positions need to be updated
         // at the moment this happens at the bottom in the projectValues method
@@ -1019,40 +1017,23 @@ public class EventService {
         // maybe we can add these events after updating the crew positions
         // or we need pre calculate what the values will be
 
-        // Create events for every Crew-match
-        // If the old crew does not match with one in the new list the crew is dead/discarded
-        Map<Integer, Integer> mapStateToInternalCopy = new HashMap<>(mapStateToInternal);
-        for (Map.Entry<Integer, Integer> entry : mapOldToNew.entrySet()) {
-            // crew lost
-            if (entry.getValue() == null){
-                Integer crewLostPos = getKeyByValue(mapStateToInternal, entry.getKey());
-                if (crewLostPos != null){
-                    mapStateToInternalCopy.remove(crewLostPos);
-                }
-            }
+        if (lastCrewState.size() != newCrewState.size()){
+            log.info("difference in crew size detected");
         }
-        Map<Integer, Integer> mapStateToInternalNew = new HashMap<>();
-        Integer newIndex = 0;
-        for (Integer val : mapStateToInternalCopy.values()){
-            mapStateToInternalNew.put(newIndex, val);
-            newIndex++;
-        }
-
-        Integer adjustedCrewPosition;
 
         for (Map.Entry<Integer, Integer> entry : mapOldToNew.entrySet()) {
-            adjustedCrewPosition = getKeyByValue(mapStateToInternalNew, entry.getKey());
-
-            // for Lost crew we need to use the initial mapStateToInternal
-            if (adjustedCrewPosition == null){
-                adjustedCrewPosition = getKeyByValue(mapStateToInternal, entry.getKey());
-            }
-
-            events.addAll(compareCrewState(lastCrewState.get(entry.getKey()), entry.getValue() != null ? newCrewState.get(entry.getValue()) : null, jump, adjustedCrewPosition));
+            events.addAll(
+                    compareCrewState(lastCrewState.get(entry.getKey()),
+                            entry.getValue() != null ? newCrewState.get(entry.getValue()) : null,
+                            jump,
+                            mapCrewToInternal.get(entry.getKey())
+                    ));
         }
+
 
         // Last we have to check if all new crew were matched with an old crew
         // if not the crew is new
+        int crewInsertIndex = lastCrewState.size();
         for (int i = 0; i < newCrewState.size(); i++){
             if (newCrewMatched.contains(i)){
                 continue;
@@ -1067,103 +1048,64 @@ public class EventService {
                 event.addTag(Constants.EventTag.STORE);
             }
             event.addTag(tag);
-            event.setCrewPosition(lastCrewState.size());
-            event.setCrew(new Crew(cs, eventType)); // todo why do we need eventType?
+            Crew crew = new Crew(cs, eventType); // todo why do we need eventType?
+            event.setCrew(crew);
+            event.setCrewId(crew.getId());
             events.addFirst(event);
-            mapOldToNew.put(lastCrewState.size(), i);
+            mapCrewToInternal.put(crewInsertIndex, crew.getId());
+            mapOldToNew.put(crewInsertIndex, i);
+            crewInsertIndex++;
         }
+        
 
-        if (!validateMap(mapStateToInternal, newCrewState)){
+        mapCrewToInternal = projectCrewMap(mapCrewToInternal, mapOldToNew);
+
+        if (!validateCrewMap(mapCrewToInternal) || mapCrewToInternal.size() != newCrewState.size()){
             log.error("Crew map validation failed");
-        }
-
-        mapStateToInternal = projectValues(mapStateToInternal, mapOldToNew);
-
-        if (!validateMap(mapStateToInternal, newCrewState) || mapStateToInternal.size() != newCrewState.size()){
-            log.error("Crew map validation failed after recalculation");
         }
 
         return events;
     }
 
-    private boolean validateMap(Map<Integer, Integer> map, List<SavedGameParser.CrewState> crewStates){
-        List<Integer> ids = new ArrayList<>();
-        for (Map.Entry<Integer, Integer> entry : map.entrySet()){
-            if (ids.contains(entry.getValue())){
-                return false;
-            }
-            ids.add(entry.getValue());
-        }
-
+    private boolean validateCrewMap(Map<Integer, String> map){
         for (int i = 0; i < map.size(); i++){
             if (!map.containsKey(i)){
                 return false;
             }
         }
-
         return true;
     }
+    
 
-    private Integer getKeyByValue(Map<Integer, Integer> map, Integer value) {
-        for (Map.Entry<Integer, Integer> entry : map.entrySet()) {
-            if (Objects.equals(entry.getValue(), value)) {
-                return entry.getKey();
-            }
-        }
-        return null;
-    }
-
-    public Map<Integer, Integer> projectValues(Map<Integer, Integer> map1, Map<Integer, Integer> map2) {
-        Map<Integer, Integer> result = new HashMap<>();
+    public Map<Integer, String> projectCrewMap(Map<Integer, String> map1, Map<Integer, Integer> map2) {
+        Map<Integer, String> result = new HashMap<>();
         if (map1 == null) return result;
 
-        for (Map.Entry<Integer, Integer> e1 : map1.entrySet()) {
-            Integer key = e1.getKey();
-            Integer lookupKey = e1.getValue();
+        for (Map.Entry<Integer, String> e1 : map1.entrySet()) {
+            Integer newKey = map2.get(e1.getKey());
 
-            if (map2 != null && map2.containsKey(lookupKey)) {
-                Integer newValue = map2.get(lookupKey);
-                result.put(key, newValue);
-            } else {
-                result.put(key, e1.getValue());
+            // only add crew if it's still alive
+            if (map2.containsKey(e1.getKey()) && newKey != null) {
+                result.put(newKey, e1.getValue());
             }
-        }
 
-
-        for (Map.Entry<Integer, Integer> e2 : map2.entrySet()){
-            if (!result.containsKey(e2.getKey()) && !result.containsValue(e2.getValue()) && e2.getValue() != null){
-                result.put(e2.getKey(), e2.getValue());
+            // if map2 does not contain the key, the crew is new
+            if (!map2.containsKey(e1.getKey())) {
+                result.put(e1.getKey(), e1.getValue());
             }
-        }
 
-        result = compactMap(result);
-
-        return result;
-    }
-
-    private Map<Integer, Integer> compactMap(Map<Integer, Integer> input) {
-        Map<Integer, Integer> result = new LinkedHashMap<>(); // keeps order
-
-        int newKey = 0;
-        for (int oldKey = 0; oldKey <= input.size() - 1; oldKey++) {
-            Integer value = input.get(oldKey);
-            if (value != null) {
-                result.put(newKey++, value);
-            }
         }
         return result;
     }
-
-
-
-    private List<Event> compareCrewState(SavedGameParser.CrewState lastCrewState, SavedGameParser.CrewState newCrewState, Jump jump, Integer crewPosition){
+    
+    private List<Event> compareCrewState(SavedGameParser.CrewState lastCrewState, SavedGameParser.CrewState newCrewState, Jump jump, String crewId){
         List<Event> events = new ArrayList<>();
         // Crew dead
         if (newCrewState == null){
             CrewLostEvent event = new CrewLostEvent(jump);
 //                    GausmanUtil.getCrewTypeName(lastCrewState.getRace().getId()) + " - " + lastCrewState.getName(),
             event.addTag(Constants.EventTag.DISCARD);
-            event.setCrewPosition(crewPosition);
+            event.setCrewId(crewId);
             event.setDisplayText(String.format("%s - %s", lastCrewState.getRace().name(), lastCrewState.getName()));
             events.add(event);
             return events;
@@ -1178,7 +1120,7 @@ public class EventService {
                     newCrewState.getName(),
                     lastCrewState.getName()
             );
-            event.setCrewPosition(crewPosition);
+            event.setCrewId(crewId);
             events.add(event);
         }
 
@@ -1191,7 +1133,7 @@ public class EventService {
                     repairsChange
             );
             event.setDisplayText(String.format("%s - %s: %s", newCrewState.getName(), Constants.Stats.REPAIRS, newCrewState.getRepairs()));
-            event.setCrewPosition(crewPosition);
+            event.setCrewId(crewId);
             events.add(event);
         }
 
@@ -1203,7 +1145,7 @@ public class EventService {
                     combatKillsChange
             );
             event.setDisplayText(String.format("%s - %s: %s", newCrewState.getName(), Constants.Stats.COMBAT_KILLS, newCrewState.getCombatKills()));
-            event.setCrewPosition(crewPosition);
+            event.setCrewId(crewId);
             events.add(event);
         }
 
@@ -1214,7 +1156,7 @@ public class EventService {
                     Constants.Stats.PILOTED_EVASIONS,
                     pilotedEvasionsChange
             );
-            event.setCrewPosition(crewPosition);
+            event.setCrewId(crewId);
             event.setDisplayText(String.format("%s - %s: %s", newCrewState.getName(), Constants.Stats.PILOTED_EVASIONS, newCrewState.getPilotedEvasions()));
             events.add(event);
         }
@@ -1227,7 +1169,7 @@ public class EventService {
                     jumpsSurvivedChange
             );
             event.setDisplayText(String.format("%s - %s: %s", newCrewState.getName(), Constants.Stats.JUMPS_SURVIVED, newCrewState.getJumpsSurvived()));
-            event.setCrewPosition(crewPosition);
+            event.setCrewId(crewId);
             events.add(event);
         }
 
@@ -1239,7 +1181,7 @@ public class EventService {
                     skillMasteriesEarnedChange
             );
             event.setDisplayText(String.format("%s - %s: %s", newCrewState.getName(), Constants.Stats.SKILL_MASTERIES_EARNED, newCrewState.getSkillMasteriesEarned()));
-            event.setCrewPosition(crewPosition);
+            event.setCrewId(crewId);
             events.add(event);
         }
 
@@ -1253,7 +1195,7 @@ public class EventService {
                     pilotSkillChange
             );
             event.setDisplayText(String.format("%s - %s Skill: %s", newCrewState.getName(), Constants.Skill.PILOT, newCrewState.getPilotSkill()));
-            event.setCrewPosition(crewPosition);
+            event.setCrewId(crewId);
             events.add(event);
         }
 
@@ -1265,7 +1207,7 @@ public class EventService {
                     engineSkillChange
             );
             event.setDisplayText(String.format("%s - %s Skill: %s", newCrewState.getName(), Constants.Skill.ENGINE, newCrewState.getEngineSkill()));
-            event.setCrewPosition(crewPosition);
+            event.setCrewId(crewId);
             events.add(event);
         }
 
@@ -1277,7 +1219,7 @@ public class EventService {
                     shieldSkillChange
             );
             event.setDisplayText(String.format("%s - %s Skill: %s", newCrewState.getName(), Constants.Skill.SHIELD, newCrewState.getShieldSkill()));
-            event.setCrewPosition(crewPosition);
+            event.setCrewId(crewId);
             events.add(event);
         }
 
@@ -1289,7 +1231,7 @@ public class EventService {
                     weaponSkillChange
             );
             event.setDisplayText(String.format("%s - %s Skill: %s", newCrewState.getName(), Constants.Skill.WEAPON, newCrewState.getWeaponSkill()));
-            event.setCrewPosition(crewPosition);
+            event.setCrewId(crewId);
             events.add(event);
         }
 
@@ -1301,7 +1243,7 @@ public class EventService {
                     repairSkillChange
             );
             event.setDisplayText(String.format("%s - %s Skill: %s", newCrewState.getName(), Constants.Skill.REPAIR, newCrewState.getRepairSkill()));
-            event.setCrewPosition(crewPosition);
+            event.setCrewId(crewId);
             events.add(event);
         }
 
@@ -1313,7 +1255,7 @@ public class EventService {
                     combatSkillChange
             );
             event.setDisplayText(String.format("%s - %s Skill: %s", newCrewState.getName(), Constants.Skill.COMBAT, newCrewState.getCombatSkill()));
-            event.setCrewPosition(crewPosition);
+            event.setCrewId(crewId);
             events.add(event);
         }
 
@@ -1327,7 +1269,7 @@ public class EventService {
                     newCrewState.getPilotMasteryOne()
             );
             event.setDisplayText(String.format("%s - %s Mastery Level %s", newCrewState.getName(), Constants.Skill.PILOT, 1));
-            event.setCrewPosition(crewPosition);
+            event.setCrewId(crewId);
             events.add(event);
         }
 
@@ -1339,7 +1281,7 @@ public class EventService {
                     newCrewState.getPilotMasteryTwo()
             );
             event.setDisplayText(String.format("%s - %s Mastery Level %s", newCrewState.getName(), Constants.Skill.PILOT, 2));
-            event.setCrewPosition(crewPosition);
+            event.setCrewId(crewId);
             events.add(event);
         }
 
@@ -1351,7 +1293,7 @@ public class EventService {
                     newCrewState.getEngineMasteryOne()
             );
             event.setDisplayText(String.format("%s - %s Mastery Level %s", newCrewState.getName(), Constants.Skill.ENGINE, 1));
-            event.setCrewPosition(crewPosition);
+            event.setCrewId(crewId);
             events.add(event);
         }
 
@@ -1363,7 +1305,7 @@ public class EventService {
                     newCrewState.getEngineMasteryTwo()
             );
             event.setDisplayText(String.format("%s - %s Mastery Level %s", newCrewState.getName(), Constants.Skill.ENGINE, 2));
-            event.setCrewPosition(crewPosition);
+            event.setCrewId(crewId);
             events.add(event);
         }
 
@@ -1375,7 +1317,7 @@ public class EventService {
                     newCrewState.getShieldMasteryOne()
             );
             event.setDisplayText(String.format("%s - %s Mastery Level %s", newCrewState.getName(), Constants.Skill.SHIELD, 1));
-            event.setCrewPosition(crewPosition);
+            event.setCrewId(crewId);
             events.add(event);
         }
 
@@ -1387,7 +1329,7 @@ public class EventService {
                     newCrewState.getShieldMasteryTwo()
             );
             event.setDisplayText(String.format("%s - %s Mastery Level %s", newCrewState.getName(), Constants.Skill.SHIELD, 2));
-            event.setCrewPosition(crewPosition);
+            event.setCrewId(crewId);
             events.add(event);
         }
 
@@ -1399,7 +1341,7 @@ public class EventService {
                     newCrewState.getWeaponMasteryOne()
             );
             event.setDisplayText(String.format("%s - %s Mastery Level %s", newCrewState.getName(), Constants.Skill.WEAPON, 1));
-            event.setCrewPosition(crewPosition);
+            event.setCrewId(crewId);
             events.add(event);
         }
 
@@ -1411,7 +1353,7 @@ public class EventService {
                     newCrewState.getWeaponMasteryTwo()
             );
             event.setDisplayText(String.format("%s - %s Mastery Level %s", newCrewState.getName(), Constants.Skill.WEAPON, 2));
-            event.setCrewPosition(crewPosition);
+            event.setCrewId(crewId);
             events.add(event);
         }
 
@@ -1423,7 +1365,7 @@ public class EventService {
                     newCrewState.getRepairMasteryOne()
             );
             event.setDisplayText(String.format("%s - %s Mastery Level %s", newCrewState.getName(), Constants.Skill.REPAIR, 1));
-            event.setCrewPosition(crewPosition);
+            event.setCrewId(crewId);
             events.add(event);
         }
 
@@ -1435,7 +1377,7 @@ public class EventService {
                     newCrewState.getRepairMasteryTwo()
             );
             event.setDisplayText(String.format("%s - %s Mastery Level %s", newCrewState.getName(), Constants.Skill.REPAIR, 2));
-            event.setCrewPosition(crewPosition);
+            event.setCrewId(crewId);
             events.add(event);
         }
 
@@ -1447,7 +1389,7 @@ public class EventService {
                     newCrewState.getCombatMasteryOne()
             );
             event.setDisplayText(String.format("%s - %s Mastery Level %s", newCrewState.getName(), Constants.Skill.COMBAT, 1));
-            event.setCrewPosition(crewPosition);
+            event.setCrewId(crewId);
             events.add(event);
         }
 
@@ -1459,7 +1401,7 @@ public class EventService {
                     newCrewState.getCombatMasteryTwo()
             );
             event.setDisplayText(String.format("%s - %s Mastery Level %s", newCrewState.getName(), Constants.Skill.COMBAT, 2));
-            event.setCrewPosition(crewPosition);
+            event.setCrewId(crewId);
             events.add(event);
         }
 
@@ -1467,57 +1409,7 @@ public class EventService {
     }
 
 
-//    private void applyEventToCrew(Crew crew, Event event){
-//        switch (event.getEventType()){
-//            // we ignore Name Events because those are always first
-//            case STAT -> {
-//                StatEvent se = (StatEvent) event;
-//                String statString = GausmanUtil.convertStatToAttributename(se.getStat());
-//                int oldValue = (int) getValueInCrewByAttributename(crew, statString);
-//                setValueInCrewByAttributename(crew, statString,oldValue + event.getAmount());
-//            }
-//            case SKILL -> {
-//                SkillEvent se = (SkillEvent) event;
-//                String skillString = GausmanUtil.convertSkillToAttributename(se.getSkill());
-//                int oldValue = (int) getValueInCrewByAttributename(crew, skillString);
-//                setValueInCrewByAttributename(crew, skillString,oldValue + event.getAmount());
-//            }
-//            case MASTERY -> {
-//                MasteryEvent me = (MasteryEvent) event;
-//                String masteryString = GausmanUtil.convertMasteryToAttributename(me.getMastery(), ((MasteryEvent) event).getLevel());
-//                setValueInCrewByAttributename(crew, masteryString, me.getNewValue());
-//            }
-//            default -> System.out.println("ApplyEventsToCrew was called with a wrong event Type");
-//        }
-//
-//    }
 
-//    private void applyEventsToCrew(Crew crew, List<Event> events){
-//        for (Event event : events){
-//            switch (event.getEventType()){
-//                // we ignore Name Events because those are always first
-//                case STAT -> {
-//                    StatEvent se = (StatEvent) event;
-//                    String statString = GausmanUtil.convertStatToAttributename(se.getStat());
-//                    int oldValue = (int) getValueInCrewByAttributename(crew, statString);
-//                    setValueInCrewByAttributename(crew, statString,oldValue + event.getAmount());
-//                }
-//                case SKILL -> {
-//                    SkillEvent se = (SkillEvent) event;
-//                    String skillString = GausmanUtil.convertSkillToAttributename(se.getSkill());
-//                    int oldValue = (int) getValueInCrewByAttributename(crew, skillString);
-//                    setValueInCrewByAttributename(crew, skillString,oldValue + event.getAmount());
-//                }
-//                case MASTERY -> {
-//                    MasteryEvent me = (MasteryEvent) event;
-//                    String masteryString = GausmanUtil.convertMasteryToAttributename(me.getMastery(), ((MasteryEvent) event).getLevel());
-//                    setValueInCrewByAttributename(crew, masteryString, me.getNewValue());
-//                }
-//                default -> System.out.println("ApplyEventsToCrew was called with a wrong event Type");
-//            }
-//        }
-//
-//    }
 
     private Object getValueInCrewByAttributename(Crew crew, String attributename){
         try {

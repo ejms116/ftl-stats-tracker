@@ -297,29 +297,30 @@ public class RunService {
     }
 
     public ShipStatusModel getStatusAtId(int targetId){
-        var entry = getClosestEntry(targetId);
-
-        if (entry == null){
-            return recomputeFromZero(targetId);
-        }
-
-        int cachedId = entry.getKey();
-
-        int distanceToCache = Math.abs(cachedId - targetId);
-
-        if (distanceToCache > targetId){
-            return recomputeFromZero(targetId);
-        }
-
-        ShipStatusModel cached = new ShipStatusModel(entry.getValue());
-
-        if (cachedId == targetId){
-            return cached;
-        }
-
-        return targetId > cachedId
-                ? applyForward(cached, cachedId, targetId)
-                : applyBackwards(cached, cachedId, targetId);
+        return recomputeFromZero(targetId);
+//        var entry = getClosestEntry(targetId);
+//
+//        if (entry == null){
+//            return recomputeFromZero(targetId);
+//        }
+//
+//        int cachedId = entry.getKey();
+//
+//        int distanceToCache = Math.abs(cachedId - targetId);
+//
+//        if (distanceToCache > targetId){
+//            return recomputeFromZero(targetId);
+//        }
+//
+//        ShipStatusModel cached = new ShipStatusModel(entry.getValue());
+//
+//        if (cachedId == targetId){
+//            return cached;
+//        }
+//
+//        return targetId > cachedId
+//                ? applyForward(cached, cachedId, targetId)
+//                : applyBackwards(cached, cachedId, targetId);
     }
 
     private ShipStatusModel recomputeFromZero(int targetId){

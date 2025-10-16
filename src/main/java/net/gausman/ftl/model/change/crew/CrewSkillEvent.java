@@ -6,6 +6,8 @@ import net.gausman.ftl.model.ShipStatusModel;
 import net.gausman.ftl.model.record.Jump;
 import net.gausman.ftl.util.GausmanUtil;
 
+import java.util.Optional;
+
 public class CrewSkillEvent extends CrewEvent {
     private Constants.Skill skill;
     private int amount;
@@ -32,30 +34,20 @@ public class CrewSkillEvent extends CrewEvent {
         super.applyEventToShipStatusModel(model, apply);
 
         String skillString = GausmanUtil.convertSkillToAttributename(getSkill());
+        Optional<Crew> crewToChange = model.getCrewList().stream()
+                .filter(c -> c.getReferenceId().equals(getCrewId()))
+                .findFirst();
 
-        if (getCrewPosition() == null){
-            log.info("Skill event: crew position null");
-            return;
-        }
+        crewToChange.ifPresent(c -> {
+            int attributeValueBefore = (int) model.getValueInCrewByAttributename(c, skillString);
 
-        if (getCrewPosition() >= model.getCrewList().size() || getCrewPosition() < 0){
-            log.error(String.format("Skill event: crew position %s out of bounds %s", getCrewPosition(), model.getCrewList().size()));
-            return;
-        }
+            if (apply){
+                model.setValueInCrewByAttributename(c, skillString, attributeValueBefore + getAmount());
+            } else {
+                model.setValueInCrewByAttributename(c, skillString, attributeValueBefore);
+            }
+        });
 
-        Crew crewToChange = model.getCrewList().get(getCrewPosition());
 
-        if (crewToChange == null){
-            log.error("Crew for crew skill event not found. Position: " + getCrewPosition());
-            return;
-        }
-
-        int attributeValueBefore = (int) model.getValueInCrewByAttributename(crewToChange, skillString);
-
-        if (apply){
-            model.setValueInCrewByAttributename(crewToChange, skillString, attributeValueBefore + getAmount());
-        } else {
-            model.setValueInCrewByAttributename(crewToChange, skillString, attributeValueBefore);
-        }
     }
 }

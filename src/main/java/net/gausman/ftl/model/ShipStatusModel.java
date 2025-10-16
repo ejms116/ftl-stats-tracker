@@ -77,13 +77,6 @@ public class ShipStatusModel {
         event.applyEventToShipStatusModel(this, apply);
     }
 
-    public Optional<Crew> removeCrewIfPresent(int index, List<Crew> list) {
-        if (index < 0 || index >= list.size()) {
-            return Optional.empty();
-        }
-        return Optional.of(list.remove(index));
-    }
-
     public Object getValueInCrewByAttributename(Crew crew, String attributename){
         try {
             Field field = crew.getClass().getDeclaredField(attributename);

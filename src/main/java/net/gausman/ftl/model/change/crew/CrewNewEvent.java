@@ -21,6 +21,10 @@ public class CrewNewEvent extends CrewEvent {
     }
 
     public void setCrew(Crew crew) {
+        if (crew == null){
+            System.out.println("error setting crew");
+            return;
+        }
         this.crew = crew;
         setDisplayText(String.format("%s - %s", crew.getCrewType().name(), crew.getName()));
     }
@@ -45,7 +49,7 @@ public class CrewNewEvent extends CrewEvent {
         if (apply){
             model.getCrewList().add(new Crew(getCrew()));
         } else {
-            model.getCrewList().remove(getCrew());
+            model.getCrewList().removeIf(c -> c.getReferenceId().equals(getCrewId()));
         }
 
         model.getSectorMetrics().update(
@@ -59,7 +63,7 @@ public class CrewNewEvent extends CrewEvent {
                     getJump().getSector(),
                     apply,
                     getJump().getCurrentBeaconId(),
-                    crew.getCrewType().getId(),
+                    getCrew().getCrewType().getId(),
                     SavedGameParser.StoreItemType.CREW
             );
         }
