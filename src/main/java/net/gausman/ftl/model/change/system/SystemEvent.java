@@ -62,9 +62,15 @@ public class SystemEvent extends Event {
 
         model.getSystems().compute(type, (k,v) -> v + mult * getAmount());
 
+        Constants.ScrapUsedCategory category = Constants.ScrapUsedCategory.SYSTEM_UPGRADE;
+        if (amount == newAmount && !getTags().contains(Constants.EventTag.START)){
+            category = Constants.ScrapUsedCategory.SYSTEM_BUY;
+        }
+
+
         model.getSectorMetrics().update(
                 getJump().getSector(),
-                Constants.ScrapUsedCategory.SYSTEM_BUY,
+                category,
                 mult*-getResourceEffects().getOrDefault(Constants.Resource.SCRAP,0)
         );
 

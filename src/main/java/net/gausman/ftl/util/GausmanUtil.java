@@ -1,5 +1,8 @@
 package net.gausman.ftl.util;
 
+import net.blerf.ftl.constants.AdvancedFTLConstants;
+import net.blerf.ftl.constants.FTLConstants;
+import net.blerf.ftl.constants.OriginalFTLConstants;
 import net.blerf.ftl.parser.DataManager;
 import net.blerf.ftl.parser.DefaultDataManager;
 import net.blerf.ftl.parser.SavedGameParser;
@@ -23,6 +26,11 @@ import java.util.regex.Pattern;
 
 public class GausmanUtil {
     private static final Logger log = LoggerFactory.getLogger(GausmanUtil.class);
+    private static FTLConstants ftlConstants = new AdvancedFTLConstants();
+
+    public static FTLConstants getFtlConstants() {
+        return ftlConstants;
+    }
 
     public static void logXmlWarningsRecoursive(AbstractBuildableTreeNode node, List<String> occurence){
         if (node.getUnknownElements() != null){
@@ -315,45 +323,6 @@ public class GausmanUtil {
         };
     }
 
-//    public static String extractId(String nameAttr) {
-//        // Accept multiple possible prefixes
-//        String[] allowedPrefixes = { "event_", "name_", "text_", "ship_" };
-//        String prefix = null;
-//
-//        for (String p : allowedPrefixes) {
-//            if (nameAttr.startsWith(p)) {
-//                prefix = p;
-//                break;
-//            }
-//        }
-//
-//        if (prefix == null) return null;
-//
-//        String content = nameAttr.substring(prefix.length());
-//
-//        // Remove trailing known suffixes like "_text", "_choice", "_clone", or "_c1_text"
-//        content = content.replaceAll("(_c\\d+(_text|_choice)?)|(_text)|(_clone)$", "");
-//
-//        // Split into parts to analyze underscore-separated tokens
-//        String[] parts = content.split("_");
-//        StringBuilder idBuilder = new StringBuilder();
-//
-//        for (int i = 0; i < parts.length; i++) {
-//            String part = parts[i];
-//
-//            // Include parts that are all uppercase or uppercase+digits
-//            if (part.matches("[A-Z0-9]+") || part.matches("[A-Z]+\\d+")) {
-//                idBuilder.append(part);
-//                if (i < parts.length - 1) idBuilder.append("_");
-//            } else {
-//                // Stop at the first lowercase or invalid segment
-//                break;
-//            }
-//        }
-//
-//        return idBuilder.toString().replaceAll("_+$", ""); // remove trailing underscores
-//    }
-
     public static String extractId(String nameAttr) {
         // Accept multiple possible prefixes
         String[] allowedPrefixes = { "event_", "name_", "text_", "ship_" };
@@ -403,6 +372,10 @@ public class GausmanUtil {
         }
 
         return id;
+    }
+
+    private void setCrewPilotSkill(int delta){
+
     }
 
 

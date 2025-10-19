@@ -18,14 +18,6 @@ import java.util.EnumMap;
 import java.util.Map;
 
 public class ScrapUsedPieChartPanel extends JPanel {
-    private enum InternalScrapUsedCategory {
-        RESOURCES,
-        REPAIR,
-        SYSTEMS,
-        ITEMS,
-        CREW,
-    }
-
     private final DefaultPieDataset<String> dataset;
 
     public ScrapUsedPieChartPanel() {
@@ -68,7 +60,7 @@ public class ScrapUsedPieChartPanel extends JPanel {
 
         // Colors per category
         int i = 0;
-        for (InternalScrapUsedCategory cat : InternalScrapUsedCategory.values()) {
+        for (Constants.InternalScrapUsedCategory cat : Constants.InternalScrapUsedCategory.values()) {
             if (i < Constants.flatLafDarkColors.length) {
                 plot.setSectionPaint(cat.name(), Constants.flatLafDarkColors[i]);
             }
@@ -90,22 +82,25 @@ public class ScrapUsedPieChartPanel extends JPanel {
         add(chartPanel, BorderLayout.CENTER);
     }
 
-    private InternalScrapUsedCategory convert(Constants.ScrapUsedCategory category) {
-        return switch (category) {
-            case FUEL, MISSILES, DRONE_PARTS -> InternalScrapUsedCategory.RESOURCES;
-            case REPAIR -> InternalScrapUsedCategory.REPAIR;
-            case SYSTEM_BUY, REACTOR -> InternalScrapUsedCategory.SYSTEMS;
-            case WEAPONS, DRONES, AUGMENTS -> InternalScrapUsedCategory.ITEMS;
-            case CREW -> InternalScrapUsedCategory.CREW;
+    private Constants.InternalScrapUsedCategory convert(Constants.ScrapUsedCategory category){
+        return switch (category){
+            case FUEL, MISSILES, DRONE_PARTS -> Constants.InternalScrapUsedCategory.RESOURCES;
+            case REPAIR -> Constants.InternalScrapUsedCategory.REPAIR;
+            case SYSTEM_UPGRADE -> Constants.InternalScrapUsedCategory.SYSTEM_UPGRADE;
+            case SYSTEM_BUY -> Constants.InternalScrapUsedCategory.SYSTEM_BUY;
+            case REACTOR -> Constants.InternalScrapUsedCategory.REACTOR;
+            case WEAPONS, DRONES, AUGMENTS -> Constants.InternalScrapUsedCategory.ITEMS;
+            case CREW -> Constants.InternalScrapUsedCategory.CREW;
         };
     }
 
     public void updateDataset(SectorMetrics sectorMetrics) {
-        // Sum values across all sectors
-        Map<InternalScrapUsedCategory, Integer> totals =
-                new EnumMap<>(InternalScrapUsedCategory.class);
 
-        for (InternalScrapUsedCategory cat : InternalScrapUsedCategory.values()) {
+        // Sum values across all sectors
+        Map<Constants.InternalScrapUsedCategory, Integer> totals =
+                new EnumMap<>(Constants.InternalScrapUsedCategory.class);
+
+        for (Constants.InternalScrapUsedCategory cat : Constants.InternalScrapUsedCategory.values()) {
             totals.put(cat, 0);
         }
 
@@ -113,16 +108,17 @@ public class ScrapUsedPieChartPanel extends JPanel {
             for (Map.Entry<Constants.ScrapUsedCategory, Integer> inner :
                     outer.getValue().getScrapUsed().entrySet()) {
 
-                InternalScrapUsedCategory cat = convert(inner.getKey());
+                Constants.InternalScrapUsedCategory cat = convert(inner.getKey());
                 totals.put(cat, totals.get(cat) + inner.getValue());
             }
         }
 
         dataset.clear();
-        for (Map.Entry<InternalScrapUsedCategory, Integer> entry : totals.entrySet()) {
-            if (entry.getValue() > 0) {
-                dataset.setValue(entry.getKey().name(), entry.getValue());
-            }
+        for (Map.Entry<Constants.InternalScrapUsedCategory, Integer> entry : totals.entrySet()) {
+            dataset.setValue(entry.getKey().name(), entry.getValue());
+//            if (entry.getValue() > 0) {
+//                dataset.setValue(entry.getKey().name(), entry.getValue());
+//            }
         }
     }
 }

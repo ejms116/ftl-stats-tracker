@@ -14,20 +14,16 @@ import org.jfree.chart.labels.StandardCategoryItemLabelGenerator;
 import org.jfree.chart.plot.CategoryPlot;
 import org.jfree.chart.renderer.category.StackedBarRenderer;
 import org.jfree.data.RangeType;
+import org.jfree.data.UnknownKeyException;
 import org.jfree.data.category.DefaultCategoryDataset;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.Map;
 
 public class ScrapUsedChartPanel extends JPanel {
-    private enum InternalScrapUsedCategory {
-        RESOURCES,
-        REPAIR,
-        SYSTEMS,
-        ITEMS,
-        CREW,
-    }
     private final DefaultCategoryDataset dataset;
 
     public ScrapUsedChartPanel(){
@@ -101,13 +97,15 @@ public class ScrapUsedChartPanel extends JPanel {
         add(chartPanel, BorderLayout.CENTER);
     }
 
-    private InternalScrapUsedCategory convert(Constants.ScrapUsedCategory category){
+    private Constants.InternalScrapUsedCategory convert(Constants.ScrapUsedCategory category){
         return switch (category){
-            case FUEL, MISSILES, DRONE_PARTS -> InternalScrapUsedCategory.RESOURCES;
-            case REPAIR -> InternalScrapUsedCategory.REPAIR;
-            case SYSTEM_BUY, REACTOR -> InternalScrapUsedCategory.SYSTEMS;
-            case WEAPONS, DRONES, AUGMENTS -> InternalScrapUsedCategory.ITEMS;
-            case CREW -> InternalScrapUsedCategory.CREW;
+            case FUEL, MISSILES, DRONE_PARTS -> Constants.InternalScrapUsedCategory.RESOURCES;
+            case REPAIR -> Constants.InternalScrapUsedCategory.REPAIR;
+            case SYSTEM_UPGRADE -> Constants.InternalScrapUsedCategory.SYSTEM_UPGRADE;
+            case SYSTEM_BUY -> Constants.InternalScrapUsedCategory.SYSTEM_BUY;
+            case REACTOR -> Constants.InternalScrapUsedCategory.REACTOR;
+            case WEAPONS, DRONES, AUGMENTS -> Constants.InternalScrapUsedCategory.ITEMS;
+            case CREW -> Constants.InternalScrapUsedCategory.CREW;
         };
     }
 
@@ -116,16 +114,23 @@ public class ScrapUsedChartPanel extends JPanel {
         for (Map.Entry<Sector, SectorInfo> outer : sectorMetrics.getData().entrySet()){
             String text = String.format("%s - %s", outer.getKey().getId(), outer.getKey().getSectorDot().getTitle());
 //            String text = String.valueOf(outer.getKey().getId());
+            Map<Constants.InternalScrapUsedCategory, Integer> temp = new EnumMap<>(Constants.InternalScrapUsedCategory.class);
             for (Map.Entry<Constants.ScrapUsedCategory, Integer> innerEntry : outer.getValue().getScrapUsed().entrySet()){
-                addOrSet(dataset, innerEntry.getValue(), convert(innerEntry.getKey()), text);
+                temp.put(convert(innerEntry.getKey()), innerEntry.getValue());
+//                addOrSet(dataset, innerEntry.getValue(), convert(innerEntry.getKey()), text);
             }
+            for (Map.Entry<Constants.InternalScrapUsedCategory, Integer> entry : temp.entrySet()){
+                addOrSet(dataset, entry.getValue(), entry.getKey(), text);
+            }
+
+
         }
         initDatasetFromPos(sectorMetrics.getData().size());
     }
 
     private void initDatasetFromPos(int pos){
         for (int i = pos + 1; i < 9; i++){
-            for (InternalScrapUsedCategory category: InternalScrapUsedCategory.values()){
+            for (Constants.InternalScrapUsedCategory category: Constants.InternalScrapUsedCategory.values()){
                 dataset.setValue(0, category, Integer.toString(i));
             }
         }
@@ -138,7 +143,7 @@ public class ScrapUsedChartPanel extends JPanel {
         Number current;
         try {
             current = dataset.getValue(rowKey, columnKey);
-        } catch (org.jfree.data.UnknownKeyException e) {
+        } catch (UnknownKeyException e) {
             current = null;
         }
         dataset.setValue((current == null ? 0.0 : current.doubleValue()) + value,

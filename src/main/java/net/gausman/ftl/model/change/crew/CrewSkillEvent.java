@@ -46,6 +46,7 @@ public class CrewSkillEvent extends CrewEvent {
             } else {
                 model.setValueInCrewByAttributename(c, skillString, attributeValueBefore);
             }
+            fixMasteryBooleans(c);
         });
 
 

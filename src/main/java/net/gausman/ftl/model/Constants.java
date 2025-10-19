@@ -337,12 +337,23 @@ public class Constants {
         }
     }
 
+    public enum InternalScrapUsedCategory {
+        RESOURCES,
+        REPAIR,
+        SYSTEM_UPGRADE,
+        SYSTEM_BUY,
+        REACTOR,
+        ITEMS,
+        CREW,
+    }
+
     public enum ScrapUsedCategory {
         FUEL("Fuel"),
         MISSILES("Missiles"),
         DRONE_PARTS("Drone parts"),
         REPAIR("Repair"),
         SYSTEM_BUY("System buy"),
+        SYSTEM_UPGRADE("System upgrade"),
         REACTOR("Reactor"),
         WEAPONS("Weapons"),
         DRONES("Drones"),

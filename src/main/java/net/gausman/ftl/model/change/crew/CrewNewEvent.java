@@ -46,8 +46,11 @@ public class CrewNewEvent extends CrewEvent {
             return;
         }
 
+        Crew newCrew = new Crew(getCrew());
+        fixMasteryBooleans(newCrew);
+
         if (apply){
-            model.getCrewList().add(new Crew(getCrew()));
+            model.getCrewList().add(newCrew);
         } else {
             model.getCrewList().removeIf(c -> c.getReferenceId().equals(getCrewId()));
         }

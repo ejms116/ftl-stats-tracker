@@ -15,7 +15,10 @@ public class ToolbarPanel extends JPanel {
     public ToolbarPanel() {
         trackingToggleButton.setBackground(Color.RED);
         add(trackingToggleButton);
-        add(testButton);
+        if (Boolean.getBoolean("ftl.testing")){
+            add(testButton);
+        }
+
         add(eventTreeBrowserButton);
     }
 
