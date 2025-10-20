@@ -6,7 +6,7 @@
 
     <groupId>net.gausman.ftl</groupId>
     <artifactId>ftl-stats-tracker</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0.0</version>
     <name>ftl-stats-tracker</name>
     <packaging>jar</packaging>
 
