@@ -276,6 +276,8 @@ public class EventTablePanel extends JSplitPane {
 //        setDetailsItemState(Constants.EventDetailType.RESOURCES_RECEIVED, true);
 //        setDetailsItemState(Constants.EventDetailType.SCRAP_COLLECTED, true);
 
+        setDetailsItemState(Constants.EventDetailType.EVENT_REWARD, true);
+
         setDetailsItemState(Constants.EventDetailType.WEAPON, true);
         setDetailsItemState(Constants.EventDetailType.DRONE, true);
         setDetailsItemState(Constants.EventDetailType.AUGMENT, true);

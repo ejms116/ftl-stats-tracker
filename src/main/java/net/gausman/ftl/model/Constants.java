@@ -75,7 +75,7 @@ public class Constants {
         SHIP_SETUP("Ship setup", EventCategory.OTHER),
         RESOURCE_DIFF_ERROR("Resource Diff Error", EventCategory.OTHER),
 
-        RESOURCES_RECEIVED("Resources received", EventCategory.RESOURCES),
+        EVENT_REWARD("Event Reward", EventCategory.RESOURCES),
         BUY_FUEL("Fuel buy", EventCategory.RESOURCES),
         BUY_MISSILE("Missiles buy", EventCategory.RESOURCES),
         BUY_DRONE("Drones buy", EventCategory.RESOURCES),
@@ -336,17 +336,6 @@ public class Constants {
             return displayName;
         }
     }
-
-    public enum InternalScrapUsedCategory {
-        RESOURCES,
-        REPAIR,
-        SYSTEM_UPGRADE,
-        SYSTEM_BUY,
-        REACTOR,
-        ITEMS,
-        CREW,
-    }
-
     public enum ScrapUsedCategory {
         FUEL("Fuel"),
         MISSILES("Missiles"),

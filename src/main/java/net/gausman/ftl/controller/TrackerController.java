@@ -111,10 +111,11 @@ public class TrackerController {
         });
 
         view.getEventTablePanel().setOpenEventInBrowserButton(e -> {
-            showEventTreeBrowserView();
             int selected = eventTablePanel.getTable().getSelectedRow();
-            if (selected != -1){
-                Event event = eventTableModel.getRowEvent(selected);
+            if (selected != -1) {
+                int modelRow = eventTablePanel.getTable().convertRowIndexToModel(selected);
+                Event event = eventTableModel.getRowEvent(modelRow);
+                showEventTreeBrowserView();
                 if (event != null){
                     List<SavedGameParser.EncounterState> encounterStates = event.getJump().getEncounterStates();
                     if (encounterStates != null && !encounterStates.isEmpty()){
@@ -123,15 +124,12 @@ public class TrackerController {
                         eventTreeBrowserView.toFront();
                         eventTreeBrowserView.requestFocus();
                     }
-
                 }
             }
         });
 
         view.getEventTablePanel().setJumpToNewestEventButton(e -> {
             selectNewestRow();
-//            eventTablePanel.showOrHideJumpToNewestEventButton(false);
-//            updateUI(eventTableModel.getNewestEventId());
         });
 
 

@@ -67,7 +67,7 @@ import java.util.*;
         @JsonSubTypes.Type(value = HackingUsedEvent.class, name = "HackingUsedEvent"),
         @JsonSubTypes.Type(value = MissilesBoughtEvent.class, name = "MissilesBoughtEvent"),
         @JsonSubTypes.Type(value = MissilesUsedEvent.class, name = "MissilesUsedEvent"),
-        @JsonSubTypes.Type(value = ResourcesReceivedEvent.class, name = "ResourcesReceivedEvent"),
+        @JsonSubTypes.Type(value = EventRewardEvent.class, name = "ResourcesReceivedEvent"),
 
         // System
         @JsonSubTypes.Type(value = SystemEvent.class, name = "SystemEvent"),

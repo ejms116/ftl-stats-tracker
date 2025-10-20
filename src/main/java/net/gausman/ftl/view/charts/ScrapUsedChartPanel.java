@@ -19,11 +19,20 @@ import org.jfree.data.category.DefaultCategoryDataset;
 
 import javax.swing.*;
 import java.awt.*;
-import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.Map;
 
 public class ScrapUsedChartPanel extends JPanel {
+    private enum InternalScrapUsedCategory {
+        RESOURCES,
+        REPAIR,
+        SYSTEM_UPGRADE,
+        SYSTEM_BUY,
+        REACTOR,
+        ITEMS,
+        CREW,
+    }
+
     private final DefaultCategoryDataset dataset;
 
     public ScrapUsedChartPanel(){
@@ -97,15 +106,15 @@ public class ScrapUsedChartPanel extends JPanel {
         add(chartPanel, BorderLayout.CENTER);
     }
 
-    private Constants.InternalScrapUsedCategory convert(Constants.ScrapUsedCategory category){
+    private InternalScrapUsedCategory convert(Constants.ScrapUsedCategory category){
         return switch (category){
-            case FUEL, MISSILES, DRONE_PARTS -> Constants.InternalScrapUsedCategory.RESOURCES;
-            case REPAIR -> Constants.InternalScrapUsedCategory.REPAIR;
-            case SYSTEM_UPGRADE -> Constants.InternalScrapUsedCategory.SYSTEM_UPGRADE;
-            case SYSTEM_BUY -> Constants.InternalScrapUsedCategory.SYSTEM_BUY;
-            case REACTOR -> Constants.InternalScrapUsedCategory.REACTOR;
-            case WEAPONS, DRONES, AUGMENTS -> Constants.InternalScrapUsedCategory.ITEMS;
-            case CREW -> Constants.InternalScrapUsedCategory.CREW;
+            case FUEL, MISSILES, DRONE_PARTS -> InternalScrapUsedCategory.RESOURCES;
+            case REPAIR -> InternalScrapUsedCategory.REPAIR;
+            case SYSTEM_UPGRADE -> InternalScrapUsedCategory.SYSTEM_UPGRADE;
+            case SYSTEM_BUY -> InternalScrapUsedCategory.SYSTEM_BUY;
+            case REACTOR -> InternalScrapUsedCategory.REACTOR;
+            case WEAPONS, DRONES, AUGMENTS -> InternalScrapUsedCategory.ITEMS;
+            case CREW -> InternalScrapUsedCategory.CREW;
         };
     }
 
@@ -114,12 +123,12 @@ public class ScrapUsedChartPanel extends JPanel {
         for (Map.Entry<Sector, SectorInfo> outer : sectorMetrics.getData().entrySet()){
             String text = String.format("%s - %s", outer.getKey().getId(), outer.getKey().getSectorDot().getTitle());
 //            String text = String.valueOf(outer.getKey().getId());
-            Map<Constants.InternalScrapUsedCategory, Integer> temp = new EnumMap<>(Constants.InternalScrapUsedCategory.class);
+            Map<InternalScrapUsedCategory, Integer> temp = new EnumMap<>(InternalScrapUsedCategory.class);
             for (Map.Entry<Constants.ScrapUsedCategory, Integer> innerEntry : outer.getValue().getScrapUsed().entrySet()){
                 temp.put(convert(innerEntry.getKey()), innerEntry.getValue());
 //                addOrSet(dataset, innerEntry.getValue(), convert(innerEntry.getKey()), text);
             }
-            for (Map.Entry<Constants.InternalScrapUsedCategory, Integer> entry : temp.entrySet()){
+            for (Map.Entry<InternalScrapUsedCategory, Integer> entry : temp.entrySet()){
                 addOrSet(dataset, entry.getValue(), entry.getKey(), text);
             }
 
@@ -130,7 +139,7 @@ public class ScrapUsedChartPanel extends JPanel {
 
     private void initDatasetFromPos(int pos){
         for (int i = pos + 1; i < 9; i++){
-            for (Constants.InternalScrapUsedCategory category: Constants.InternalScrapUsedCategory.values()){
+            for (InternalScrapUsedCategory category: InternalScrapUsedCategory.values()){
                 dataset.setValue(0, category, Integer.toString(i));
             }
         }

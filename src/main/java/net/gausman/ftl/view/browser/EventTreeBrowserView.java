@@ -136,9 +136,6 @@ public class EventTreeBrowserView extends JFrame {
             }
         });
 
-
-
-
         // === Filter logic for search field ===
         searchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
             private void updateFilter() {
@@ -199,6 +196,7 @@ public class EventTreeBrowserView extends JFrame {
     }
 
     public void selectEventById(String eventId, List<SavedGameParser.EncounterState> encounterStates){
+        loadEventById(eventId);
         for (int i = 0; i < model.getRowCount(); i++){
             EventBrowserListItem item = model.getRowItem(i);
             if (item.getId().equals(eventId)){

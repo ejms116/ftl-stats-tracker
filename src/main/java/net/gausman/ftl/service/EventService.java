@@ -93,7 +93,7 @@ public class EventService {
         }
 
         // Resources
-        ResourcesReceivedEvent resourcesStartEvent = new ResourcesReceivedEvent( jump);
+        EventRewardEvent resourcesStartEvent = new EventRewardEvent( jump);
         resourcesStartEvent.addTag(Constants.EventTag.START);
         resourcesStartEvent.setResourceEffect(Constants.Resource.FUEL, STARTING_FUEL);
 
@@ -213,15 +213,6 @@ public class EventService {
             events.add(shipsDestroyedEvent);
         }
 
-        int scrapCollected = currentGameState.getTotalScrapCollected() - lastGameState.getTotalScrapCollected();
-        if (scrapCollected > 0){
-            ScrapCollectedEvent scrapCollectedEvent = new ScrapCollectedEvent(jump);
-            scrapCollectedEvent.addIntegerStatEffects(new IntegerStatEffect(Constants.General.SCRAP_COLLECTED, scrapCollected));
-            scrapCollectedEvent.setResourceEffect(Constants.Resource.SCRAP, scrapCollected);
-            scrapCollectedEvent.addTag(Constants.EventTag.REWARD);
-            events.add(scrapCollectedEvent);
-        }
-
         int crewHiredDiff = currentGameState.getTotalCrewHired() - lastGameState.getTotalCrewHired();
         if (crewHiredDiff > 0){
             CrewHiredEvent crewHiredEvent = new CrewHiredEvent(jump);
@@ -260,8 +251,19 @@ public class EventService {
         int oldFuelCount = lastGameState.getPlayerShip().getFuelAmt();
         int newFuelCount = currentGameState.getPlayerShip().getFuelAmt();
 
-        ResourcesReceivedEvent resourcesRewardEvent = new ResourcesReceivedEvent(jump);
+        EventRewardEvent resourcesRewardEvent = new EventRewardEvent(jump);
         resourcesRewardEvent.addTag(Constants.EventTag.REWARD);
+
+        int scrapCollected = currentGameState.getTotalScrapCollected() - lastGameState.getTotalScrapCollected();
+        if (scrapCollected > 0){
+//            ScrapCollectedEvent scrapCollectedEvent = new ScrapCollectedEvent(jump);
+//            scrapCollectedEvent.addIntegerStatEffects(new IntegerStatEffect(Constants.General.SCRAP_COLLECTED, scrapCollected));
+//            scrapCollectedEvent.setResourceEffect(Constants.Resource.SCRAP, scrapCollected);
+//            scrapCollectedEvent.addTag(Constants.EventTag.REWARD);
+//            events.add(scrapCollectedEvent);
+            resourcesRewardEvent.addIntegerStatEffects(new IntegerStatEffect(Constants.General.SCRAP_COLLECTED, scrapCollected));
+            resourcesRewardEvent.setResourceEffect(Constants.Resource.SCRAP, scrapCollected);
+        }
 
         // starting with the new fuelCount we try to guess how many fuel we got as reward
         // we subtract the fuel we had before
