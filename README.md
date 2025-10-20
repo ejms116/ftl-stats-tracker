@@ -1,7 +1,13 @@
 # FTL Stats Tracker
 
-FTL Stats Tracker is a tool that helps you track and analyze your FTL (Faster Than Light) game stats.  
-It collects information about your runs, crew, ships, and events, and provides summaries and insights.
+FTL Stats Tracker is a tool that helps you track and analyze your FTL runs. 
+It collects information about the run and stores them in a json file.
+
+Here are a few screenshots:
+
+![Scrap gain](img/screenshot_1.png)
+![Store overview](img/screenshot_3.png)
+
 
 ## ⚠️ Disclaimer
 
