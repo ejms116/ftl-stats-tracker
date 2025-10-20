@@ -29,12 +29,13 @@ public class FTLStatsTracker {
     private static void initGUI(){
         boolean writeConfig = false;
         Properties props = new Properties();
-        File configFile = new File("ftl-editor.cfg");
+        File configFile = new File("ftl-stats-tracker.cfg");
 
         props.setProperty(EditorConfig.FTL_SAVE_PATH, "");
         props.setProperty(EditorConfig.FTL_DATS_PATH, "");  // Prompt.
-        props.setProperty(EditorConfig.UPDATE_APP, "");     // Prompt.
-        props.setProperty(EditorConfig.USE_DEFAULT_UI, "false");
+//        props.setProperty(EditorConfig.UPDATE_APP, "");     // Prompt.
+//        props.setProperty(EditorConfig.USE_DEFAULT_UI, "false");
+        props.setProperty(EditorConfig.SAVE_FILE_COPY_SETTING, RunService.SaveFileCopySetting.ONCE_PER_JUMP.toString());
 
         // Read the config file.
         InputStream in = null;
@@ -59,7 +60,6 @@ public class FTLStatsTracker {
 
 
         net.blerf.ftl.core.EditorConfig appConfig = new net.blerf.ftl.core.EditorConfig(props, configFile);
-        // FTL Savegame path (continue.sav)
         File saveFile;
         String savePath = appConfig.getProperty(net.blerf.ftl.core.EditorConfig.FTL_SAVE_PATH, "");
 
@@ -69,23 +69,26 @@ public class FTLStatsTracker {
             // TODO: check valid savegame path
         } else {
             saveFile = null;
-            props.setProperty(net.blerf.ftl.core.EditorConfig.FTL_SAVE_PATH, "C:\\Users\\erikj\\Documents\\My Games\\FasterThanLight\\continue.sav");
+            props.setProperty(EditorConfig.FTL_SAVE_PATH, "C:\\Users\\erikj\\Documents\\My Games\\FasterThanLight\\continue.sav");
             writeConfig = true;
         }
 
         // FTL Resources Path.
         File datsDir = null;
-        String datsPath = appConfig.getProperty(net.blerf.ftl.core.EditorConfig.FTL_DATS_PATH, "");
+        String datsPath = appConfig.getProperty(EditorConfig.FTL_DATS_PATH, "");
 
         if (!datsPath.isEmpty()) {
             log.info("Using FTL dats path from config: " + datsPath);
             datsDir = new File(datsPath);
             if (!FTLUtilities.isDatsDirValid(datsDir)) {
-                log.error("The config's " + net.blerf.ftl.core.EditorConfig.FTL_DATS_PATH + " does not exist, or it is invalid");
+                log.error("The config's " + EditorConfig.FTL_DATS_PATH + " does not exist, or it is invalid");
                 datsDir = null;
             }
         } else {
-            log.debug("No " + net.blerf.ftl.core.EditorConfig.FTL_DATS_PATH + " previously set");
+            log.debug("No " + EditorConfig.FTL_DATS_PATH + " previously set");
+            datsDir = null;
+            props.setProperty(EditorConfig.FTL_DATS_PATH, "C:\\Program Files (x86)\\Steam\\steamapps\\common\\FTL Faster Than Light");
+            writeConfig = true;
         }
 
 //        if (datsDir == null) {
@@ -124,6 +127,8 @@ public class FTLStatsTracker {
         } catch (IllegalArgumentException | NullPointerException e) {
             // fallback (e.g., default value)
             saveFileCopySetting = RunService.SaveFileCopySetting.ONCE_PER_JUMP;
+            props.setProperty(EditorConfig.SAVE_FILE_COPY_SETTING, "ONCE_PER_JUMP");
+            writeConfig = true;
         }
 
 
@@ -177,10 +182,11 @@ public class FTLStatsTracker {
 
         Path finalRunsDir = runsDir;
         Path finalSavesDir = savesDir;
+        File finalSaveFile = saveFile;
         RunService.SaveFileCopySetting finalSaveFileCopySetting = saveFileCopySetting;
         javax.swing.SwingUtilities.invokeLater(() -> {
             FlatLaf.setup(new FlatDarkLaf());
-            new TrackerController(saveFile, finalRunsDir, finalSavesDir, finalSaveFileCopySetting);
+            new TrackerController(finalSaveFile, finalRunsDir, finalSavesDir, finalSaveFileCopySetting);
         });
     }
 

@@ -19,4 +19,4 @@ dependency-reduced-pom.xml
 target/runs/current_run.json
 runs/
 current_run.json
-ftl-editor.cfg
+ftl-stats-tracker.cfg
