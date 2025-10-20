@@ -31,6 +31,7 @@ This program uses code from [Vhatis ftl-profile-editor](https://github.com/Vhati
 
 Big thanks to Vhati and everybody that contributed to that project. The ftl-stats-tracker would not be possible without it.
 
+The referenced code was used under the terms of its original license.
 
 ## 📥 How to Use
 
