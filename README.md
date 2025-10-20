@@ -47,6 +47,10 @@ You can download the **pre-built version** from the [Releases](https://github.co
 
 7. Start the program again and start tracking!
 
+## Usage
+- click the red/green button to toggle save file tracking on and off
+- if you don't finish your run in one session just start the tracker again and the current run will be loaded (it's the current_run.json in the directory), toggle on the tracking and then continue playing normally
+
 ## ✨ Features
 
 FTL Stats Tracker provides detailed insights into your FTL runs, including:
@@ -75,15 +79,6 @@ FTL Stats Tracker has some inherent limitations due to the way it works:
   > This typically occurs when these values are affected by events during a run.
 
 
-## Limitations
-
-- this program is based on comparing the save files. Since the save files are made to restore the current situation they don't contain all the information the players might be interested in.
-For example it is not possible (to my knowledge) to gather data about the player or enemy hitting or missing shots or what they were targeting
-- since the game only writes a new save file based on certain conditions it can be very difficult trying to guess what actually happened in the game just from comparing the save files.
-For example the scrap can change from many different things: buying upgrades, event reward, selling items, extra scrap from SRA. Because of this a lot of things in the program is somewhat fragile
-- I'm currently working on improving on some things but it will probably never be possible to achieve 100% accuracy
-- in order to recreate the ship status for every beacon the program adds "Error-Events" with the difference for the specific resource (scrap, fuel, missiles, drone-parts). This usually happens when these values were affected by events.
-
 ## Known errors (currently working on)
 Here are things that will currently not be tracked correctly
 
@@ -94,3 +89,8 @@ Here are things that will currently not be tracked correctly
 - weapon buy event
 - repair arm scrap difference
 - repair events (free or buy)
+
+## Outlook
+
+- I'm currently working on tracking the event choices which can solve most of the issues above
+- the tracker already created a json file with all the information included (saved in the runs directory), in the future I want to add statistics for all tracked runs
