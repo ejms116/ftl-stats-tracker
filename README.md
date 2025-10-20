@@ -25,6 +25,12 @@ Before using FTL Stats Tracker, make sure your system meets the following requir
 
 > Ensure that Java is correctly installed and added to your system's PATH so that you can run the program from the command line.
 
+## Credits
+
+This program uses code from [Vhatis ftl-profile-editor](https://github.com/Vhati/ftl-profile-editor)
+
+Big thanks to Vhati and everybody that contributed to that project. The ftl-stats-tracker would not be possible without it.
+
 
 ## 📥 How to Use
 
