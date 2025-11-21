@@ -5,6 +5,7 @@ import net.gausman.ftl.model.ShipStatusModel;
 import net.gausman.ftl.model.change.Event;
 import net.gausman.ftl.model.record.Jump;
 
+@Deprecated
 public class ScrapCollectedEvent extends Event {
 
     public ScrapCollectedEvent() {}

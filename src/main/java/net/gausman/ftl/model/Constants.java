@@ -86,6 +86,8 @@ public class Constants {
 
         SCRAP_COLLECTED("Scrap collected", EventCategory.GENERAL),
         SRA_EXTRA_SCRAP("SRA bonus scrap", EventCategory.GENERAL),
+        REPAIR_ARM_SCRAP_REDUCTION("Repair arm scrap reduction", EventCategory.GENERAL),
+        DOUBLE_ARM_ROUNDING_DIFF("SRA/Repair arm rounding difference", EventCategory.GENERAL),
         BEACONS_EXPLORED("Beacons explored", EventCategory.GENERAL),
         SHIPS_DESTROYED("Ships destroyed", EventCategory.GENERAL),
         CREW_HIRED("Crew hired", EventCategory.GENERAL),
@@ -192,9 +194,7 @@ public class Constants {
         public String toString(){
             return displayName;
         }
-
     }
-
 
     public enum Resource {
         HULL("Hull", "/icons/icon_hull.png"),
@@ -323,7 +323,9 @@ public class Constants {
     public enum ScrapOrigin {
         NORMAL("Normal"),
         FREE("Free stuff"),
-        SRA("Scrap Recovery Arm")
+        SRA("Scrap Recovery Arm"),
+        REPAIR_ARM("Repair Arm"),
+        ROUNDING_DIFF("Rounding difference")
         ;
 
         private final String displayName;
@@ -341,18 +343,45 @@ public class Constants {
         MISSILES("Missiles"),
         DRONE_PARTS("Drone parts"),
         REPAIR("Repair"),
-        SYSTEM_BUY("System buy"),
-        SYSTEM_UPGRADE("System upgrade"),
+        SYSTEM_BUY("Systems"),
+        SYSTEM_UPGRADE("Upgrades"),
         REACTOR("Reactor"),
         WEAPONS("Weapons"),
         DRONES("Drones"),
         AUGMENTS("Augments"),
         CREW("Crew"),
+        WASTED("Wasted"),
         ;
 
         private final String displayName;
 
         ScrapUsedCategory(String displayName){
+            this.displayName = displayName;
+        }
+
+        public String toString(){
+            return displayName;
+        }
+    }
+
+    public enum Sankey {
+        ITEMS_START("Start items"),
+        ITEMS_FREE("Free items"),
+        ITEMS_SOLD("Sold items"),
+        INVENTORY("Inventory"),
+        WASTED("Wasted"),
+        SCRAP_START("Start scrap"),
+        SCRAP_COLLECTED("Scrap coll"),
+        SCRAP_AVAILABLE("Scrap avail"),
+        SRA_EXTRA_SCRAP("SRA scrap"),
+        SHIP_VALUE("Ship value"),
+        SHIP_START("Start value"),
+        CONSUMED("Consumed"),
+        ;
+
+        private final String displayName;
+
+        Sankey(String displayName){
             this.displayName = displayName;
         }
 
@@ -428,6 +457,16 @@ public class Constants {
         public String toString(){
             return displayName;
         }
+    }
+
+    public enum SaveMetaTag {
+        BOARDING,
+        BOARDING_DEFENSE,
+        FLAGSHIP,
+        DRONE_MICRO,
+        ZOLTAN_POLICE,
+        CRYSTAL,
+        MANTIS
     }
 
 

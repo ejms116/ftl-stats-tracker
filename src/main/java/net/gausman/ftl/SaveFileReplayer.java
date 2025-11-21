@@ -7,7 +7,7 @@ import java.util.*;
 
 public class SaveFileReplayer {
     public static void main(String[] args) throws Exception {
-        Path testFolder = Paths.get("saves\\test-holo-engi-a");
+        Path testFolder = Paths.get("saves\\fsm");
         Path targetFile = Paths.get("C:\\Users\\erikj\\Documents\\My Games\\FasterThanLight\\continue.sav");
 
         // Collect test files (sorted by name)
@@ -17,7 +17,8 @@ public class SaveFileReplayer {
                 files.add(file);
             }
         }
-        files.sort(Comparator.comparingInt(file -> GausmanUtil.extractNumberAfterHyphen(file.toString())));
+//        files.sort(Comparator.comparingInt(file -> GausmanUtil.extractNumberAfterHyphen(file.toString())));
+        files.sort(Comparator.comparingInt(file -> GausmanUtil.extractNumberBeforeParenthesis(file.toString())));
 //        files.sort(Comparator.naturalOrder()); // sort alphabetically
 
         // Replay loop

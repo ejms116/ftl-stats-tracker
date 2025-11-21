@@ -6,6 +6,7 @@ import net.gausman.ftl.model.change.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.constant.Constable;
 import java.lang.reflect.Field;
 import java.util.*;
 
@@ -118,6 +119,44 @@ public class ShipStatusModel {
         return false;
     }
 
+    // this function priotizes items based on the originRank
+    // Removing items (Selling or discarding) happens in this order FREE, BUY, START
+    // if the event is undone the mult is negative meaning the oder is reversed
+    public Item updateItemState(String id, SavedGameParser.StoreItemType itemType, Constants.ItemState itemState, Constants.ItemState newState, int mult) {
+        Item best = null;
+        int bestRank = -99; // this has to be less then -3 because the rank will be negative when apply is false and the mult is -1
+
+        for (Item item : itemList) {
+            if (item.getId().equals(id)
+                    && item.getItemType() == itemType
+                    && item.getState() == itemState) {
+
+                int rank = mult*originRank(item.getOrigin());
+                if (rank > bestRank) {
+                    best = item;
+                    bestRank = rank;
+                }
+            }
+        }
+
+        if (best != null) {
+            best.setState(newState);
+            return best;
+        }
+        return null;
+    }
+
+
+    private int originRank(Constants.ItemOrigin origin) {
+        return switch (origin) {
+            case Constants.ItemOrigin.REWARD -> 3;
+            case BUY_EVENT -> 2;
+            case Constants.ItemOrigin.BUY -> 2;
+            case Constants.ItemOrigin.START -> 1;
+        };
+    }
+
+
     public boolean removeMatchingItem(String id, SavedGameParser.StoreItemType itemType, Constants.ItemOrigin origin, Constants.ItemState itemState) {
         for (int i = itemList.size() - 1; i >= 0; i--) {
             Item item = itemList.get(i);
@@ -130,16 +169,6 @@ public class ShipStatusModel {
             }
         }
         return false;
-    }
-
-    private Map<Constants.ScrapOrigin, Integer> createDefaultScrapGainedMap(){
-        Map<Constants.ScrapOrigin, Integer> map = new EnumMap<>(Constants.ScrapOrigin.class);
-
-        for (Constants.ScrapOrigin origin : Constants.ScrapOrigin.values()){
-            map.put(origin, 0);
-        }
-
-        return map;
     }
 
     public Map<Constants.General, String> getGeneralInfoString() {

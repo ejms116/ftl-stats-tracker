@@ -25,7 +25,7 @@ public class DronesBoughtEvent extends Event {
 
         model.getSectorMetrics().update(
                 getJump().getSector(),
-                Constants.ScrapUsedCategory.DRONES,
+                Constants.ScrapUsedCategory.DRONE_PARTS,
                 mult*-getResourceEffects().getOrDefault(Constants.Resource.SCRAP,0)
         );
 
@@ -35,5 +35,13 @@ public class DronesBoughtEvent extends Event {
             storeInfo.getStore().setDroneParts(storeInfo.getStore().getDroneParts() - mult*getResourceEffects().getOrDefault(Constants.Resource.DRONE, 0));
         }
 
+        model.getSectorMetrics().addFlowMultipleStages(
+                2,
+                3,
+                Constants.Sankey.SCRAP_AVAILABLE.toString(),
+                Constants.ScrapUsedCategory.DRONE_PARTS.toString(),
+                Constants.Sankey.CONSUMED.toString(),
+                -1*mult*getResourceEffects().getOrDefault(Constants.Resource.SCRAP,0)
+        );
     }
 }

@@ -23,6 +23,9 @@ public class EventRewardEvent extends Event {
                     Constants.ScrapOrigin.NORMAL,
                     mult*getResourceEffects().getOrDefault(Constants.Resource.SCRAP,0)
             );
+
+            model.getSectorMetrics().updateFlows(1, Constants.Sankey.SCRAP_COLLECTED.toString(), Constants.Sankey.SCRAP_AVAILABLE.toString(), mult*getResourceEffects().getOrDefault(Constants.Resource.SCRAP,0));
+
         }
     }
 }

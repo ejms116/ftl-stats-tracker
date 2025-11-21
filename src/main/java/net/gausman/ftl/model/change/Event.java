@@ -44,6 +44,8 @@ import java.util.*;
         @JsonSubTypes.Type(value = ScrapCollectedEvent.class, name = "ScrapCollectedEvent"),
         @JsonSubTypes.Type(value = ShipsDestroyedEvent.class, name = "ShipsDestroyedEvent"),
         @JsonSubTypes.Type(value = SRAExtraScrapEvent.class, name = "SRAExtraScrapEvent"),
+        @JsonSubTypes.Type(value = RepairArmScrapReductionEvent.class, name = "RepairArmScrapReductionEvent"),
+        @JsonSubTypes.Type(value = ScrapRoundingDiffEvent.class, name = "ScrapRoundingDiffEvent"),
 
         // Other
         @JsonSubTypes.Type(value = DamageEvent.class, name = "DamageEvent"),

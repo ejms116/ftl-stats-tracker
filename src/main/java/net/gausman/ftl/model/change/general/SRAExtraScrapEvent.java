@@ -4,6 +4,9 @@ import net.gausman.ftl.model.Constants;
 import net.gausman.ftl.model.ShipStatusModel;
 import net.gausman.ftl.model.change.Event;
 import net.gausman.ftl.model.record.Jump;
+import org.jfree.data.flow.DefaultFlowDataset;
+
+import java.util.Optional;
 
 public class SRAExtraScrapEvent extends Event {
     public SRAExtraScrapEvent() {}
@@ -23,5 +26,7 @@ public class SRAExtraScrapEvent extends Event {
                 Constants.ScrapOrigin.SRA,
                 mult*getResourceEffects().getOrDefault(Constants.Resource.SCRAP,0)
         );
+        model.getSectorMetrics().updateFlows(1, Constants.Sankey.SRA_EXTRA_SCRAP.toString(), Constants.Sankey.SCRAP_AVAILABLE.toString(), mult*getResourceEffects().getOrDefault(Constants.Resource.SCRAP,0));
+
     }
 }

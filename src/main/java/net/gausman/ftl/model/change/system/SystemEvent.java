@@ -5,6 +5,10 @@ import net.gausman.ftl.model.Constants;
 import net.gausman.ftl.model.ShipStatusModel;
 import net.gausman.ftl.model.change.Event;
 import net.gausman.ftl.model.record.Jump;
+import net.gausman.ftl.util.GausmanUtil;
+import org.jfree.data.flow.DefaultFlowDataset;
+
+import java.util.Optional;
 
 public class SystemEvent extends Event {
     private SavedGameParser.SystemType type;
@@ -81,6 +85,41 @@ public class SystemEvent extends Event {
                     getJump().getCurrentBeaconId(),
                     type.getId(),
                     SavedGameParser.StoreItemType.SYSTEM
+            );
+            model.getSectorMetrics().addFlowMultipleStages(
+                    2,
+                    3,
+                    Constants.Sankey.SCRAP_AVAILABLE.toString(),
+                    category.toString(),
+                    Constants.Sankey.SHIP_VALUE.toString(),
+                    -1*mult*getResourceEffects().getOrDefault(Constants.Resource.SCRAP,0)
+            );
+        }
+
+        if (getTags().contains(Constants.EventTag.START)){
+            int levelBefore = getNewAmount() - getAmount() + 1;
+            if (type.equals(SavedGameParser.SystemType.SHIELDS)){
+                levelBefore++;
+            }
+            int buyCostSystem = mult*GausmanUtil.getBuyCostSystem(type.getId());
+            int upgradeCostSystem = mult*GausmanUtil.getUpgradeCostSystem(type.getId(), levelBefore , getNewAmount());
+            model.getSectorMetrics().addFlowMultipleStages(
+                    0,
+                    3,
+                    Constants.Sankey.SHIP_START.toString(),
+                    Constants.ScrapUsedCategory.SYSTEM_BUY.toString(),
+                    Constants.Sankey.SHIP_VALUE.toString(),
+                    buyCostSystem
+            );
+
+            model.getSectorMetrics().addFlowMultipleStages(
+                    0,
+                    3,
+                    Constants.Sankey.SHIP_START.toString(),
+                    Constants.ScrapUsedCategory.SYSTEM_UPGRADE.toString(),
+                    Constants.Sankey.SHIP_VALUE.toString(),
+                    upgradeCostSystem
+
             );
         }
     }

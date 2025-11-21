@@ -256,11 +256,6 @@ public class EventService {
 
         int scrapCollected = currentGameState.getTotalScrapCollected() - lastGameState.getTotalScrapCollected();
         if (scrapCollected > 0){
-//            ScrapCollectedEvent scrapCollectedEvent = new ScrapCollectedEvent(jump);
-//            scrapCollectedEvent.addIntegerStatEffects(new IntegerStatEffect(Constants.General.SCRAP_COLLECTED, scrapCollected));
-//            scrapCollectedEvent.setResourceEffect(Constants.Resource.SCRAP, scrapCollected);
-//            scrapCollectedEvent.addTag(Constants.EventTag.REWARD);
-//            events.add(scrapCollectedEvent);
             resourcesRewardEvent.addIntegerStatEffects(new IntegerStatEffect(Constants.General.SCRAP_COLLECTED, scrapCollected));
             resourcesRewardEvent.setResourceEffect(Constants.Resource.SCRAP, scrapCollected);
         }
@@ -535,15 +530,11 @@ public class EventService {
         SavedGameParser.EncounterState lastEncounter = lastGameState.getEncounter();
         SavedGameParser.EncounterState currentEncounter = currentGameState.getEncounter();
 
-//        Map<String, Encounters> encounters = dm.getEncounters();
-//        Map<String, ShipEvent> shipEvents = dm.getShipEvents();
-//        FTLEventList ftlEventList = dm.getEventListById("SAVE_CIVILIAN_LIST");
-//        FTLEvent ftlEvent = dm.getEventById("PIRATE_STATION_CROPS");
 
         // SRA Extra Scrap
         // if the player collected scrap and has a Scrap Recovery arm we want to add the extra scrap
         // normally the extra scrap is just 10% rounded down
-        // the problem is that for double rewards the amount is calculated for both scrap values seperately
+        // the problem is that for double rewards the amount is calculated for both scrap values separately
         // so 27 + 34 = 61 only gives 2 + 3 = 5 extra scrap
         // we don't know the individual numbers so we just use the sum for the extra scrap estimate
         // if the actual difference is equal to the estimate or exactly one lower it should be good
@@ -553,27 +544,10 @@ public class EventService {
         // one scrap reward -> always correct
         // two scrap reward -> guess might be 1 too high
         // three scrap rewards -> guess might be 2 too high (I don't think this can happen)
-        if (lastGameState.getPlayerShip().getAugmentIdList().contains("SCRAP_COLLECTOR") && scrapCollected > 0){
-            int expectedScrapDiff = 0;
-            for (Event e : events){
-                expectedScrapDiff += e.getResourceEffects().getOrDefault(Constants.Resource.SCRAP, 0);
-            }
-            int remainingScrapDiff = scrapDiff - expectedScrapDiff;
-            int extraScrapGuess = scrapCollected / 10;
-            // we always want to add the extra scrap event even if the number might be off by one
-            // because not adding it would be more wrong
-            if (remainingScrapDiff == extraScrapGuess || remainingScrapDiff == extraScrapGuess - 1) {
-                SRAExtraScrapEvent sraExtraScrapEvent = new SRAExtraScrapEvent(jump);
-                sraExtraScrapEvent.setResourceEffect(Constants.Resource.SCRAP, remainingScrapDiff);
-                events.add(sraExtraScrapEvent);
+        // REPAIR_ARM
+        handleRepairArmAndSRAScrapDiff(events, lastGameState, currentGameState, scrapCollected, scrapDiff, jump);
 
-            } else {
-                SRAExtraScrapEvent sraExtraScrapEvent = new SRAExtraScrapEvent(jump);
-                sraExtraScrapEvent.setResourceEffect(Constants.Resource.SCRAP, extraScrapGuess);
-                events.add(sraExtraScrapEvent);
-                log.info("scrap diff error");
-            }
-        }
+
 
         // Generate Resource difference events
         // these should ideally never happen, but if they do we can use this for debugging
@@ -609,6 +583,94 @@ public class EventService {
 
         return box;
 
+    }
+
+    private void handleRepairArmAndSRAScrapDiff(List<Event> events, SavedGameParser.SavedGameState lastGameState, SavedGameParser.SavedGameState currentGameState ,int scrapCollectedStatDiff, int actualScrapDiff, Jump jump) {
+        if (scrapCollectedStatDiff <= 0) {
+            return;
+        }
+
+        boolean repairArmPresentAndHullDamaged = lastGameState.getPlayerShip().getAugmentIdList().contains("REPAIR_ARM")
+                && lastGameState.getPlayerShip().getHullAmt() < 30;
+
+        int sraCount = (int) lastGameState.getPlayerShip()
+                .getAugmentIdList()
+                .stream()
+                .filter(id -> id.equals("SCRAP_COLLECTOR"))
+                .count();
+
+        // Percentage modifier can have the following values:
+        // 0.85 -> Repair Arm
+        // 0.95 -> Repair Arm and 1x SRA
+        // 1.05 -> Repair Arm and 2x SRA
+        // 1.00 -> no Repair Arm or SRA
+        // 1.10 -> 1x SRA
+        // 1.20 -> 2x SRA
+        // 1.30 -> 3x SRA
+        double sraModifier = sraCount * 0.1;
+        double repairArmModifier = repairArmPresentAndHullDamaged ? -0.15 : 0.0;
+        double percentageModifier = sraModifier + repairArmModifier;
+
+        if (percentageModifier == 0.0) {
+            return;
+        }
+
+
+        int expectedScrapDiff = 0;
+        for (Event e : events) {
+            expectedScrapDiff += e.getResourceEffects().getOrDefault(Constants.Resource.SCRAP, 0);
+        }
+        int remainingScrapDiff = actualScrapDiff - expectedScrapDiff;
+        int scrapDiffGuess = (int) Math.floor(scrapCollectedStatDiff * percentageModifier);
+
+        int scrapDiffError = remainingScrapDiff - scrapDiffGuess;
+
+        int sraDiffGuess = (int) Math.floor(scrapCollectedStatDiff * sraModifier);
+        int repairArmDiffGuess = (int) Math.floor(scrapCollectedStatDiff * repairArmModifier);
+
+
+        // Only SRA
+        if (sraDiffGuess == scrapDiffGuess) {
+            if (Math.abs(scrapDiffError) < 3 && remainingScrapDiff > 0){
+                SRAExtraScrapEvent sraExtraScrapEvent = new SRAExtraScrapEvent(jump);
+                sraExtraScrapEvent.setResourceEffect(Constants.Resource.SCRAP, remainingScrapDiff);
+                events.add(sraExtraScrapEvent);
+            }
+        }
+        // Only Repair arm
+        else if (repairArmDiffGuess == scrapDiffGuess){
+            if (Math.abs(scrapDiffError) < 3 && remainingScrapDiff > 0){
+                RepairArmScrapReductionEvent repairArmScrapReductionEvent = new RepairArmScrapReductionEvent(jump);
+                repairArmScrapReductionEvent.setResourceEffect(Constants.Resource.SCRAP, remainingScrapDiff);
+                events.add(repairArmScrapReductionEvent);
+            }
+        }
+        // Repair arm and SRA
+        else {
+            if (Math.abs(scrapDiffError) < 3){
+                if (Math.abs(sraDiffGuess) > 0){
+                    SRAExtraScrapEvent sraExtraScrapEvent = new SRAExtraScrapEvent(jump);
+                    sraExtraScrapEvent.setResourceEffect(Constants.Resource.SCRAP, sraDiffGuess);
+                    events.add(sraExtraScrapEvent);
+                }
+                if (Math.abs(repairArmDiffGuess) > 0){
+                    RepairArmScrapReductionEvent repairArmScrapReductionEvent = new RepairArmScrapReductionEvent(jump);
+                    repairArmScrapReductionEvent.setResourceEffect(Constants.Resource.SCRAP, repairArmDiffGuess);
+                    events.add(repairArmScrapReductionEvent);
+                }
+
+                int remainingScrapDiffRounding = remainingScrapDiff - sraDiffGuess - repairArmDiffGuess;
+                if (Math.abs(remainingScrapDiffRounding) > 0){
+                    ScrapRoundingDiffEvent scrapRoundingDiffEvent = new ScrapRoundingDiffEvent(jump);
+                    scrapRoundingDiffEvent.setResourceEffect(Constants.Resource.SCRAP, remainingScrapDiffRounding);
+                    events.add(scrapRoundingDiffEvent);
+                }
+
+
+            }
+        }
+
+        log.info("Scrap diff error: " + scrapDiffError);
     }
 
     private void generateResourceDiffErrorEvents(

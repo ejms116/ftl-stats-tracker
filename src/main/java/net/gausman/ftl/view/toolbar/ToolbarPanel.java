@@ -11,6 +11,7 @@ public class ToolbarPanel extends JPanel {
     private final JButton trackingToggleButton = new JButton(TRACKING_TOGGLE_BUTTON_OFF);
     private final JButton testButton = new JButton("Test");
     private final JButton eventTreeBrowserButton = new JButton("Event Browser");
+    private final JButton ftlDojoButton = new JButton("FTL Dojo");
 
     public ToolbarPanel() {
         trackingToggleButton.setBackground(Color.RED);
@@ -18,8 +19,8 @@ public class ToolbarPanel extends JPanel {
         if (Boolean.getBoolean("ftl.testing")){
             add(testButton);
         }
-
         add(eventTreeBrowserButton);
+        add(ftlDojoButton);
     }
 
     public void setEventTreeBrowserButtonListener(ActionListener listener){
@@ -32,6 +33,10 @@ public class ToolbarPanel extends JPanel {
 
     public void setTrackingToggleListener(ActionListener listener){
         trackingToggleButton.addActionListener(listener);
+    }
+
+    public void setFtlDojoButton(ActionListener listener){
+        ftlDojoButton.addActionListener(listener);
     }
 
     public void setTrackingToggleState(boolean isOn){

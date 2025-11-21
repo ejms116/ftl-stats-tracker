@@ -26,6 +26,7 @@ public class ScrapUsedPieChartPanel extends JPanel {
         REACTOR,
         ITEMS,
         CREW,
+        WASTED,
     } 
     
     private final DefaultPieDataset<String> dataset;
@@ -101,6 +102,7 @@ public class ScrapUsedPieChartPanel extends JPanel {
             case REACTOR -> InternalScrapUsedCategory.REACTOR;
             case WEAPONS, DRONES, AUGMENTS -> InternalScrapUsedCategory.ITEMS;
             case CREW -> InternalScrapUsedCategory.CREW;
+            case WASTED -> InternalScrapUsedCategory.WASTED;
         };
     }
 

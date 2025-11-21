@@ -35,5 +35,13 @@ public class FuelBoughtEvent extends Event {
         if (storeInfo != null){
             storeInfo.getStore().setFuel(storeInfo.getStore().getFuel() - mult*getResourceEffects().getOrDefault(Constants.Resource.FUEL, 0));
         }
+        model.getSectorMetrics().addFlowMultipleStages(
+                2,
+                3,
+                Constants.Sankey.SCRAP_AVAILABLE.toString(),
+                Constants.ScrapUsedCategory.FUEL.toString(),
+                Constants.Sankey.CONSUMED.toString(),
+                -1*mult*getResourceEffects().getOrDefault(Constants.Resource.SCRAP,0)
+        );
     }
 }

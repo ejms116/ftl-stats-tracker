@@ -4,6 +4,7 @@ import net.blerf.ftl.parser.SavedGameParser.SystemType;
 import net.gausman.ftl.model.*;
 import net.gausman.ftl.model.record.Sector;
 import net.gausman.ftl.model.record.StoreInfo;
+import net.gausman.ftl.view.charts.SankeyChartPanel;
 import net.gausman.ftl.view.charts.ScrapGainedChartPanel;
 import net.gausman.ftl.view.charts.ScrapUsedChartPanel;
 import net.gausman.ftl.view.charts.ScrapUsedPieChartPanel;
@@ -38,6 +39,7 @@ public class ShipStatusPanel extends JTabbedPane {
     private ScrapGainedChartPanel scrapGainedChartPanel;
     private ScrapUsedChartPanel scrapUsedChartPanel;
     private ScrapUsedPieChartPanel scrapUsedPieChartPanel;
+    private SankeyChartPanel sankeyChartPanel;
 
     private final JSplitPane statusPanel;
 //    private final JSplitPane sectorPanel;
@@ -89,9 +91,12 @@ public class ShipStatusPanel extends JTabbedPane {
         scrapGainedChartPanel = new ScrapGainedChartPanel();
         scrapUsedChartPanel = new ScrapUsedChartPanel();
         scrapUsedPieChartPanel = new ScrapUsedPieChartPanel();
+        sankeyChartPanel = new SankeyChartPanel();
         tabbedPaneSector.addTab("Scrap gain", scrapGainedChartPanel);
         tabbedPaneSector.addTab("Scrap usage (sector)", scrapUsedChartPanel);
         tabbedPaneSector.addTab("Scrap usage", scrapUsedPieChartPanel);
+        tabbedPaneSector.addTab("Scrap flow", sankeyChartPanel);
+
 
         // add Store
         storeTableModel = new StoreTableModel();
@@ -226,7 +231,7 @@ public class ShipStatusPanel extends JTabbedPane {
         scrapGainedChartPanel.updateDataset(model.getSectorMetrics());
         scrapUsedChartPanel.updateDataset(model.getSectorMetrics());
         scrapUsedPieChartPanel.updateDataset(model.getSectorMetrics());
-
+        sankeyChartPanel.updateDataset(model.getSectorMetrics());
         resizeColumnWidths(storeTable, jScrollPaneStore);
     }
 

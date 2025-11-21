@@ -34,5 +34,13 @@ public class MissilesBoughtEvent extends Event {
         if (storeInfo != null){
             storeInfo.getStore().setMissiles(storeInfo.getStore().getMissiles() - mult*getResourceEffects().getOrDefault(Constants.Resource.MISSILE, 0));
         }
+        model.getSectorMetrics().addFlowMultipleStages(
+                2,
+                3,
+                Constants.Sankey.SCRAP_AVAILABLE.toString(),
+                Constants.ScrapUsedCategory.MISSILES.toString(),
+                Constants.Sankey.CONSUMED.toString(),
+                -1*mult*getResourceEffects().getOrDefault(Constants.Resource.SCRAP,0)
+        );
     }
 }

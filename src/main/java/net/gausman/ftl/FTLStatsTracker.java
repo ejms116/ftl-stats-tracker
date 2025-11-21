@@ -135,6 +135,8 @@ public class FTLStatsTracker {
 
         Path runsDir = null;
         Path savesDir = null;
+        Path dojoDir = null;
+        Path dojoRunsDir = null;
         try {
             // Get the directory where the JAR is located
             Path jarDir = new File(FTLStatsTracker.class.getProtectionDomain()
@@ -147,10 +149,14 @@ public class FTLStatsTracker {
             // Define required directories
             runsDir = jarDir.resolve("runs");
             savesDir = jarDir.resolve("saves");
+            dojoDir = jarDir.resolve("dojo");
+            dojoRunsDir = jarDir.resolve("dojo/saves");
 
             // Ensure they exist
             createDirectoryIfMissing(runsDir);
             createDirectoryIfMissing(savesDir);
+            createDirectoryIfMissing(dojoDir);
+            createDirectoryIfMissing(dojoRunsDir);
 
             log.info("Directories ensured at: " + jarDir);
 
@@ -182,11 +188,12 @@ public class FTLStatsTracker {
 
         Path finalRunsDir = runsDir;
         Path finalSavesDir = savesDir;
+        Path finalDojoDir = dojoDir;
         File finalSaveFile = saveFile;
         RunService.SaveFileCopySetting finalSaveFileCopySetting = saveFileCopySetting;
         javax.swing.SwingUtilities.invokeLater(() -> {
             FlatLaf.setup(new FlatDarkLaf());
-            new TrackerController(finalSaveFile, finalRunsDir, finalSavesDir, finalSaveFileCopySetting);
+            new TrackerController(finalSaveFile, finalRunsDir, finalSavesDir, finalDojoDir, finalSaveFileCopySetting);
         });
     }
 

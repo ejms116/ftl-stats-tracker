@@ -10,6 +10,9 @@ import net.blerf.ftl.xml.ShipBlueprint;
 import net.blerf.ftl.xml.SystemBlueprint;
 import net.blerf.ftl.xml.event.AbstractBuildableTreeNode;
 import net.gausman.ftl.model.Constants;
+import net.gausman.ftl.model.ShipStatusModel;
+import org.jfree.data.flow.DefaultFlowDataset;
+import org.jfree.data.flow.FlowKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Element;
@@ -30,6 +33,29 @@ public class GausmanUtil {
 
     public static FTLConstants getFtlConstants() {
         return ftlConstants;
+    }
+
+    public static <T extends Comparable<T>> DefaultFlowDataset<T> copyFlowDataset(DefaultFlowDataset<T> original) {
+        DefaultFlowDataset<T> copy = new DefaultFlowDataset<>();
+        copy.setFlow(0, (T) Constants.Sankey.ITEMS_START.toString(), (T) Constants.Sankey.INVENTORY.toString(), 0.0);
+        copy.setFlow(0, (T) Constants.Sankey.ITEMS_FREE.toString(), (T) Constants.Sankey.INVENTORY.toString(), 0.0);
+        copy.setFlow(1, (T) Constants.Sankey.INVENTORY.toString(), (T) Constants.Sankey.INVENTORY.toString(), 0.0);
+        copy.setFlow(2, (T) Constants.Sankey.INVENTORY.toString(), (T) Constants.Sankey.INVENTORY.toString(), 0.0);
+        copy.setFlow(3, (T) Constants.Sankey.INVENTORY.toString(), (T) Constants.Sankey.SHIP_VALUE.toString(), 0.0);
+        copy.setFlow(0, (T) Constants.Sankey.ITEMS_START.toString(), (T) Constants.Sankey.WASTED.toString(), 0.0);
+        copy.setFlow(0, (T) Constants.Sankey.ITEMS_START.toString(), (T) Constants.Sankey.ITEMS_SOLD.toString(), 0.0);
+        copy.setFlow(1, (T) Constants.Sankey.ITEMS_SOLD.toString(), (T) Constants.Sankey.SCRAP_AVAILABLE.toString(), 0.0);
+//        copy.setFlow(1, (T) Constants.Sankey.ITEMS_SOLD.toString(), (T) Constants.Sankey.INVENTORY.toString(), 0.0);
+        copy.setFlow(1, (T) Constants.Sankey.SCRAP_COLLECTED.toString(), (T) Constants.Sankey.SCRAP_AVAILABLE.toString(), 0.0);
+        copy.setFlow(2, (T) Constants.Sankey.SCRAP_AVAILABLE.toString(), (T) Constants.ScrapUsedCategory.REACTOR.toString(), 0.0);
+
+
+        for (FlowKey<T> key : original.getAllFlows()) {
+            Number value = original.getFlow(key.getStage(), key.getSource(), key.getDestination());
+            copy.setFlow(key.getStage(), key.getSource(), key.getDestination(), value.doubleValue());
+        }
+
+        return copy;
     }
 
     public static void logXmlWarningsRecoursive(AbstractBuildableTreeNode node, List<String> occurence){
@@ -106,7 +132,26 @@ public class GausmanUtil {
         } else {
             return 0;
         }
+    }
 
+    public static int reactorUpgradeCost(int current, int target) {
+        int cost = 0;
+
+        for (int level = current + 1; level <= target; level++) {
+            if (level >= 1 && level <= 5) {
+                cost += 30;
+            } else if (level >= 6 && level <= 10) {
+                cost += 20;
+            } else if (level >= 11 && level <= 15) {
+                cost += 25;
+            } else if (level >= 16 && level <= 20) {
+                cost += 30;
+            } else if (level >= 21 && level <= 25) {
+                cost += 35;
+            }
+        }
+
+        return cost;
     }
 
     public static Constants.ScrapUsedCategory convertResourceToScrapUsedCategory(Constants.Resource resource){
@@ -123,6 +168,13 @@ public class GausmanUtil {
         DataManager dm = DataManager.get();
         ShipBlueprint ship = dm.getShip(blueprint);
         return ship.getName().getTextValue();
+    }
+
+    public static int getBuyCostSystem(String systemId){
+        DataManager dm = DataManager.get();
+        SystemBlueprint systemBlueprint = dm.getSystem(systemId);
+        int upgradeCost = systemBlueprint.getCost();
+        return upgradeCost;
     }
 
     public static int getUpgradeCostSystem(String systemId, int levelBefore, int levelAfter){
@@ -263,14 +315,14 @@ public class GausmanUtil {
     }
 
 
-    public static int extractLeadingNumber(String filename) {
-        try {
-            String numberPart = filename.split("[^0-9]")[0]; // get leading digits
-            return Integer.parseInt(numberPart);
-        } catch (Exception e) {
-            return Integer.MAX_VALUE; // put files without numbers at the end
-        }
-    }
+//    public static int extractLeadingNumber(String filename) {
+//        try {
+//            String numberPart = filename.split("[^0-9]")[0]; // get leading digits
+//            return Integer.parseInt(numberPart);
+//        } catch (Exception e) {
+//            return Integer.MAX_VALUE; // put files without numbers at the end
+//        }
+//    }
 
     public static int extractNumberAfterHyphen(String filename) {
         try {
@@ -288,6 +340,31 @@ public class GausmanUtil {
         } catch (Exception e) {
             return Integer.MAX_VALUE;
         }
+    }
+
+    public static int extractNumberBeforeParenthesis(String filename) {
+        Pattern beforeParenthesis = Pattern.compile("(\\d+)\\(");
+        Matcher m = beforeParenthesis.matcher(filename);
+        if (m.find()) {
+            return Integer.parseInt(m.group(1)); // the captured number
+        }
+        return Integer.MAX_VALUE; // no number → push to end, your choice
+    }
+
+
+    public static int extractLeadingNumber(String filename) {
+        // Read digits from the start until a non-digit occurs
+        int i = 0;
+        while (i < filename.length() && Character.isDigit(filename.charAt(i))) {
+            i++;
+        }
+
+        // If no digits at the start, treat as 0 or throw an error depending on your needs
+        if (i == 0) {
+            return 0;
+        }
+
+        return Integer.parseInt(filename.substring(0, i));
     }
 
 

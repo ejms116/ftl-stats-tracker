@@ -109,9 +109,9 @@ public class ScrapGainedChartPanel extends JPanel {
         );
 
         NumberAxis yAxis = (NumberAxis)plot.getRangeAxis();
-        yAxis.setRangeType(RangeType.POSITIVE);
-        yAxis.setAutoRangeMinimumSize(400);
-
+//        yAxis.setRangeType(RangeType.POSITIVE);
+//        yAxis.setAutoRangeMinimumSize(400);
+        yAxis.setAutoRange(true);
 
         // --- Wrap chart ---
         ChartPanel chartPanel = new ChartPanel(chart);

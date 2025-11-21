@@ -29,5 +29,13 @@ public class RepairEvent extends Event {
         if (storeInfo != null){
             storeInfo.setRepairCount(storeInfo.getRepairCount() + mult*getResourceEffects().getOrDefault(Constants.Resource.HULL, 0));
         }
+        model.getSectorMetrics().addFlowMultipleStages(
+                2,
+                3,
+                Constants.Sankey.SCRAP_AVAILABLE.toString(),
+                Constants.ScrapUsedCategory.REPAIR.toString(),
+                Constants.Sankey.CONSUMED.toString(),
+                -1*mult*getResourceEffects().getOrDefault(Constants.Resource.SCRAP,0)
+        );
     }
 }

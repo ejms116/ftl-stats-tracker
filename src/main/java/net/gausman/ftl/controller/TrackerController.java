@@ -12,6 +12,7 @@ import net.gausman.ftl.util.FileWatcher;
 import net.gausman.ftl.util.GausmanUtil;
 import net.gausman.ftl.view.TrackerView;
 import net.gausman.ftl.view.browser.EventTreeBrowserView;
+import net.gausman.ftl.view.dojo.FTLDojoView;
 import net.gausman.ftl.view.eventtable.EventTablePanel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,6 +47,7 @@ public class TrackerController {
 
     private TrackerView view;
     private EventTreeBrowserView eventTreeBrowserView;
+    private FTLDojoView FTLDojoView;
 
     private List<Event> events;
     private EventTableModel eventTableModel;
@@ -55,11 +57,13 @@ public class TrackerController {
 
     private DataManager dm = DataManager.get();
 
-    public TrackerController(File saveFile, Path runsDir, Path savesDir, RunService.SaveFileCopySetting saveFileCopySetting) {
+    private Path dojoDir;
+
+    public TrackerController(File saveFile, Path runsDir, Path savesDir, Path dojoDir, RunService.SaveFileCopySetting saveFileCopySetting) {
         continueSaveFile = saveFile;
         view = new TrackerView();
         runService = new RunService(runsDir, savesDir, saveFileCopySetting);
-
+        this.dojoDir = dojoDir;
 
         eventTableModel = new EventTableModel();
 
@@ -108,6 +112,10 @@ public class TrackerController {
 
         view.getToolbarPanel().setEventTreeBrowserButtonListener(e -> {
             showEventTreeBrowserView();
+        });
+
+        view.getToolbarPanel().setFtlDojoButton(e -> {
+            showTrainingModusView();
         });
 
         view.getEventTablePanel().setOpenEventInBrowserButton(e -> {
@@ -198,6 +206,19 @@ public class TrackerController {
         } else {
             eventTreeBrowserView.toFront();
             eventTreeBrowserView.requestFocus();
+        }
+    }
+
+    private void showTrainingModusView() {
+        if (FTLDojoView == null || !FTLDojoView.isDisplayable()){
+             FTLDojoView = new FTLDojoView(dojoDir, continueSaveFile);
+             FTLDojoView.setVisible(true);
+
+
+        } else {
+            FTLDojoView.toFront();
+            FTLDojoView.requestFocus();
+            FTLDojoView.setVisible(true);
         }
     }
 

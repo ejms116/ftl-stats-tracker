@@ -31,6 +31,7 @@ public class ScrapUsedChartPanel extends JPanel {
         REACTOR,
         ITEMS,
         CREW,
+        WASTED,
     }
 
     private final DefaultCategoryDataset dataset;
@@ -115,6 +116,7 @@ public class ScrapUsedChartPanel extends JPanel {
             case REACTOR -> InternalScrapUsedCategory.REACTOR;
             case WEAPONS, DRONES, AUGMENTS -> InternalScrapUsedCategory.ITEMS;
             case CREW -> InternalScrapUsedCategory.CREW;
+            case WASTED -> InternalScrapUsedCategory.WASTED;
         };
     }
 
@@ -125,8 +127,7 @@ public class ScrapUsedChartPanel extends JPanel {
 //            String text = String.valueOf(outer.getKey().getId());
             Map<InternalScrapUsedCategory, Integer> temp = new EnumMap<>(InternalScrapUsedCategory.class);
             for (Map.Entry<Constants.ScrapUsedCategory, Integer> innerEntry : outer.getValue().getScrapUsed().entrySet()){
-                temp.put(convert(innerEntry.getKey()), innerEntry.getValue());
-//                addOrSet(dataset, innerEntry.getValue(), convert(innerEntry.getKey()), text);
+                temp.merge(convert(innerEntry.getKey()), innerEntry.getValue(), Integer::sum);
             }
             for (Map.Entry<InternalScrapUsedCategory, Integer> entry : temp.entrySet()){
                 addOrSet(dataset, entry.getValue(), entry.getKey(), text);
