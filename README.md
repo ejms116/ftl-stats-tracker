@@ -1,7 +1,13 @@
 # FTL Stats Tracker
 
-FTL Stats Tracker is a tool that helps you track and analyze your FTL (Faster Than Light) game stats.  
-It collects information about your runs, crew, ships, and events, and provides summaries and insights.
+FTL Stats Tracker is a tool that helps you track and analyze your FTL runs. 
+It collects information about the run and stores them in a json file.
+
+Here are a few screenshots:
+
+![Scrap gain](img/screenshot_1.png)
+![Store overview](img/screenshot_3.png)
+
 
 ## ⚠️ Disclaimer
 
@@ -19,6 +25,13 @@ Before using FTL Stats Tracker, make sure your system meets the following requir
 
 > Ensure that Java is correctly installed and added to your system's PATH so that you can run the program from the command line.
 
+## Credits
+
+This program uses code from [Vhatis ftl-profile-editor](https://github.com/Vhati/ftl-profile-editor)
+
+Big thanks to Vhati and everybody that contributed to that project. The ftl-stats-tracker would not be possible without it.
+
+The referenced code was used under the terms of its original license.
 
 ## 📥 How to Use
 
